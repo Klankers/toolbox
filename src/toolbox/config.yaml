@@ -8,6 +8,7 @@ steps:
   - name: "Load OG1"
     parameters:
       file_path: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/data/OG1/ALR_4_649_R.nc"  # Path to the input NetCDF file
+      add_depth: true  # Add depth information to the data
       diagnostics: true  # Enable diagnostics 
   
   - name: "Factory Calibration"
