@@ -57,7 +57,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.load_data.LoadOG1" title="toolbox.steps.custom.load_data.LoadOG1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LoadOG1</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Step for loading OG1 data.</p></td>
 </tr>
 </tbody>
 </table>
@@ -68,6 +68,19 @@
 <dt class="sig sig-object py" id="toolbox.steps.custom.load_data.LoadOG1">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.load_data.</span></span><span class="sig-name descname"><span class="pre">LoadOG1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/load_data.html#LoadOG1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.load_data.LoadOG1" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
+<p>Step for loading OG1 data.</p>
+<p>Derived from Phyto-Phys Repo by Obsidian500</p>
+<dl class="simple">
+<dt>Available Parameters:</dt><dd><ul class="simple">
+<li><p>file_path: Path to the OG1 data file.</p></li>
+<li><p>add_meta: Boolean flag to indicate whether to add metadata.</p></li>
+<li><p>add_elapsed_time: Boolean flag to indicate whether to add elapsed time.</p></li>
+<li><p>add_depth: Boolean flag to indicate whether to add depth.</p></li>
+<li><p>lat_label: Label for latitude variable in the dataset. (default: “LATITUDE”)</p></li>
+<li><p>diagnostics: Boolean flag to indicate whether to generate diagnostics.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.custom.load_data.LoadOG1.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Load</span> <span class="pre">OG1'</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/load_data.html#LoadOG1.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.load_data.LoadOG1.step_name" title="Link to this definition">¶</a></dt>
@@ -83,6 +96,23 @@
 <dt class="sig sig-object py" id="toolbox.steps.custom.load_data.LoadOG1.generate_diagnostics">
 <span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/load_data.html#LoadOG1.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.load_data.LoadOG1.generate_diagnostics" title="Link to this definition">¶</a></dt>
 <dd><p>Hook for diagnostics (optional)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.load_data.LoadOG1.add_meta">
+<span class="sig-name descname"><span class="pre">add_meta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/load_data.html#LoadOG1.add_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.load_data.LoadOG1.add_meta" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.load_data.LoadOG1.add_elapsed_time">
+<span class="sig-name descname"><span class="pre">add_elapsed_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/load_data.html#LoadOG1.add_elapsed_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.load_data.LoadOG1.add_elapsed_time" title="Link to this definition">¶</a></dt>
+<dd><p>Appends epoch and elapsed time to the dataset</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.load_data.LoadOG1.add_depth">
+<span class="sig-name descname"><span class="pre">add_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lat_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'LATITUDE'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/load_data.html#LoadOG1.add_depth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.load_data.LoadOG1.add_depth" title="Link to this definition">¶</a></dt>
+<dd><p>Converts pressure to depth and appends it to the dataset</p>
 </dd></dl>
 
 </dd></dl>

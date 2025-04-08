@@ -57,11 +57,28 @@
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
 
 
 <div class="viewcode-block" id="LoadOG1">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LoadOG1</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Step for loading OG1 data.</span>
+
+<span class="sd">    Derived from Phyto-Phys Repo by Obsidian500</span>
+
+<span class="sd">    Available Parameters:</span>
+<span class="sd">        - file_path: Path to the OG1 data file.</span>
+<span class="sd">        - add_meta: Boolean flag to indicate whether to add metadata.</span>
+<span class="sd">        - add_elapsed_time: Boolean flag to indicate whether to add elapsed time.</span>
+<span class="sd">        - add_depth: Boolean flag to indicate whether to add depth.</span>
+<span class="sd">        - lat_label: Label for latitude variable in the dataset. (default: &quot;LATITUDE&quot;)</span>
+<span class="sd">        - diagnostics: Boolean flag to indicate whether to generate diagnostics.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="LoadOG1.step_name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.step_name">[docs]</a>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Load OG1&quot;</span></div>
@@ -70,10 +87,20 @@
 <div class="viewcode-block" id="LoadOG1.run">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
         <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;file_path&quot;</span><span class="p">]</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoadData] Loading </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2"> OG1&quot;</span><span class="p">)</span>
         <span class="c1"># load data from xarray</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;add_meta&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_meta</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;add_elapsed_time&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_elapsed_time</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;add_depth&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_depth</span><span class="p">(</span><span class="n">lat_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lat_label&quot;</span><span class="p">])</span>
 
         <span class="c1"># Generate diagnostics if enabled</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
@@ -88,6 +115,90 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoadData] Generating diagnostics...&quot;</span><span class="p">)</span>
         <span class="c1"># Print summary stats</span>
         <span class="n">diag</span><span class="o">.</span><span class="n">generate_summary_stats</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LoadOG1.add_meta">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.add_meta">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoadData] Adding metadata...&quot;</span><span class="p">)</span>
+        <span class="c1"># Add Length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS_Length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">N_MEASUREMENTS</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="c1"># Add Variable Meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;Variable Information&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Is Numeric&quot;</span><span class="p">,</span> <span class="s2">&quot;Length&quot;</span><span class="p">,</span> <span class="s2">&quot;# NaNs&quot;</span><span class="p">,</span> <span class="s2">&quot;NaNless Length&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Check if the variable is numeric</span>
+            <span class="n">b_is_numeric</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+                <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">)</span>
+            <span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;Variable Information&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">b_is_numeric</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">))</span> <span class="k">if</span> <span class="n">b_is_numeric</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">))</span> <span class="k">if</span> <span class="n">b_is_numeric</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="LoadOG1.add_elapsed_time">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.add_elapsed_time">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_elapsed_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Appends epoch and elapsed time to the dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">epoch_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TIME</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">)</span>
+            <span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">epoch_time</span> <span class="o">-</span> <span class="n">epoch_time</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mf">1e-9</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;EPOCH_TIME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">epoch_time</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">EPOCH_TIME</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Time in nanoseconds since 01/01/1970&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;ns&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Epoch time&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">elapsed_time</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ELAPSED_TIME</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Elapsed time in seconds since deployment&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Elapsed time&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="o">==</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;ERROR: The TIME variable does not appear in the netCDF file. These functions are only intended&quot;</span>
+                    <span class="s2">&quot; for use with OG1 format netCDF files.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">: Something unexpected happened: </span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LoadOG1.add_depth">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.add_depth">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat_label</span><span class="o">=</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts pressure to depth and appends it to the dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">p</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">lat_label</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="c1"># use GSW to convert pressure to depth</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">z_from_p</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">depth</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DEPTH</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth calculated following TEOS-10, implementation by GSW, see&quot;</span>
+            <span class="s2">&quot;https://github.com/TEOS-10/GSW-python. Dynamic height anomoly and&quot;</span>
+            <span class="s2">&quot;sea surface geopotential are assimed to be 0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;m&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth (z)&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">10935</span><span class="p">,</span>
+        <span class="p">}</span></div>
 </div>
 
 </pre></div>
