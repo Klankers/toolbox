@@ -144,21 +144,16 @@
 
 
 
-<div class="viewcode-block" id="generate_summary_stats">
-<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.generate_summary_stats">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">generate_summary_stats</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate summary statistics for a given dataset&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="generate_info">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.generate_info">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_info</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate info for a given dataset&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
         <span class="c1"># For xarray, we&#39;ll summarize each data variable</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Summary Statistics:&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
-            <span class="p">)</span>  <span class="c1"># Just showing mean and std for simplicity</span>
-            <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data Info:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Summary statistics only supported for xarray Dataset &quot;</span><span class="p">)</span></div>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data Info only supported for xarray Dataset &quot;</span><span class="p">)</span></div>
 
 
 

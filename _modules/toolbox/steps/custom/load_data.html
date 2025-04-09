@@ -89,6 +89,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;file_path&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Params: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoadData] Loading </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2"> OG1&quot;</span><span class="p">)</span>
         <span class="c1"># load data from xarray</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
@@ -100,9 +101,16 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">add_elapsed_time</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="s2">&quot;add_depth&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_depth</span><span class="p">(</span><span class="n">lat_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lat_label&quot;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_depth</span><span class="p">(</span>
+                <span class="n">lat_label</span><span class="o">=</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lat_label&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;lat_label&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+                    <span class="k">else</span> <span class="s2">&quot;LATITUDE&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
 
         <span class="c1"># Generate diagnostics if enabled</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoadData] Diagnostics: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span></div>
 
@@ -114,7 +122,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[LoadData] Generating diagnostics...&quot;</span><span class="p">)</span>
         <span class="c1"># Print summary stats</span>
-        <span class="n">diag</span><span class="o">.</span><span class="n">generate_summary_stats</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="n">diag</span><span class="o">.</span><span class="n">generate_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="LoadOG1.add_meta">
@@ -186,7 +194,15 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts pressure to depth and appends it to the dataset</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">p</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">lat_label</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">lat_label</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ERROR: The </span><span class="si">{</span><span class="n">lat_label</span><span class="si">}</span><span class="s2"> variable does not appear in the netCDF file. These functions are only intended&quot;</span>
+                <span class="s2">&quot; for use with OG1 format netCDF files.&quot;</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
         <span class="c1"># use GSW to convert pressure to depth</span>
         <span class="n">depth</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">z_from_p</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">depth</span><span class="p">)</span>
