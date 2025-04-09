@@ -2,13 +2,15 @@
 pipeline:
   name: "Data Processing Pipeline"
   description: "A pipeline for processing and analyzing multi-dimensional data"
-
+  visualisation: false  # Enable visualisation of the pipeline
 # Steps in the pipeline
 steps:
   - name: "Load OG1"
     parameters:
       file_path: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/data/OG1/ALR_4_649_R.nc"  # Path to the input NetCDF file
+      add_meta: true # Add metadata to the data
       add_depth: true  # Add depth information to the data
+      lat_label: "DEPLOYMENT_LATITUDE"
       diagnostics: true  # Enable diagnostics 
   
   - name: "Factory Calibration"
