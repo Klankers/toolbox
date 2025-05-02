@@ -19,6 +19,7 @@ class Pipeline:
             # Add steps from config
             self.steps = config["steps"]
             self.global_parameters = config["pipeline"]
+        self._context = None
 
     def add_step(
         self,
@@ -53,7 +54,8 @@ class Pipeline:
         print(f"Step '{step_name}' added successfully!")
 
         if run_immediately:
-            self.run_last_step()
+            print(f"Running step '{step_name}' immediately.")
+            self._context = self.execute_step(step_config, self._context)
 
     def _find_step(self, steps_list, step_name):
         """Recursively find a step by name"""
@@ -79,13 +81,15 @@ class Pipeline:
 
         last_step = self.steps[-1]
         print(f"Running last step: {last_step['name']}")
-        self.execute_step(last_step)
+        self.context = self.execute_step(last_step, self._context)
+        # debug
+        print(f"Context after running last step: {self._context}")
 
     def run(self):
         """Runs the entire pipeline"""
-        _context = None
+
         for step in self.steps:
-            _context = self.execute_step(step, _context)
+            self._context = self.execute_step(step, self._context)
 
         if self.global_parameters.get("visualisation", False):
             self.visualise_pipeline()
