@@ -36,14 +36,14 @@ class LoadOG1(BaseStep):
         # load data from xarray
         self.data = xr.open_dataset(source)
 
-        if self.parameters["add_meta"]:
-            self.add_meta()
+        if self.add_meta:
+            self.f_addMeta()
 
-        if self.parameters["add_elapsed_time"]:
-            self.add_elapsed_time()
+        if self.add_elapsed_time:
+            self.f_addElapsedTime()
 
-        if self.parameters["add_depth"]:
-            self.add_depth(
+        if self.add_depth:
+            self.f_addDepth(
                 lat_label=(
                     self.parameters["lat_label"]
                     if "lat_label" in self.parameters
@@ -56,14 +56,16 @@ class LoadOG1(BaseStep):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        # Continue with the rest of the step logic...
+        # add data to context
+        self.context["data"] = self.data
+        return self.context
 
     def generate_diagnostics(self):
         print(f"[LoadData] Generating diagnostics...")
         # Print summary stats
         diag.generate_info(self.data)
 
-    def add_meta(self):
+    def f_addMeta(self):
         print(f"[LoadData] Adding metadata...")
         # Add Length
         self.data.attrs["N_MEASUREMENTS_Length"] = int(
@@ -87,7 +89,7 @@ class LoadOG1(BaseStep):
                 len(v.values) - np.sum(np.isnan(v.values)) if b_is_numeric else None,
             ]
 
-    def add_elapsed_time(self):
+    def f_addElapsedTime(self):
         """
         Appends epoch and elapsed time to the dataset
         """
@@ -120,7 +122,7 @@ class LoadOG1(BaseStep):
             else:
                 print(f"{type(e)}: Something unexpected happened: \n {e}")
 
-    def add_depth(self, lat_label="LATITUDE"):
+    def f_addDepth(self, lat_label="LATITUDE"):
         """
         Converts pressure to depth and appends it to the dataset
         """

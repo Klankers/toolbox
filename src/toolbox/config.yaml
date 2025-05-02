@@ -23,7 +23,7 @@ steps:
       output_path: "/path/to/exported_data"
     diagnostics: false  # Disable diagnostics for export step
 
-# Optional custom settings for the pipeline
+# Optional custom settings for the pipeline # CURRENTLY UNUSED
 settings:
   run_mode: "interactive"  # Set the pipeline to run in interactive mode
   max_concurrent_steps: 2   # Allow 2 steps to run concurrently
