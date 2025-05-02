@@ -94,13 +94,13 @@
         <span class="c1"># load data from xarray</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="s2">&quot;add_meta&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;add_meta&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_meta</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="s2">&quot;add_elapsed_time&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;add_elapsed_time&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_elapsed_time</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="s2">&quot;add_depth&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;add_depth&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_depth</span><span class="p">(</span>
                 <span class="n">lat_label</span><span class="o">=</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lat_label&quot;</span><span class="p">]</span>

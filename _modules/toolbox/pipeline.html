@@ -131,9 +131,9 @@
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.execute_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Executes a single step&quot;&quot;&quot;</span>
-        <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">)</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_context</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.run_last_step">

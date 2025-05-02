@@ -88,7 +88,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.discover_steps" title="toolbox.steps.discover_steps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">discover_steps</span></code></a>()</p></td>
 <td><p>Dynamically populate the STEP_CLASSES dictionary from custom step classes.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.create_step" title="toolbox.steps.create_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_step</span></code></a>(step_config)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.create_step" title="toolbox.steps.create_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_step</span></code></a>(step_config, _context)</p></td>
 <td><p>Dynamically create a step instance from config</p></td>
 </tr>
 </tbody>
@@ -98,7 +98,7 @@
 <h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.BaseStep">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.BaseStep.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#toolbox.steps.BaseStep.name" title="Link to this definition">¶</a></dt>
@@ -121,7 +121,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.BaseStep.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep.run" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep.run" title="Link to this definition">¶</a></dt>
 <dd><p>To be implemented by subclasses</p>
 </dd></dl>
 
@@ -146,7 +146,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.steps.create_step">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">create_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps.html#create_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.create_step" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">create_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps.html#create_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.create_step" title="Link to this definition">¶</a></dt>
 <dd><p>Dynamically create a step instance from config</p>
 </dd></dl>
 
