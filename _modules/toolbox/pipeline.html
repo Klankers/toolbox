@@ -129,11 +129,11 @@
 
 <div class="viewcode-block" id="Pipeline.execute_step">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.execute_step">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">execute_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_config</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Executes a single step&quot;&quot;&quot;</span>
         <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_context</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.run_last_step">
@@ -153,8 +153,9 @@
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the entire pipeline&quot;&quot;&quot;</span>
+        <span class="n">_context</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+            <span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">_context</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;visualisation&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">visualise_pipeline</span><span class="p">()</span></div>
