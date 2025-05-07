@@ -7,20 +7,24 @@ pipeline:
 steps:
   - name: "Load OG1"
     parameters:
-      file_path: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/data/OG1/ALR_4_649_R.nc"  # Path to the input NetCDF file
-      add_meta: true # Add metadata to the data
+      file_path: "" # Path to the input NetCDF file
+      add_meta: false # Add metadata to the data
       add_depth: true  # Add depth information to the data
+      add_elapsed_time: false
       lat_label: "DEPLOYMENT_LATITUDE"
-      diagnostics: true  # Enable diagnostics 
+      diagnostics: false  # Enable diagnostics
   
-  - name: "Factory Calibration"
+  - name: "Find Profiles"
     parameters:
-      diagnostics: false 
+      gradient_thresholds: [0.02, -0.02]
+      filter_window_sizes: ["10s", "20s"]
+      depth_column: "DEPTH"
+      diagnostics: true
 
   - name: "Data Export"
     parameters:
-      export_format: "OG1"  # Define the export format (e.g., OG1, CSV, etc.)
-      output_path: "/path/to/exported_data"
+      export_format: "netcdf"  # Define the export format (e.g., OG1, CSV, etc.)
+      output_path: ""
     diagnostics: false  # Disable diagnostics for export step
 
 # Optional custom settings for the pipeline # CURRENTLY UNUSED

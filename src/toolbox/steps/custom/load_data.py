@@ -84,7 +84,7 @@ class LoadOG1(BaseStep):
             ) & (v.ndim != 0)
             self.data.attrs["Variable Information"].loc[k] = [
                 b_is_numeric,
-                len(v.values),
+                len(v.values) if b_is_numeric else v.values,
                 np.sum(np.isnan(v.values)) if b_is_numeric else None,
                 len(v.values) - np.sum(np.isnan(v.values)) if b_is_numeric else None,
             ]

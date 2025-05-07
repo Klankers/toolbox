@@ -25,7 +25,7 @@ class ExportStep(BaseStep):
         if export_format == "csv":
             data.to_csv(output_path)
         elif export_format == "netcdf":
-            data.to_netcdf(output_path, engine="h5netcdf")
+            data.to_netcdf(output_path, engine="netcdf4")
         elif export_format == "parquet":
             data.to_parquet(output_path)
         else:

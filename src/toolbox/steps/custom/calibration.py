@@ -10,6 +10,7 @@ class FactoryCalibrationStep(BaseStep):
 
     def run(self):
         print(f"[FactoryCalibration] Applying calibration")
+        return self.context
 
 
 class SensorCalibrationStep(BaseStep):
@@ -17,3 +18,4 @@ class SensorCalibrationStep(BaseStep):
 
     def run(self):
         print(f"[SensorCalibration] Calibrating sensor")
+        return self.context
