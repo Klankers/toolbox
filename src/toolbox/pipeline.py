@@ -13,13 +13,25 @@ class Pipeline:
         self.graph = Digraph("Pipeline", format="png", graph_attr={"rankdir": "TB"})
 
         if config_path:
-            # Load pipeline configuration from file
             with open(config_path, "r") as file:
                 config = yaml.safe_load(file)
-            # Add steps from config
-            self.steps = config["steps"]
             self.global_parameters = config["pipeline"]
+            self.build_steps(config["steps"])
         self._context = None
+
+    def build_steps(self, steps_config, parent_name=None):
+        """Recursively build steps from configuration"""
+        for step in steps_config:
+            self.add_step(
+                step_name=step["name"],
+                parameters=step.get("parameters", {}),
+                diagnostics=step.get("diagnostics", False),
+                parent_name=parent_name,
+                run_immediately=False,
+            )
+            # Recurse into substeps
+            if "substeps" in step:
+                self.build_steps(step["substeps"], parent_name=step["name"])
 
     def add_step(
         self,
