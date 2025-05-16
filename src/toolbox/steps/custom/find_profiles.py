@@ -113,38 +113,39 @@ class FindProfilesStep(BaseStep):
 
     def run(self):
         print(
-            "[FindProfiles] attempting to designate profile numbers"
+            "[FindProfiles] Attempting to designate profile numbers"
         )
 
         # Check if the data is in the context
         if "data" not in self.context:
             raise ValueError("No data found in context. Please load data first.")
         else:
-            print(f"[Export] Data found in context.")
-        data = self.context["data"]
+            print(f"[FindProfiles] Data found in context.")
+        self.data = self.context["data"]
         self.thresholds = self.parameters["gradient_thresholds"]
         self.win_sizes = self.parameters["filter_window_sizes"]
         self.depth_col = self.parameters["depth_column"]
 
-        # Convert to polars for processing
-        self._df = pl.from_pandas(data[['TIME', self.depth_col]].to_dataframe(), nan_to_null=False)
-
+        # If the user wants to tune parameters
         if self.diagnostics:
             root = self.generate_diagnostics()
             root.mainloop()
 
+        # Convert to polars for processing
+        self._df = pl.from_pandas(self.data[['TIME', self.depth_col]].to_dataframe(), nan_to_null=False)
         self.profile_outputs = find_profiles(self._df, self.thresholds, self.win_sizes, depth_col=self.depth_col)
         profile_numbers = self.profile_outputs['profile_num'].to_numpy()
-        data["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), profile_numbers)
-        data.PROFILE_NUMBER.attrs = {
+
+        # Append to xarray and update context
+        self.data["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), profile_numbers)
+        self.data.PROFILE_NUMBER.attrs = {
             "long_name": "Derived profile number. #=-1 indicates no profile, #>=0 are profiles.",
             "units": "None",
             "standard_name": "Profile Number",
             "valid_min": -1,
             "valid_max": np.inf,
         }
-
-        self.context["data"] = data
+        self.context["data"] = self.data
         return self.context
 
     def generate_diagnostics(self):
@@ -154,6 +155,7 @@ class FindProfilesStep(BaseStep):
             mpl.use('TkAgg')
 
             # Update data for plot
+            self._df = pl.from_pandas(self.data[['TIME', self.depth_col]].to_dataframe(), nan_to_null=False)
             self.profile_outputs = find_profiles(self._df, self.thresholds, self.win_sizes, depth_col=self.depth_col)
 
             # Split data into profile and non-profile points for plotting
