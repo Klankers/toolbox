@@ -1,7 +1,7 @@
 """Pipeline Class"""
 
 import yaml
-from steps import create_step, STEP_CLASSES
+from steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
 from graphviz import Digraph
 
 
@@ -22,6 +22,13 @@ class Pipeline:
     def build_steps(self, steps_config, parent_name=None):
         """Recursively build steps from configuration"""
         for step in steps_config:
+            # Check if the step has required stpes already imported
+            REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
+            for required_step in REQUIRED_STEPS:
+                if required_step not in STEP_CLASSES:
+                    raise ValueError(
+                        f"Required step '{required_step}' for '{step['name']}' is not found."
+                    )
             self.add_step(
                 step_name=step["name"],
                 parameters=step.get("parameters", {}),
