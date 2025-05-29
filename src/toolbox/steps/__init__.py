@@ -8,6 +8,10 @@ from .base_step import BaseStep
 # Automatically populate STEP_CLASSES by inspecting custom step classes
 STEP_CLASSES = {}
 
+STEP_DEPENDENCIES = {
+    "QC: Salinity": ["Load OG1"],
+}
+
 
 def discover_steps():
     """Dynamically populate the STEP_CLASSES dictionary from custom step classes."""
@@ -18,7 +22,7 @@ def discover_steps():
     module_files = [
         f for f in os.listdir(custom_dir) if f.endswith(".py") and f != "__init__.py"
     ]
-    print(f"Discovered custom steps: {module_files}")
+    print(f"Discovered custom step modules: {module_files}")
 
     # Loop through each file, import the module, and inspect its classes
     for module_file in module_files:

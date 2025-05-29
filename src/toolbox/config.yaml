@@ -21,6 +21,14 @@ steps:
       depth_column: "DEPTH"
       diagnostics: true
 
+  - name: "QC: Salinity"
+    parameters:
+      CTLag: True
+      ThermalLag: True
+      windowLength: 21 # Length of the window for QC
+      diagnostics: true  # Enable diagnostics for QC step
+
+
   - name: "Data Export"
     parameters:
       export_format: "netcdf"  # Define the export format (e.g., OG1, CSV, etc.)
