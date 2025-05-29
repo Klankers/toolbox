@@ -91,7 +91,7 @@ class SalinityQC(BaseStep):
                     self.thermal_lag_correction()
 
 
-            self.context["data"] = self.data
+            self.context["data"] = self.tsr[0]
             return self.context
 
     def generate_diagnostics(self):
