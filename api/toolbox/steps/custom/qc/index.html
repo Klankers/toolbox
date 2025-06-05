@@ -56,10 +56,10 @@
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.SalinityQCStep" title="toolbox.steps.custom.qc.SalinityQCStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SalinityQCStep</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.SalinityQC" title="toolbox.steps.custom.qc.SalinityQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SalinityQC</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.TemperatureQCStep" title="toolbox.steps.custom.qc.TemperatureQCStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemperatureQCStep</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.TemperatureQC" title="toolbox.steps.custom.qc.TemperatureQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemperatureQC</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -69,20 +69,8 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.platform_identification_test" title="toolbox.steps.custom.qc.platform_identification_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">platform_identification_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: ?</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_date_test" title="toolbox.steps.custom.qc.impossible_date_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: TIME</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_location_test" title="toolbox.steps.custom.qc.impossible_location_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.position_on_land_test" title="toolbox.steps.custom.qc.position_on_land_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_speed_test" title="toolbox.steps.custom.qc.impossible_speed_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: TIME, LATITUDE, LONGITUDE</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.running_average_nan" title="toolbox.steps.custom.qc.running_average_nan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">running_average_nan</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Estimate running average mean</p></td>
 </tr>
 </tbody>
 </table>
@@ -90,68 +78,180 @@
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.platform_identification_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">platform_identification_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#platform_identification_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.platform_identification_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: ?
-Test Number: 1
-TODO: Unclear if this is redundant for gliders (Argo QC is designed for floats)</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_date_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_date_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_date_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_date_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TIME
-Test Number: 2
-Flag Number: 4 (bad data)
-Checks that the datetime of each point is valid.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_location_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_location_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_location_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_location_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: LATITUDE, LONGITUDE
-Test Number: 3
-Flag Number: 4 (bad data)
-Checks that the latitude and longitude are valid.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.position_on_land_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">position_on_land_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#position_on_land_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.position_on_land_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: LATITUDE, LONGITUDE
-Test Number: 4
-Flag Number: 4 (bad data)
-Checks that the measurement location is not on land.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_speed_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_speed_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_speed_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_speed_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TIME, LATITUDE, LONGITUDE
-Test Number: 5
-Flag Number: 4 (bad data)
-Checks that the the glider speed stays below 3m/s</p>
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.running_average_nan">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">running_average_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><span class="pre">numpy.ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><span class="pre">numpy.ndarray</span></a></span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#running_average_nan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.running_average_nan" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate running average mean</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQCStep">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">SalinityQCStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQCStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQCStep" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">SalinityQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.step_name">
+<span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'QC:</span> <span class="pre">Salinity'</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.step_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQCStep.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQCStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQCStep.run" title="Link to this definition">¶</a></dt>
-<dd><p>To be implemented by subclasses</p>
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.run" title="Link to this definition">¶</a></dt>
+<dd><p>Apply the thermal-lag correction for Salinity presented in Morrison et al 1994.
+The temperature is estimated inside the conductivity cell to estimate Salinity.
+This is based on eq.5 of Morrison et al. (1994), which doesn’t require to know the sensitivity of temperature to conductivity (eq.2 of Morrison et al. 1994).
+No attempt is done yet to minimize the coefficients alpha/tau in T/S space, as in Morrison et al. (1994) or Garau et al. (2011).
+The fixed coefficients (alpha and tau) presented in Morrison et al. (1994) are used.
+These coefficients should be valid for pumped SeaBird CTsail as described in Woo (2019) by using their flow rate in the conductivity cell.
+This function should further be adapted to unpumped CTD by taking into account the glider velocity through the water based on the pitch angle or a hydrodynamic flight model.</p>
+<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/">http://dx.doi.org/</a> 10.26198/5c997b5fdc9bd).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset</em><em>, </em><em>which should contain:</em>) – <ul class="simple">
+<li><p>time, sci_m_present_time, [numpy.datetime64]</p></li>
+<li><p>pressure [dbar]</p></li>
+<li><p>conductivity [mS/cm]</p></li>
+<li><p>in-situ temperature [de C]</p></li>
+<li><p>longitude</p></li>
+<li><p>latitude</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>MUST APPLY self.data to self.context[“data”] to save the changes</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Nil - serves on self in-place</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.generate_diagnostics">
+<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.generate_diagnostics" title="Link to this definition">¶</a></dt>
+<dd><p>Hook for diagnostics (optional)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.thermal_lag_correction">
+<span class="sig-name descname"><span class="pre">thermal_lag_correction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.thermal_lag_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.thermal_lag_correction" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.call_CTlag">
+<span class="sig-name descname"><span class="pre">call_CTlag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.call_CTlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.call_CTlag" title="Link to this definition">¶</a></dt>
+<dd><p>For the full deployment, calculate the optimal conductivity time lag relative to temperature to reduce CNDC spikes for each glider profile.
+If more than 300 profiles are present, the optimal lag is estimated every 10 profiles.
+Display the optimal conductivity time lag calculated for each profile, estimate the median of this lag, and apply this median lag to corrected variables (conductivity_qc/CNDC_QC).
+This correction should reduce CNDC spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset</em><em>, </em><em>which should contain:</em>) – <ul>
+<li><p>PROFILE_NUMBER</p></li>
+<li><p>time, sci_m_present_time, [numpy.datetime64]</p></li>
+<li><p>pressure [dbar]</p></li>
+<li><p>conductivity [mS/cm]</p></li>
+<li><p>in-situ temperature [de C]</p></li>
+<li><p>longitude</p></li>
+<li><p>latitude</p></li>
+</ul>
+</p></li>
+<li><p><strong>windowLength</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>self.tsr</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>with conductivity_qc and CNDC_QC.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.compute_optimal_lag">
+<span class="sig-name descname"><span class="pre">compute_optimal_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.compute_optimal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.compute_optimal_lag" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce CNDC spikes for each glider profile.
+Mimimize the standard deviation of the difference between a lagged CNDC and a high-pass filtered CNDC.
+The optimal lag is returned. The lag is chosen from -2 to 2s every 0.1s.
+This correction should reduce CNDC spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.
+This correction is described in Woo (2019) but the mimimization is done between CNDC and high-pass filtered CNDC (as done by RBR, <a class="reference external" href="https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools">https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools</a>) instead of comparing downcast vs upcast.</p>
+<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/">http://dx.doi.org/</a> 10.26198/5c997b5fdc9bd).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset for one single profile</em><em>, </em><em>which should contain:</em>) – <ul>
+<li><p>time_ctd, sci_ctd41cp_timestamp, [numpy.datetime64]</p></li>
+<li><p>pressure [dbar]</p></li>
+<li><p>conductivity [mS/cm]</p></li>
+<li><p>in-situ temperature [de C]</p></li>
+</ul>
+</p></li>
+<li><p><strong>windowLength</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>self.tsr</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>with conductivity_qc and CNDC_QC.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.display_CTLag">
+<span class="sig-name descname"><span class="pre">display_CTLag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.display_CTLag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.display_CTLag" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.display_qc_profiles">
+<span class="sig-name descname"><span class="pre">display_qc_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.display_qc_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.display_qc_profiles" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Display profiles for ~20 mid profiles of:</dt><dd><ol class="arabic simple">
+<li><p>raw CNDC</p></li>
+<li><p>CNDC corrected from CTlag</p></li>
+<li><p>CNDC with the thermal lag correction</p></li>
+<li><p>difference between raw and QC (CTlag + thermal lag correction) CNDC and temperature</p></li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.display_tsr_raw">
+<span class="sig-name descname"><span class="pre">display_tsr_raw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.display_tsr_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.display_tsr_raw" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Display for ~20 mid profiles of:</dt><dd><ol class="arabic simple">
+<li><p>in situ temperature</p></li>
+<li><p>raw CNDC</p></li>
+<li><p>density</p></li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.SalinityQC.display_tsr_qc">
+<span class="sig-name descname"><span class="pre">display_tsr_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#SalinityQC.display_tsr_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.SalinityQC.display_tsr_qc" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Display for ~20 mid profiles (all=0) or the entire section (all=1) of:</dt><dd><ol class="arabic simple">
+<li><p>raw CNDC</p></li>
+<li><p>QC CNDC</p></li>
+<li><p>raw - QC CNDC</p></li>
+</ol>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.TemperatureQCStep">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">TemperatureQCStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#TemperatureQCStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.TemperatureQCStep" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.TemperatureQC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">TemperatureQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#TemperatureQC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.TemperatureQC" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.TemperatureQCStep.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#TemperatureQCStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.TemperatureQCStep.run" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.TemperatureQC.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#TemperatureQC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.TemperatureQC.run" title="Link to this definition">¶</a></dt>
 <dd><p>To be implemented by subclasses</p>
 </dd></dl>
 
