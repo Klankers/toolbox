@@ -69,28 +69,7 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.platform_identification_test" title="toolbox.steps.custom.qc.platform_identification_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">platform_identification_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: ?</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_date_test" title="toolbox.steps.custom.qc.impossible_date_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: TIME</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_location_test" title="toolbox.steps.custom.qc.impossible_location_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.position_on_land_test" title="toolbox.steps.custom.qc.position_on_land_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_speed_test" title="toolbox.steps.custom.qc.impossible_speed_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: TIME, LATITUDE, LONGITUDE</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.global_range_test" title="toolbox.steps.custom.qc.global_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_range_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: PRES, TEMP, PRAC_SALINITY</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.regional_range_test" title="toolbox.steps.custom.qc.regional_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regional_range_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: TEMP, PRAC_SALINITY</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.running_average_nan" title="toolbox.steps.custom.qc.running_average_nan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">running_average_nan</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.running_average_nan" title="toolbox.steps.custom.qc.running_average_nan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">running_average_nan</span></code></a>(→ numpy.ndarray)</p></td>
 <td><p>Estimate running average mean</p></td>
 </tr>
 </tbody>
@@ -98,70 +77,6 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.platform_identification_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">platform_identification_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#platform_identification_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.platform_identification_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: ?
-Test Number: 1
-TODO: Unclear if this is redundant for gliders (Argo QC is designed for floats)</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_date_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_date_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_date_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_date_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TIME
-Test Number: 2
-Flag Number: 4 (bad data)
-Checks that the datetime of each point is valid.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_location_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_location_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_location_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_location_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: LATITUDE, LONGITUDE
-Test Number: 3
-Flag Number: 4 (bad data)
-Checks that the latitude and longitude are valid.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.position_on_land_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">position_on_land_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#position_on_land_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.position_on_land_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: LATITUDE, LONGITUDE
-Test Number: 4
-Flag Number: 4 (bad data)
-Checks that the measurement location is not on land.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_speed_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_speed_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_speed_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_speed_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TIME, LATITUDE, LONGITUDE
-Test Number: 5
-Flag Number: 4 (bad data)
-Checks that the the glider speed stays below 3m/s</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.global_range_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">global_range_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#global_range_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.global_range_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: PRES, TEMP, PRAC_SALINITY
-Test Number: 6
-Flag Number: 4, 3 (bad data, probably bad data)
-Checks that the pressure, temperature and practically salinity do not lie outside expected
-global extremes.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.regional_range_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">regional_range_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#regional_range_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.regional_range_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TEMP, PRAC_SALINITY
-Test Number: 7
-Flag Number: 4 (bad data)
-Checks that the temperature and practically salinity do not lie outside expected
-regional (Mediterranean and Red Seas) extremes.</p>
-</dd></dl>
-
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.steps.custom.qc.running_average_nan">
 <span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">running_average_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a></span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#running_average_nan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.running_average_nan" title="Link to this definition">¶</a></dt>
