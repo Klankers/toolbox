@@ -34,7 +34,7 @@ class LoadOG1(BaseStep):
         print(f"Params: {self.parameters}")
         print(f"[LoadData] Loading {source} OG1")
         # load data from xarray
-        self.data = xr.open_dataset(source)
+        self.data = xr.open_dataset(source, decode_times=False)
 
         if self.add_meta:
             self.f_addMeta()
