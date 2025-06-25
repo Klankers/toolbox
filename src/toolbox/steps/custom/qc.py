@@ -9,6 +9,7 @@ from datetime import datetime
 
 
 # Defining QC functions from "Argo Quality Control Manual for CTD and Trajectory Data" (https://archimer.ifremer.fr/doc/00228/33951/).
+# TODO: Do we need a bin nan rows QC to speed up processing?
 
 def platform_identification_test(df):
     """
@@ -126,7 +127,7 @@ def global_range_test(df):
     for var, lims, flag_vars, flag in test_calls:
         for flag_var in flag_vars:
             df = df.with_columns(
-                ((pl.col(var) > lims[0]) & (pl.col(var) < lims[1])).cast(pl.Int64) * flag
+                ((pl.col(var) > lims[0]) & (pl.col(var) < lims[1])).not_().cast(pl.Int64) * flag
                 .alias(f'{flag_var}_QC')
             )
 
@@ -140,9 +141,56 @@ def regional_range_test(df):
     Checks that the temperature and practically salinity do not lie outside expected
     regional (Mediterranean and Red Seas) extremes.
     """
-    # TODO: Ask team if this is required
+    import shapely as sh
 
+    # Define Red and Mediterranean Sea areas
+    Red_Sea = sh.geometry.Polygon([(40, 10), (45, 14), (35, 30), (30, 30), (40, 10)])  # (lon, lat)
+    Med_Sea = sh.geometry.Polygon([(-6, 30), (40, 30), (35, 40), (20, 42), (15, 50), (-5, 40), (-6, 30)])
+    # Check if data falls in those areas
+    for poly, name in zip([Red_Sea, Med_Sea], ['in_red_sea', 'in_med_sea']):
+        df = df.with_columns(
+            pl.shape(['LONGITUDE', 'LATITUDE']).map_batches(
+                lambda x: sh.contains_xy(poly, x.struct.field('LONGITUDE'), x.struct.field('LATITUDE'))
+            ).alias(f'{name}')
+        )
 
+    # define regional temperature and salinity limits
+    limits = {
+        'red': {
+            'TEMP': (21, 40),
+            'PRAC_SALINITY': (2, 41)
+        },
+        'med': {
+            'TEMP': (10, 40),
+            'PRAC_SALINITY': (2, 40)
+        }
+    }
+    # Check if the data satisfies these limits
+    for region, var_lims in limits.items():
+        for var, lims in var_lims.items():
+            df = df.with_columns(
+                ((pl.col(var) > lims[0]) & (pl.col(var) < lims[1])).not_()
+            ).alias(f'bad_{region}_{var}')
+
+        # for the flagging, data must fail the regional test AND be within that region.
+        for var in ['TEMP', 'PRAC_SALINITY']:
+            df = df.with_columns(
+                ((pl.col(f'bad_{region}_{var}') & pl.col(f'in_{region}_sea')).cast(pl.Int64) * 4)
+                .alias(f'{var}_QC')
+            )
+
+    return df
+
+def pressure_increasing_test(df):
+    """
+    Target Variable: PRES
+    Test Number: 8
+    Flag Number: 4 (bad data)
+    Checks for any egregious spikes in pressure between consecutive points.
+    """
+    # TODO: Check with others that this test is relevant alongside test 9
+
+    return df
 
 class SalinityQCStep(BaseStep):
     def run(self):
