@@ -56,10 +56,13 @@
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.SalinityQC" title="toolbox.steps.custom.qc.SalinityQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SalinityQC</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.ArgoQCStep" title="toolbox.steps.custom.qc.ArgoQCStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArgoQCStep</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.TemperatureQC" title="toolbox.steps.custom.qc.TemperatureQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemperatureQC</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.SalinityQC" title="toolbox.steps.custom.qc.SalinityQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SalinityQC</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.TemperatureQC" title="toolbox.steps.custom.qc.TemperatureQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemperatureQC</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -69,28 +72,31 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.platform_identification_test" title="toolbox.steps.custom.qc.platform_identification_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">platform_identification_test</span></code></a>(df)</p></td>
-<td><p>Target Variable: ?</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_date_test" title="toolbox.steps.custom.qc.impossible_date_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a>(df)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_date_test" title="toolbox.steps.custom.qc.impossible_date_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: TIME</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_location_test" title="toolbox.steps.custom.qc.impossible_location_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a>(df)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_location_test" title="toolbox.steps.custom.qc.impossible_location_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.position_on_land_test" title="toolbox.steps.custom.qc.position_on_land_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a>(df)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.position_on_land_test" title="toolbox.steps.custom.qc.position_on_land_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_speed_test" title="toolbox.steps.custom.qc.impossible_speed_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a>(df)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.impossible_speed_test" title="toolbox.steps.custom.qc.impossible_speed_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: TIME, LATITUDE, LONGITUDE</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.global_range_test" title="toolbox.steps.custom.qc.global_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_range_test</span></code></a>(df)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.global_range_test" title="toolbox.steps.custom.qc.global_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_range_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: PRES, TEMP, PRAC_SALINITY</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.regional_range_test" title="toolbox.steps.custom.qc.regional_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regional_range_test</span></code></a>(df)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.regional_range_test" title="toolbox.steps.custom.qc.regional_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regional_range_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: TEMP, PRAC_SALINITY</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.running_average_nan" title="toolbox.steps.custom.qc.running_average_nan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">running_average_nan</span></code></a>(→ numpy.ndarray)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.pressure_increasing_test" title="toolbox.steps.custom.qc.pressure_increasing_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pressure_increasing_test</span></code></a>(df)</p></td>
+<td><p>Target Variable: PRES</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.spike_test" title="toolbox.steps.custom.qc.spike_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spike_test</span></code></a>(df)</p></td>
+<td><p>Target Variable: TEMP, PRAC_SALINITY</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.qc.running_average_nan" title="toolbox.steps.custom.qc.running_average_nan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">running_average_nan</span></code></a>(→ numpy.ndarray)</p></td>
 <td><p>Estimate running average mean</p></td>
 </tr>
 </tbody>
@@ -98,14 +104,6 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.steps.custom.qc.platform_identification_test">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">platform_identification_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#platform_identification_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.platform_identification_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: ?
-Test Number: 1
-TODO: Unclear if this is redundant for gliders (Argo QC is designed for floats)</p>
-</dd></dl>
-
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.steps.custom.qc.impossible_date_test">
 <span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">impossible_date_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#impossible_date_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.impossible_date_test" title="Link to this definition">¶</a></dt>
@@ -160,6 +158,46 @@ Test Number: 7
 Flag Number: 4 (bad data)
 Checks that the temperature and practically salinity do not lie outside expected
 regional (Mediterranean and Red Seas) extremes.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.pressure_increasing_test">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">pressure_increasing_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#pressure_increasing_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.pressure_increasing_test" title="Link to this definition">¶</a></dt>
+<dd><p>Target Variable: PRES
+Test Number: 8
+Flag Number: 4 (bad data)
+Checks for any egregious spikes in pressure between consecutive points.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.spike_test">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">spike_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#spike_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.spike_test" title="Link to this definition">¶</a></dt>
+<dd><p>Target Variable: TEMP, PRAC_SALINITY
+Test Number: 9
+Flag Number: 4 (bad data)
+Checks for spikes in temperature and prctical salinity between nearest neighbour points points.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.ArgoQCStep">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.qc.</span></span><span class="sig-name descname"><span class="pre">ArgoQCStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#ArgoQCStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.ArgoQCStep" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.ArgoQCStep.step_name">
+<span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Argo</span> <span class="pre">QC'</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#ArgoQCStep.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.ArgoQCStep.step_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.ArgoQCStep.organise_flags">
+<span class="sig-name descname"><span class="pre">organise_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_flags</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#ArgoQCStep.organise_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.ArgoQCStep.organise_flags" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.qc.ArgoQCStep.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/qc.html#ArgoQCStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.qc.ArgoQCStep.run" title="Link to this definition">¶</a></dt>
+<dd><p>To be implemented by subclasses</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">

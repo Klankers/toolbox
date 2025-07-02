@@ -60,17 +60,7 @@
 
 
 <span class="c1"># Defining QC functions from &quot;Argo Quality Control Manual for CTD and Trajectory Data&quot; (https://archimer.ifremer.fr/doc/00228/33951/).</span>
-
-<div class="viewcode-block" id="platform_identification_test">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.platform_identification_test">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">platform_identification_test</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Target Variable: ?</span>
-<span class="sd">    Test Number: 1</span>
-<span class="sd">    TODO: Unclear if this is redundant for gliders (Argo QC is designed for floats)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">df</span></div>
-
+<span class="c1"># TODO: Do we need a bin nan rows QC to speed up processing?</span>
 
 <div class="viewcode-block" id="impossible_date_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.impossible_date_test">[docs]</a>
@@ -128,9 +118,27 @@
 <span class="sd">    Test Number: 4</span>
 <span class="sd">    Flag Number: 4 (bad data)</span>
 <span class="sd">    Checks that the measurement location is not on land.</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sh</span>
 
-    <span class="c1">#TODO: Find a lookup table to perform this check with</span>
+    <span class="c1"># Define the land regions with shapely polygons</span>
+    <span class="n">world</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;C:\Users\banga\Downloads\110m_cultural\ne_110m_admin_0_countries.dbf&quot;</span><span class="p">)</span>
+    <span class="n">land_polygons</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">unary_union</span><span class="p">(</span><span class="n">world</span><span class="o">.</span><span class="n">geometry</span><span class="p">)</span>  <span class="c1"># Concat the polygons into a MultiPolygon object</span>
+
+    <span class="c1"># Check if lat, long coords fall within the area of the land polygons</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">struct</span><span class="p">(</span><span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">sh</span><span class="o">.</span><span class="n">contains_xy</span><span class="p">(</span><span class="n">land_polygons</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s1">&#39;LONGITUDE&#39;</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s1">&#39;LATITUDE&#39;</span><span class="p">))</span> <span class="o">*</span> <span class="mi">4</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s1">&#39;LONGITUDE_QC&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># Add the flags to LATITUDE as well.</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s1">&#39;LONGITUDE_QC&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s1">&#39;LATITUDE_QC&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
 
 <div class="viewcode-block" id="impossible_speed_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.impossible_speed_test">[docs]</a>
@@ -194,7 +202,7 @@
     <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">lims</span><span class="p">,</span> <span class="n">flag_vars</span><span class="p">,</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">test_calls</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">flag_var</span> <span class="ow">in</span> <span class="n">flag_vars</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span> <span class="o">*</span> <span class="n">flag</span>
+                <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">not_</span><span class="p">()</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span> <span class="o">*</span> <span class="n">flag</span>
                 <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">flag_var</span><span class="si">}</span><span class="s1">_QC&#39;</span><span class="p">)</span>
             <span class="p">)</span>
 
@@ -210,9 +218,154 @@
 <span class="sd">    Flag Number: 4 (bad data)</span>
 <span class="sd">    Checks that the temperature and practically salinity do not lie outside expected</span>
 <span class="sd">    regional (Mediterranean and Red Seas) extremes.</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sh</span>
 
-    <span class="c1"># TODO: Ask team if this is required</span>
+    <span class="c1"># Define Red and Mediterranean Sea areas</span>
+    <span class="n">Red_Sea</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Polygon</span><span class="p">([(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">45</span><span class="p">,</span> <span class="mi">14</span><span class="p">),</span> <span class="p">(</span><span class="mi">35</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">10</span><span class="p">)])</span>  <span class="c1"># (lon, lat)</span>
+    <span class="n">Med_Sea</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Polygon</span><span class="p">([(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="p">(</span><span class="mi">35</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">42</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">30</span><span class="p">)])</span>
+    <span class="c1"># Check if data falls in those areas</span>
+    <span class="k">for</span> <span class="n">poly</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">Red_Sea</span><span class="p">,</span> <span class="n">Med_Sea</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;in_red_sea&#39;</span><span class="p">,</span> <span class="s1">&#39;in_med_sea&#39;</span><span class="p">]):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">shape</span><span class="p">([</span><span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">sh</span><span class="o">.</span><span class="n">contains_xy</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s1">&#39;LONGITUDE&#39;</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s1">&#39;LATITUDE&#39;</span><span class="p">))</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># define regional temperature and salinity limits</span>
+    <span class="n">limits</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;red&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;TEMP&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">21</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span>
+            <span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">41</span><span class="p">)</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;med&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;TEMP&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span>
+            <span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1"># Check if the data satisfies these limits</span>
+    <span class="k">for</span> <span class="n">region</span><span class="p">,</span> <span class="n">var_lims</span> <span class="ow">in</span> <span class="n">limits</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">lims</span> <span class="ow">in</span> <span class="n">var_lims</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+                <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">not_</span><span class="p">()</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bad_</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># for the flagging, data must fail the regional test AND be within that region.</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;TEMP&#39;</span><span class="p">,</span> <span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">]:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+                <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bad_</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;in_</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s1">_sea&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">_QC&#39;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="pressure_increasing_test">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.pressure_increasing_test">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pressure_increasing_test</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Target Variable: PRES</span>
+<span class="sd">    Test Number: 8</span>
+<span class="sd">    Flag Number: 4 (bad data)</span>
+<span class="sd">    Checks for any egregious spikes in pressure between consecutive points.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="spike_test">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.spike_test">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">spike_test</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Target Variable: TEMP, PRAC_SALINITY</span>
+<span class="sd">    Test Number: 9</span>
+<span class="sd">    Flag Number: 4 (bad data)</span>
+<span class="sd">    Checks for spikes in temperature and prctical salinity between nearest neighbour points points.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="ArgoQCStep">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.ArgoQCStep">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArgoQCStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<div class="viewcode-block" id="ArgoQCStep.step_name">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.ArgoQCStep.step_name">[docs]</a>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s1">&#39;Argo QC&#39;</span></div>
+
+
+<div class="viewcode-block" id="ArgoQCStep.organise_flags">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.ArgoQCStep.organise_flags">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organise_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_flags</span><span class="p">):</span>
+        <span class="c1"># Method for taking in new flags and cross checking against exiting flags, including upgrading flags when necessary.</span>
+        <span class="c1"># Add new QC flag columns if they dont already exist</span>
+        <span class="n">flag_columns_to_add</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">new_flags</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+            <span class="n">new_flags</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">flag_columns_to_add</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="c1"># Update existing flag columns</span>
+        <span class="n">flag_columns_to_update</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">new_flags</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">column_name</span> <span class="ow">in</span> <span class="n">flag_columns_to_update</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">max_horizontal</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">column_name</span><span class="p">),</span> <span class="n">new_flags</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">column_name</span><span class="p">)]</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">column_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ArgoQCStep.run">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/qc/index.html#toolbox.steps.custom.qc.ArgoQCStep.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Defining the order of operations</span>
+        <span class="c1"># step_number: function</span>
+        <span class="n">qc_function_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="mi">2</span><span class="p">:</span> <span class="n">impossible_date_test</span><span class="p">,</span>
+            <span class="mi">3</span><span class="p">:</span> <span class="n">impossible_location_test</span><span class="p">,</span>
+            <span class="mi">4</span><span class="p">:</span> <span class="n">position_on_land_test</span><span class="p">,</span>
+            <span class="mi">5</span><span class="p">:</span> <span class="n">impossible_speed_test</span><span class="p">,</span>
+            <span class="mi">6</span><span class="p">:</span> <span class="n">global_range_test</span><span class="p">,</span>
+            <span class="mi">7</span><span class="p">:</span> <span class="n">regional_range_test</span><span class="p">,</span>
+            <span class="mi">8</span><span class="p">:</span> <span class="n">pressure_increasing_test</span><span class="p">,</span>
+            <span class="mi">9</span><span class="p">:</span> <span class="n">spike_test</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;step_order&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;step_order&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Check if the data is in the context</span>
+        <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;[Argo QC] No data found in context. Please load data first.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Argo QC] Data found in context.&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="c1"># Convert data to polars for fast processing</span>
+        <span class="n">qc_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">,</span> <span class="s1">&#39;TEMP&#39;</span><span class="p">,</span> <span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">qc</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">)):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">qc_variables</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Argo QC] The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">qc_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s2">) which are required for QC.&quot;</span>
+                           <span class="sa">f</span><span class="s2">&quot;Make sure that the variables are present in the data, or use the &#39;Derive CDT&#39; step to append them.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create a place to store all of the QC results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+        <span class="c1"># Run through all of the QC steps and add the flags to flag store</span>
+        <span class="k">for</span> <span class="n">step_number</span> <span class="ow">in</span> <span class="n">order</span><span class="p">:</span>
+            <span class="n">qc_function</span> <span class="o">=</span> <span class="n">qc_function_dict</span><span class="p">[</span><span class="n">step_number</span><span class="p">]</span>
+            <span class="n">returned_flags</span> <span class="o">=</span> <span class="n">qc_function</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">organise_flags</span><span class="p">(</span><span class="n">returned_flags</span><span class="p">)</span></div>
+</div>
+
+
+        <span class="c1"># TODO: Append the flags from self.flag_store to the xarray data and push back into context</span>
+
+
+
+
+
 
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
