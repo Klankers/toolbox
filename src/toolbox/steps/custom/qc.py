@@ -11,14 +11,6 @@ from datetime import datetime
 # Defining QC functions from "Argo Quality Control Manual for CTD and Trajectory Data" (https://archimer.ifremer.fr/doc/00228/33951/).
 # TODO: Do we need a bin nan rows QC to speed up processing?
 
-def platform_identification_test(df):
-    """
-    Target Variable: ?
-    Test Number: 1
-    TODO: Unclear if this is redundant for gliders (Argo QC is designed for floats)
-    """
-    return df
-
 def impossible_date_test(df):
     """
     Target Variable: TIME
@@ -68,7 +60,25 @@ def position_on_land_test(df):
     Flag Number: 4 (bad data)
     Checks that the measurement location is not on land.
     """
-    #TODO: Find a lookup table to perform this check with
+    import geopandas
+    import shapely as sh
+
+    # Define the land regions with shapely polygons
+    world = geopandas.read_file(r"C:\Users\banga\Downloads\110m_cultural\ne_110m_admin_0_countries.dbf")
+    land_polygons = sh.ops.unary_union(world.geometry)  # Concat the polygons into a MultiPolygon object
+
+    # Check if lat, long coords fall within the area of the land polygons
+    df = df.with_columns(
+        pl.struct('LONGITUDE', 'LATITUDE').map_batches(
+            lambda x: sh.contains_xy(land_polygons, x.struct.field('LONGITUDE'), x.struct.field('LATITUDE')) * 4
+        ).alias('LONGITUDE_QC')
+    )
+    # Add the flags to LATITUDE as well.
+    df = df.with_columns(
+        pl.col('LONGITUDE_QC').alias('LATITUDE_QC')
+    )
+
+    return df
 
 def impossible_speed_test(df):
     """
@@ -188,9 +198,89 @@ def pressure_increasing_test(df):
     Flag Number: 4 (bad data)
     Checks for any egregious spikes in pressure between consecutive points.
     """
-    # TODO: Check with others that this test is relevant alongside test 9
 
     return df
+
+def spike_test(df):
+    """
+    Target Variable: TEMP, PRAC_SALINITY
+    Test Number: 9
+    Flag Number: 4 (bad data)
+    Checks for spikes in temperature and prctical salinity between nearest neighbour points points.
+    """
+
+    return df
+
+class ArgoQCStep(BaseStep):
+    step_name = 'Argo QC'
+
+    def organise_flags(self, new_flags):
+        # Method for taking in new flags and cross checking against exiting flags, including upgrading flags when necessary.
+        # Add new QC flag columns if they dont already exist
+        flag_columns_to_add = set(new_flags.columns) - set(self.flag_store.columns)
+        self.flag_store = self.flag_store.with_columns(
+            new_flags(list(flag_columns_to_add)),
+        )
+        # Update existing flag columns
+        flag_columns_to_update = set(new_flags.columns) & set(self.flag_store.columns)
+        for column_name in flag_columns_to_update:
+            self.flag_store = self.flag_store.with_columns(
+                pl.max_horizontal(
+                    [pl.col(column_name), new_flags.select(column_name)]
+                ).alias(f'{column_name}')
+            )
+
+    def run(self):
+        # Defining the order of operations
+        # step_number: function
+        qc_function_dict = {
+            2: impossible_date_test,
+            3: impossible_location_test,
+            4: position_on_land_test,
+            5: impossible_speed_test,
+            6: global_range_test,
+            7: regional_range_test,
+            8: pressure_increasing_test,
+            9: spike_test,
+        }
+        order = list(range(1, 10))
+        if self.parameters['step_order'] is not None:
+            order = self.parameters['step_order']
+
+        # Check if the data is in the context
+        if "data" not in self.context:
+            raise ValueError("[Argo QC] No data found in context. Please load data first.")
+        else:
+            print(f"[Argo QC] Data found in context.")
+        data = self.context["data"]
+        # Convert data to polars for fast processing
+        qc_variables = ['TIME', 'LATITUDE', 'LONGITUDE', 'PRES', 'TEMP', 'PRAC_SALINITY']
+        if set(qc).issubset(set(data.keys)):
+            df = pl.from_pandas(
+                data[qc_variables]
+                .to_dataframe(), nan_to_null=False
+            )
+        else:
+            raise KeyError(f"[Argo QC] The data is missing variables: ({set(qc_variables) - set(data.keys)}) which are required for QC."
+                           f"Make sure that the variables are present in the data, or use the 'Derive CDT' step to append them.")
+
+        # Create a place to store all of the QC results
+        self.flag_store = pl.DataFrame()
+
+        # Run through all of the QC steps and add the flags to flag store
+        for step_number in order:
+            qc_function = qc_function_dict[step_number]
+            returned_flags = qc_function(df)
+            self.organise_flags(returned_flags)
+
+        # TODO: Append the flags from self.flag_store to the xarray data and push back into context
+
+
+
+
+
+
+
 
 class SalinityQCStep(BaseStep):
     def run(self):
