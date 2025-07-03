@@ -18,7 +18,7 @@ def impossible_date_test(df):
     Flag Number: 4 (bad data)
     Checks that the datetime of each point is valid.
     """
-    df = df.with_columns(
+    flags = df.select(
         (
                 (pl.col('TIME') > datetime(1985, 1, 1)) &
                 (pl.col('TIME') < datetime.now()) &
@@ -26,10 +26,10 @@ def impossible_date_test(df):
         ).alias('TIME_is_valid')
     )
 
-    df = df.with_columns(
-        (pl.not_(pl.col('TIME_is_valid')).cast(pl.Int64) * 4).alias('TIME_QC'),
+    flags = flags.select(
+        (pl.col('TIME_is_valid').not_().cast(pl.Int64) * 4).alias('TIME_QC'),
     )
-    return df
+    return flags
 
 def impossible_location_test(df):
     """
@@ -39,7 +39,7 @@ def impossible_location_test(df):
     Checks that the latitude and longitude are valid.
     """
     for label, bounds in zip(['LATITUDE', 'LONGITUDE'], [(-90, 90), (-180, 180)]):
-        df = df.with_columns(
+        flags = df.with_columns(
             (
                 (pl.col(label) > bounds[0]) &
                 (pl.col(label) < bounds[1]) &
@@ -48,10 +48,10 @@ def impossible_location_test(df):
             ).alias(f'{label}_is_valid')
         )
 
-        df = df.with_columns(
-            (pl.not_(pl.col(f'{label}_is_valid')).cast(pl.Int64) * 4).alias(f'{label}_QC'),
+        flags = flags.with_columns(
+            (pl.col(f'{label}_is_valid').not_().cast(pl.Int64) * 4).alias(f'{label}_QC'),
         )
-    return df
+    return flags
 
 def position_on_land_test(df):
     """
@@ -232,8 +232,8 @@ class ArgoQCStep(BaseStep):
 
     def run(self):
         # Defining the order of operations
-        # step_number: function
         qc_function_dict = {
+            # step_number: function
             2: impossible_date_test,
             3: impossible_location_test,
             4: position_on_land_test,
@@ -256,26 +256,28 @@ class ArgoQCStep(BaseStep):
         # Convert data to polars for fast processing
         qc_variables = ['TIME', 'LATITUDE', 'LONGITUDE', 'PRES', 'TEMP', 'PRAC_SALINITY']
         if set(qc).issubset(set(data.keys)):
-            df = pl.from_pandas(
-                data[qc_variables]
-                .to_dataframe(), nan_to_null=False
-            )
+            df = pl.from_pandas(data[qc_variables].to_dataframe(), nan_to_null=False)
         else:
             raise KeyError(f"[Argo QC] The data is missing variables: ({set(qc_variables) - set(data.keys)}) which are required for QC."
                            f"Make sure that the variables are present in the data, or use the 'Derive CDT' step to append them.")
 
-        # Create a place to store all of the QC results
+        # Fetch existing flags from the data and create a place to store them
+        existing_flags = [flag_column for flag_column in df.columns if '_QC' in flag_column]
         self.flag_store = pl.DataFrame()
+        if len(existing_flags) > 0:
+            self.flag_store = pl.from_pandas(data[existing_flags].to_dataframe(), nan_to_null=False)
 
-        # Run through all of the QC steps and add the flags to flag store
+        # Run through all of the QC steps and add the flags to flag_store
         for step_number in order:
             qc_function = qc_function_dict[step_number]
             returned_flags = qc_function(df)
             self.organise_flags(returned_flags)
 
-        # TODO: Append the flags from self.flag_store to the xarray data and push back into context
-
-
+        # Append the flags from self.flag_store to the xarray data and push back into context
+        for flag_column in self.flag_store.columns:
+            data[flag_column] = (("N_MEASUREMENTS",), self.flag_store[flag_column].to_numpy())
+        self.context["data"] = data
+        return self.context
 
 
 
