@@ -35,8 +35,8 @@ def running_average_nan(arr: np.ndarray, window_size: int) -> np.ndarray:
     return avg
 
 
-class SalinityQC(BaseStep):
-    step_name = "QC: Salinity"
+class SalinityADJ(BaseStep):
+    step_name = "ADJ: Salinity"
 
     def run(self):
         """
@@ -67,16 +67,16 @@ class SalinityQC(BaseStep):
                 MUST APPLY self.data to self.context["data"] to save the changes
 
         """
-        print(f"[Salinity QC] Running QC")
+        print(f"[Salinity ADJ] Running ADJ")
         print(
-            f"[Salinity QC] Run with diagnostics to determine if CTlag and thermal lag correction should be applied. Diagnostics: {self.diagnostics}"
+            f"[Salinity ADJ] Run with diagnostics to determine if CTlag and thermal lag correction should be applied. Diagnostics: {self.diagnostics}"
         )
 
         # Check if the data is in the context
         if "data" not in self.context:
             raise ValueError("No data found in context. Please load data first.")
         else:
-            # Prepare the data for CNDC QC
+            # Prepare the data for CNDC ADJ
             self.tsr = {}
             self.tsrs = {}
             self.tsr[0] = self.context["data"]
@@ -102,18 +102,18 @@ class SalinityQC(BaseStep):
 
     def generate_diagnostics(self):
         plt.ion()
-        print(f"[Salinity QC] Generating diagnostics...")
+        print(f"[Salinity ADJ] Generating diagnostics...")
 
         if self.parameters["CTLag"]:
             self.tsr = self.call_CTlag()
             self.display_CTLag()
         if self.parameters["ThermalLag"]:
             self.thermal_lag_correction()
-            self.display_qc_profiles()
+            self.display_adj_profiles()
         self.display_tsr_raw()
-        self.display_tsr_qc()
+        self.display_tsr_adj()
         plt.ioff()
-        print(f"[Salinity QC] Diagnostics generated.")
+        print(f"[Salinity ADJ] Diagnostics generated.")
 
     def thermal_lag_correction(self):
 
@@ -169,8 +169,8 @@ class SalinityQC(BaseStep):
         )
         TEMP_corrected = t_sampled(TIME_CTD_s)
 
-        # qc variables do not exist if call_CTlag was not run before
-        varsi = ["PSAL_QC", "DENSITY_QC", "SIGMA0_QC"]
+        # adj variables do not exist if call_CTlag was not run before
+        varsi = ["PSAL_ADJ", "DENSITY_ADJ", "SIGMA0_ADJ"]
         for vari in varsi:
             if 1 in self.tsr.keys(): # Means call_CTlag was called before
                 self.tsr[2][vari] = xr.DataArray(
@@ -193,27 +193,27 @@ class SalinityQC(BaseStep):
 
         # Check that call_CTlag was run first
         if 1 in self.tsr.keys():
-            CNDC = self.tsr[1].CNDC_QC.values[nonan]
+            CNDC = self.tsr[1].CNDC_ADJ.values[nonan]
         else:
             CNDC = self.tsr[0].CNDC.values[nonan]
-        self.tsr[2]["PSAL_QC"].values[nonan] = gsw.SP_from_C(
+        self.tsr[2]["PSAL_ADJ"].values[nonan] = gsw.SP_from_C(
             10 * CNDC, TEMP_corrected, PRES
         )  # OG1 is in [S/m] but should be in [mS/cm] for gsw.
         SA = gsw.SA_from_SP(
-            self.tsr[2]["PSAL_QC"].values[nonan],
+            self.tsr[2]["PSAL_ADJ"].values[nonan],
             PRES,
             self.tsr[2].LON.values[nonan],
             self.tsr[2].LAT.values[nonan],
         )
         CT = gsw.CT_from_t(SA, TEMP, PRES)
-        self.tsr[2]["DENSITY_QC"].values[nonan] = gsw.rho(SA, CT, PRES)
-        self.tsr[2]["SIGMA0_QC"].values[nonan] = gsw.sigma0(SA, CT)
+        self.tsr[2]["DENSITY_ADJ"].values[nonan] = gsw.rho(SA, CT, PRES)
+        self.tsr[2]["SIGMA0_ADJ"].values[nonan] = gsw.sigma0(SA, CT)
 
     def call_CTlag(self):
         """
         For the full deployment, calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
         If more than 300 profiles are present, the optimal lag is estimated every 10 profiles.
-        Display the optimal conductivity time lag calculated for each profile, estimate the median of this lag, and apply this median lag to corrected variables (CNDC_QC/PSAL_QC).
+        Display the optimal conductivity time lag calculated for each profile, estimate the median of this lag, and apply this median lag to corrected variables (CNDC_ADJ/PSAL_ADJ).
         This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.
 
 
@@ -333,7 +333,7 @@ class SalinityQC(BaseStep):
         CNDC = self.tsr[0].CNDC.values[nonan]
         shft = interpolate.interp1d(TIME_CTD_s, CNDC, bounds_error=False)
 
-        varsi = ["CNDC_QC", "PSAL_QC", "DENSITY_QC", "SIGMA0_QC"]
+        varsi = ["CNDC_ADJ", "PSAL_ADJ", "DENSITY_ADJ", "SIGMA0_ADJ"]
         for vari in varsi:
             dim_name = self.tsr[1].time.dims[0]  # typically 'N_MEASUREMENTS'
             self.tsr[1][vari] = xr.DataArray(
@@ -343,14 +343,14 @@ class SalinityQC(BaseStep):
             )
             self.tsr[1][vari].attrs = self.tsr[0][vari[:-3]].attrs.copy()
             self.tsr[1][vari].attrs["comment"] = vari + " with CT lag alignment"
-        self.tsr[1]["CNDC_QC"].values[nonan] = shft(TIME_CTD_s + tau_median)
-        self.tsr[1]["PSAL_QC"].values[nonan] = gsw.conversions.SP_from_C(
-            10 * self.tsr[1]["CNDC_QC"].values[nonan],
+        self.tsr[1]["CNDC_ADJ"].values[nonan] = shft(TIME_CTD_s + tau_median)
+        self.tsr[1]["PSAL_ADJ"].values[nonan] = gsw.conversions.SP_from_C(
+            10 * self.tsr[1]["CNDC_ADJ"].values[nonan],
             self.tsr[1].TEMP.values[nonan],
             self.tsr[1].PRES.values[nonan],
         )
         SA = gsw.SA_from_SP(
-            self.tsr[1]["PSAL_QC"].values[nonan],
+            self.tsr[1]["PSAL_ADJ"].values[nonan],
             self.tsr[1].PRES.values[nonan],
             self.tsr[1].LON.values[nonan],
             self.tsr[1].LAT.values[nonan],
@@ -360,18 +360,18 @@ class SalinityQC(BaseStep):
             self.tsr[1].TEMP.values[nonan],
             self.tsr[1].PRES.values[nonan],
         )
-        self.tsr[1]["DENSITY_QC"].values[nonan] = gsw.rho(
+        self.tsr[1]["DENSITY_ADJ"].values[nonan] = gsw.rho(
             SA, CT, self.tsr[1].PRES.values[nonan]
         )
-        self.tsr[1]["SIGMA0_QC"].values[nonan] = gsw.sigma0(SA, CT)
+        self.tsr[1]["SIGMA0_ADJ"].values[nonan] = gsw.sigma0(SA, CT)
 
-    def display_qc_profiles(self):
+    def display_adj_profiles(self):
         """
         Display profiles for ~20 mid profiles of:
             (1) PSAL: raw salinity
-            (2) PSAL_QC: salinity corrected from CTlag
-            (3) PSAL_QC: salinity with the thermal lag correction
-            (4) difference between raw and QC (CTlag + thermal lag correction) salinity and temperature
+            (2) PSAL_ADJ: salinity corrected from CTlag
+            (3) PSAL_ADJ: salinity with the thermal lag correction
+            (4) difference between raw and ADJ (CTlag + thermal lag correction) salinity and temperature
 
         """
 
@@ -406,20 +406,20 @@ class SalinityQC(BaseStep):
                     label=labels[0] if ct == 0 else None,
                 )
                 ax[1].plot(
-                    self.tsrs[1].PSAL_QC[index][prof_id],
+                    self.tsrs[1].PSAL_ADJ[index][prof_id],
                     -self.tsrs[1].DEPTH[index][prof_id],
                     color,
                     label=labels[1] if ct == 0 else None,
                 )
                 ax[2].plot(
-                    self.tsrs[2].PSAL_QC[index][prof_id],
+                    self.tsrs[2].PSAL_ADJ[index][prof_id],
                     -self.tsrs[2].DEPTH[index][prof_id],
                     color,
                     label=labels[2] if ct == 0 else None,
                 )
 
                 ax[3].plot(
-                    self.tsrs[2].PSAL_QC[index][prof_id]
+                    self.tsrs[2].PSAL_ADJ[index][prof_id]
                     - self.tsrs[0].PSAL[index][prof_id],
                     -self.tsrs[2].DEPTH[index][prof_id],
                     color,
@@ -439,13 +439,13 @@ class SalinityQC(BaseStep):
             self.tsrs,
             idx_d,
             "grey",
-            ["downs", "downs (CTlag)", "downs (thermal mass)", "downs (qc - raw)"],
+            ["downs", "downs (CTlag)", "downs (thermal mass)", "downs (ADJ - raw)"],
         )
         plot_profiles(
             self.tsrs,
             idx_u,
             "blue",
-            ["ups", "ups (CTlag)", "ups (thermal mass)", "ups (qc - raw)"],
+            ["ups", "ups (CTlag)", "ups (thermal mass)", "ups (ADJ - raw)"],
         )
 
         for i in range(4):
@@ -465,11 +465,11 @@ class SalinityQC(BaseStep):
             np.concatenate(
                 (
                     np.abs(
-                        self.tsrs[2].PSAL_QC.values[idx_u]
+                        self.tsrs[2].PSAL_ADJ.values[idx_u]
                         - self.tsrs[0].PSAL.values[idx_u]
                     ),
                     np.abs(
-                        self.tsrs[2].PSAL_QC.values[idx_d]
+                        self.tsrs[2].PSAL_ADJ.values[idx_d]
                         - self.tsrs[0].PSAL.values[idx_d]
                     ),
                 )
@@ -482,7 +482,7 @@ class SalinityQC(BaseStep):
 
         if save == 1:
             plt.savefig(
-                "plots/3_qc_profiles",
+                "plots/3_adj_profiles",
                 bbox_inches="tight",
                 pad_inches=0.02,
                 dpi=160,
@@ -526,12 +526,12 @@ class SalinityQC(BaseStep):
         ax[2].set_xlabel("TIME", fontweight="bold")
         plt.tight_layout()
 
-    def display_tsr_qc(self):
+    def display_tsr_adj(self):
         """
         Display for ~20 mid profiles (all=0) or the entire section (all=1) of:
             (1) PSAL: raw salinity
-            (2) PSAL_QC: QC salinity
-            (3) raw - QC salinity
+            (2) PSAL_ADJ: ADJ salinity
+            (3) raw - ADJ salinity
 
         """
 
@@ -544,7 +544,7 @@ class SalinityQC(BaseStep):
         if all == 1:  # Display the entire deployment
             self.tsrs = self.tsr
 
-        variables = ["PSAL", "PSAL_QC", "diff"]
+        variables = ["PSAL", "PSAL_ADJ", "diff"]
         colormaps = ["viridis", "viridis", "RdBu_r"]
         cs = {}
 
@@ -554,7 +554,7 @@ class SalinityQC(BaseStep):
         # Loop through variables to create scatter plots
         for i, var in enumerate(variables):
             data = (
-                self.tsrs["PSAL"] - self.tsrs["PSAL_QC"]
+                self.tsrs["PSAL"] - self.tsrs["PSAL_ADJ"]
                 if var == "diff"
                 else self.tsrs[var]
             )
@@ -582,7 +582,7 @@ class SalinityQC(BaseStep):
                 )
             cbar = plt.colorbar(cs[i], ax=ax[i])
             if i == 2:
-                cbar.set_label("PSAL - PSAL_QC [psu]", fontsize=12, fontweight="bold")
+                cbar.set_label("PSAL - PSAL_ADJ [psu]", fontsize=12, fontweight="bold")
             else:
                 cbar.set_label(var + " [psu]", fontsize=12, fontweight="bold")
             ax[i].set_ylabel("Depth [m]", fontweight="bold")
@@ -591,8 +591,8 @@ class SalinityQC(BaseStep):
         plt.tight_layout()
 
 
-class TemperatureQC(BaseStep):
+class TemperatureADJ(BaseStep):
     def run(self):
         print(
-            f"[TemperatureQC] Running QC with threshold {self.parameters['threshold']}"
+            f"[TemperatureADJ] Running ADJ with threshold {self.parameters['threshold']}"
         )
