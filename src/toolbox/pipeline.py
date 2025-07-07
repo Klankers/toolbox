@@ -150,3 +150,19 @@ class Pipeline:
             add_to_graph(step, step_order=step_order)
 
         self.graph.render("pipeline_visualisation", view=True)
+
+    def generate_config(self):
+        """Generate a configuration dictionary from the current pipeline setup"""
+        return {
+            "pipeline": (
+                self.global_parameters if hasattr(self, "global_parameters") else {}
+            ),
+            "steps": self.steps,
+        }
+
+    def export_config(self, output_path="generated_pipeline.yaml"):
+        config_dict = self.generate_config()
+        with open(output_path, "w") as f:
+            yaml.dump(config_dict, f, sort_keys=False)
+        print(f"Pipeline config exported to {output_path}")
+        return config_dict

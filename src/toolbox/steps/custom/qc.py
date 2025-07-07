@@ -92,7 +92,8 @@ class SalinityADJ(BaseStep):
             if self.diagnostics:
                 self.generate_diagnostics()
             else:
-                if self.parameters["call_CTlag"]:
+                print(self.parameters)
+                if self.parameters["CTLag"]:
                     self.tsr = self.call_CTlag()
                 if self.parameters["thermal_lag_correction"]:
                     self.thermal_lag_correction()
@@ -158,9 +159,7 @@ class SalinityADJ(BaseStep):
         TEMP_corrected_1s = np.full(TEMP_1s.shape[0], np.nan)
         TEMP_corrected = np.full(TEMP.shape[0], 0.0)
         for i in range(2, TEMP_1s.shape[0]):
-            dTemp[i] = -b * dTemp[i - 1] + a * (
-                TEMP_1s[i] - TEMP_1s[i - 1]
-            )
+            dTemp[i] = -b * dTemp[i - 1] + a * (TEMP_1s[i] - TEMP_1s[i - 1])
 
         TEMP_corrected_1s = TEMP_1s - dTemp
 
@@ -172,7 +171,7 @@ class SalinityADJ(BaseStep):
         # adj variables do not exist if call_CTlag was not run before
         varsi = ["PSAL_ADJ", "DENSITY_ADJ", "SIGMA0_ADJ"]
         for vari in varsi:
-            if 1 in self.tsr.keys(): # Means call_CTlag was called before
+            if 1 in self.tsr.keys():  # Means call_CTlag was called before
                 self.tsr[2][vari] = xr.DataArray(
                     np.full(self.tsr[0].time.shape[0], np.nan),
                     dims=["time"],
@@ -233,7 +232,9 @@ class SalinityADJ(BaseStep):
         self.tsr: with tau and prof_i.
 
         """
-        print(f"Calculate optimal conductivity time lag relative to temperature to reduce salinity spikes")
+        print(
+            f"Calculate optimal conductivity time lag relative to temperature to reduce salinity spikes"
+        )
         self.tsr[1] = self.tsr[0].copy()
         prof_idx = np.unique(self.tsr[0].PROFILE_NUMBER.values).astype("int32")
         # Estimate the CT lag every profile or 10 profiles for more than 300 profiles.
