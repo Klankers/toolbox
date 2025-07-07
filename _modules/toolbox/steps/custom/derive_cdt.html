@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2D2D2D" />
+  
+  <title>Toolbox :: toolbox.steps.custom.derive_cdt</title>
+  
+
+  <link rel="icon" type="image/png" sizes="32x32" href="../../../../_static/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../../../_static/img/favicon-16x16.png">
+  <link rel="index" title="Index" href="../../../../genindex.html"/>
+
+  <link rel="stylesheet" href="../../../../_static/css/insegel.css"/>
+  <link rel="stylesheet" href="../../../../_static/css/custom.css"/>
+
+  <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../../../_static/sphinx_highlight.js"></script>
+      <script type="text/javascript" src="../../../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="../../../../_static/design-tabs.js"></script>
+      <script type="text/javascript" src="../../../../https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+  
+
+  <script src="https://email.tl.fortawesome.com/c/eJxNjUEOgyAQAF8jR7Kw6wIHDh7sP1Cw2mgxgmn6-3JsMqc5zEQfE8dkxOY1KKMUOI3ACFKRJpSW2AAp7ontYIaxI6i7XPJVwyeVfCQ550Os3jLrGSNOLgbdAy6s0PBk2TFNjEbsfq31LB0OnX407pJa5v2faRadwSW63mn5KuLyR9j2tgx3zecanl-55R_-jjPs"></script> 
+</head>
+
+<body>
+  <div id="insegel-container">
+    <header>
+      <div id="logo-container">
+          
+          <h1>Toolbox</h1>
+          
+      </div>
+      <div id="project-container">
+        
+        <h1>Documentation</h1>
+        
+      </div>
+    </header>
+
+    <div id="content-container">
+
+      <div id="main-content-container">
+        <div id="main-content" role="main">
+          
+  <h1>Source code for toolbox.steps.custom.derive_cdt</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Class definition for deriving CDT variables.&quot;&quot;&quot;</span>
+
+<span class="c1">#### Mandatory imports ####</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
+
+
+<div class="viewcode-block" id="DeriveCDTVariables">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/derive_cdt/index.html#toolbox.steps.custom.derive_cdt.DeriveCDTVariables">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeriveCDTVariables</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<div class="viewcode-block" id="DeriveCDTVariables.step_name">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/derive_cdt/index.html#toolbox.steps.custom.derive_cdt.DeriveCDTVariables.step_name">[docs]</a>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive CDT&quot;</span></div>
+
+
+<div class="viewcode-block" id="DeriveCDTVariables.run">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/derive_cdt/index.html#toolbox.steps.custom.derive_cdt.DeriveCDTVariables.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;[Derive CTD Variables] Processing CTD...&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Check if the data is in the context</span>
+        <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;[Derive CTD Variables] No data found in context. Please load data first.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Derive CTD Variables] Data found in context.&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Converting units</span>
+        <span class="c1"># TODO: This following two lines should become redundant when BODC releases OG1-like datasets</span>
+        <span class="n">conversion_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CNDC&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;conductivity_unit_conversion_factor&quot;</span><span class="p">],</span>
+            <span class="s1">&#39;PRES&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;pressure_unit_conversion_factor&quot;</span><span class="p">],</span>
+            <span class="s1">&#39;LATITUDE&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;latitude_longitude_conversion_factor&quot;</span><span class="p">],</span>
+            <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;latitude_longitude_conversion_factor&quot;</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">multiplier</span> <span class="ow">in</span> <span class="n">conversion_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">][:]</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="n">multiplier</span><span class="p">)</span>
+
+        <span class="c1"># Convert data to polars for fast processing</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[[</span><span class="s1">&#39;TIME&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;CNDC&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">,</span> <span class="s1">&#39;TEMP&#39;</span><span class="p">]]</span>
+            <span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Apply interpolation on position variables if required</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;interpolate_latitude_longitude&quot;</span><span class="p">]:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+                <span class="o">*</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var_name</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">interpolate_by</span><span class="p">(</span><span class="s1">&#39;TIME&#39;</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;LATITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Collect calls for gsw functions (variable_name, gsw function, function args)</span>
+        <span class="n">gsw_function_calls</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s1">&#39;DEPTH&#39;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">z_from_p</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;PRES&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CNDC&#39;</span><span class="p">,</span> <span class="s1">&#39;TEMP&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s1">&#39;ABS_SALINITY&#39;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">SA_from_SP</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">,</span> <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s1">&#39;CONS_TEMP&#39;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">CT_from_t</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;ABS_SALINITY&#39;</span><span class="p">,</span> <span class="s1">&#39;TEMP&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s1">&#39;DENSITY&#39;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">rho</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;ABS_SALINITY&#39;</span><span class="p">,</span> <span class="s1">&#39;CONS_TEMP&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">gsw_function_calls</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[Derive CTD Variables] Deriving </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s1">...&#39;</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">struct</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
+                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">))</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">var_name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">percentiles</span><span class="o">=</span><span class="p">[]))</span>
+
+        <span class="n">variable_metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;DEPTH&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth from surface (negative down as defined by TEOS-10)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;meters [m]&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2550000</span><span class="p">,</span> <span class="c1"># Mariana Trench</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;PRAC_SALINITY&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Practical salinity&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;unitless&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="c1"># Valid min and max are considered limits beyond which errors become impractical</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;ABS_SALINITY&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Absolute salinity&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;g/kg&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;ABS_SALINITY&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="c1"># Pure salt</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;CONS_TEMP&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Conservative temperature&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;°C&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;CONS_TEMP&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="c1"># Freezing point of seawater</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">102</span><span class="p">,</span> <span class="c1"># Boiling point of seawater</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;DENSITY&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Density&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;kg/m3&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;DENSITY&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">900</span><span class="p">,</span> <span class="c1"># Warm, low salinity surface water</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1100</span><span class="p">,</span> <span class="c1"># Cold, high salinity bottom water</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+        <span class="c1"># Append to xarray and update context</span>
+        <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">variable_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">df</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
+</div>
+
+</pre></div>
+
+        </div>
+      </div>
+
+      <div id="side-menu-container">
+
+        <div id="search" role="search">
+        <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+            <input type="text" name="q" placeholder="Search..." />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+        </form>
+</div>
+
+        <div id="side-menu" role="navigation">
+
+          
+  
+    
+  
+  
+    <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/toolbox/index.html">toolbox</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/toolbox/index.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/toolbox/index.html#attributes">Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/toolbox/index.html#package-contents">Package Contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  
+
+
+        </div>
+
+        
+
+      </div>
+
+    </div>
+
+<footer>
+    <div id="footer-info">
+        <ul id="build-details">
+            
+
+            
+
+            
+        </ul>
+
+        
+            <div id="copyright">
+                &copy; 2025, Adam Ward, National Oceanography Centre
+            </div>
+        
+
+        <div id="credit">
+            created with <a href="http://sphinx-doc.org/">Sphinx</a> and <a href="https://github.com/Autophagy/insegel">Insegel</a>
+
+        </div>
+    </div>
+
+    <a id="menu-toggle" class="fa fa-bars" aria-hidden="true"></a>
+
+    <script type="text/javascript">
+      $("#menu-toggle").click(function() {
+        $("#menu-toggle").toggleClass("toggled");
+        $("#side-menu-container").slideToggle(300);
+      });
+    </script>
+
+</footer> 
+
+</div>
+
+</body>
+</html>

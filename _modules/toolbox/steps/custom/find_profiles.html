@@ -174,38 +174,39 @@
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.FindProfilesStep.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span>
-            <span class="s2">&quot;[FindProfiles] attempting to designate profile numbers&quot;</span>
+            <span class="s2">&quot;[FindProfiles] Attempting to designate profile numbers&quot;</span>
         <span class="p">)</span>
 
         <span class="c1"># Check if the data is in the context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No data found in context. Please load data first.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Data found in context.&quot;</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[FindProfiles] Data found in context.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;gradient_thresholds&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;filter_window_sizes&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;depth_column&quot;</span><span class="p">]</span>
 
-        <span class="c1"># Convert to polars for processing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">data</span><span class="p">[[</span><span class="s1">&#39;TIME&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
+        <span class="c1"># If the user wants to tune parameters</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
             <span class="n">root</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
 
+        <span class="c1"># Convert to polars for processing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="s1">&#39;TIME&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">profile_outputs</span> <span class="o">=</span> <span class="n">find_profiles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span><span class="p">,</span> <span class="n">depth_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">)</span>
         <span class="n">profile_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_outputs</span><span class="p">[</span><span class="s1">&#39;profile_num&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
-        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">profile_numbers</span><span class="p">)</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">PROFILE_NUMBER</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+
+        <span class="c1"># Append to xarray and update context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">profile_numbers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">PROFILE_NUMBER</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Derived profile number. #=-1 indicates no profile, #&gt;=0 are profiles.&quot;</span><span class="p">,</span>
             <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Profile Number&quot;</span><span class="p">,</span>
             <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
             <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
         <span class="p">}</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -218,6 +219,7 @@
             <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;TkAgg&#39;</span><span class="p">)</span>
 
             <span class="c1"># Update data for plot</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="s1">&#39;TIME&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">profile_outputs</span> <span class="o">=</span> <span class="n">find_profiles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span><span class="p">,</span> <span class="n">depth_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">)</span>
 
             <span class="c1"># Split data into profile and non-profile points for plotting</span>
