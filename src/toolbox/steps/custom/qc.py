@@ -6,53 +6,120 @@ import utils.diagnostics as diag
 import polars as pl
 import xarray as xr
 from datetime import datetime
-
+from abc import ABC, abstractmethod
+import matplotlib.pyplot as plt
+import matplotlib
 
 # Defining QC functions from "Argo Quality Control Manual for CTD and Trajectory Data" (https://archimer.ifremer.fr/doc/00228/33951/).
 # TODO: Do we need a bin nan rows QC to speed up processing?
 
-def impossible_date_test(df):
+class QC_Test(ABC):
+
+    @abstractmethod
+    def return_qc(self):
+        pass
+
+    @abstractmethod
+    def plot_diagnostics(self):
+        pass
+
+class impossible_date_test(QC_Test):
     """
     Target Variable: TIME
     Test Number: 2
     Flag Number: 4 (bad data)
     Checks that the datetime of each point is valid.
     """
-    flags = df.select(
-        (
-                (pl.col('TIME') > datetime(1985, 1, 1)) &
-                (pl.col('TIME') < datetime.now()) &
-                pl.col('TIME').is_not_null()
-        ).alias('TIME_is_valid')
-    )
+    def __init__(self, df):
+        self.test_number = 2
+        self.df = df
+        self.flags = None
 
-    flags = flags.select(
-        (pl.col('TIME_is_valid').not_().cast(pl.Int64) * 4).alias('TIME_QC'),
-    )
-    return flags
+    def return_qc(self):
+        # Check if any of the datetime stamps fall outside 1985 and the current datetime
+        self.flags = self.df.select(
+            (
+                    (pl.col('TIME') > datetime(1985, 1, 1)) &
+                    (pl.col('TIME') < datetime.now()) &
+                    pl.col('TIME').is_not_null()
+            ).alias('TIME_is_valid')
+        )
 
-def impossible_location_test(df):
+        self.flags = self.flags.select(
+            (pl.col('TIME_is_valid').not_().cast(pl.Int64) * 4).alias('TIME_QC'),
+        )
+        return self.flags
+
+    def plot_diagnostics(self):
+        matplotlib.use('tkagg')
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=200)
+        axs = [ax, ax.twinx()]
+        for ax, data, var, col in zip(axs, [self.df, self.flags], ['TIME', 'TIME_QC'], ['b', 'r']):
+            ax.plot(data[var], c=col)
+            ax.set(
+                xlabel='Index',
+                ylabel=var,
+            )
+            ax.yaxis.label.set_color(col)
+        fig.tight_layout()
+        plt.show(block=True)
+
+class impossible_location_test(QC_Test):
     """
     Target Variable: LATITUDE, LONGITUDE
     Test Number: 3
     Flag Number: 4 (bad data)
     Checks that the latitude and longitude are valid.
     """
-    for label, bounds in zip(['LATITUDE', 'LONGITUDE'], [(-90, 90), (-180, 180)]):
-        flags = df.with_columns(
-            (
-                (pl.col(label) > bounds[0]) &
-                (pl.col(label) < bounds[1]) &
-                pl.col(label).is_not_null() &
-                pl.col(label).is_finite()
-            ).alias(f'{label}_is_valid')
-        )
+    def __init__(self, df):
+        self.test_number = 3
+        self.df = df
+        self.flags = None
 
-        flags = flags.with_columns(
-            (pl.col(f'{label}_is_valid').not_().cast(pl.Int64) * 4).alias(f'{label}_QC'),
-        )
-    return flags
+    def return_qc(self):
+        for label, bounds in zip(['LATITUDE', 'LONGITUDE'], [(-90, 90), (-180, 180)]):
+            self.df = self.df.with_columns(
+                (
+                    (pl.col(label) > bounds[0]) &
+                    (pl.col(label) < bounds[1]) &
+                    pl.col(label).is_not_null() &
+                    pl.col(label).is_finite()
+                ).alias(f'{label}_is_valid')
+            )
 
+            self.df = self.df.with_columns(
+                (pl.col(f'{label}_is_valid').not_().cast(pl.Int64) * 4).alias(f'{label}_QC'),
+            )
+
+        self.flags = self.df.select(pl.col('^.*_QC$'))
+        return self.flags
+
+    def plot_diagnostics(self):
+        matplotlib.use('tkagg')
+        fig, axs = plt.subplots(nrows=2, figsize=(8, 6), sharex=True, dpi=200)
+        for ax, var, bounds in zip(axs, ['LATITUDE', 'LONGITUDE'], [(-90, 90), (-180, 180)]):
+            # Data
+            ax.plot(self.df[var], c='b')
+            ax.set(
+                xlabel='Index',
+                ylabel=var,
+            )
+            ax.yaxis.label.set_color('b')
+            # Flags
+            ax_twin = ax.twinx()
+            ax_twin.plot(self.flags[f'{var}_QC'], c='r')
+            ax_twin.set(
+                xlabel='Index',
+                ylabel=f'{var}_QC',
+            )
+            ax_twin.yaxis.label.set_color('r')
+            # Bounds
+            for bound in bounds:
+                ax.axhline(bound, ls='--', c='k')
+        fig.tight_layout()
+        plt.show(block=True)
+
+# TODO: In progress of converting these to QC_TEST classes and writing diagnostics for each test
 def position_on_land_test(df):
     """
     Target Variable: LATITUDE, LONGITUDE
@@ -216,23 +283,23 @@ class ArgoQCStep(BaseStep):
 
     def organise_flags(self, new_flags):
         # Method for taking in new flags and cross checking against exiting flags, including upgrading flags when necessary.
-        # Add new QC flag columns if they dont already exist
-        flag_columns_to_add = set(new_flags.columns) - set(self.flag_store.columns)
-        self.flag_store = self.flag_store.with_columns(
-            new_flags(list(flag_columns_to_add)),
-        )
         # Update existing flag columns
         flag_columns_to_update = set(new_flags.columns) & set(self.flag_store.columns)
         for column_name in flag_columns_to_update:
             self.flag_store = self.flag_store.with_columns(
                 pl.max_horizontal(
-                    [pl.col(column_name), new_flags.select(column_name)]
+                    [pl.col(column_name), new_flags[column_name]]
                 ).alias(f'{column_name}')
             )
+        # Add new QC flag columns if they dont already exist
+        flag_columns_to_add = set(new_flags.columns) - set(self.flag_store.columns)
+        self.flag_store = self.flag_store.with_columns(
+            new_flags[list(flag_columns_to_add)],
+        )
 
     def run(self):
         # Defining the order of operations
-        qc_function_dict = {
+        qc_classes = {
             # step_number: function
             2: impossible_date_test,
             3: impossible_location_test,
@@ -243,7 +310,7 @@ class ArgoQCStep(BaseStep):
             8: pressure_increasing_test,
             9: spike_test,
         }
-        order = list(range(1, 10))
+        order = list(range(2, 10))
         if self.parameters['step_order'] is not None:
             order = self.parameters['step_order']
 
@@ -255,11 +322,11 @@ class ArgoQCStep(BaseStep):
         data = self.context["data"]
         # Convert data to polars for fast processing
         qc_variables = ['TIME', 'LATITUDE', 'LONGITUDE', 'PRES', 'TEMP', 'PRAC_SALINITY']
-        if set(qc).issubset(set(data.keys)):
+        if set(qc_variables).issubset(set(data.keys())):
             df = pl.from_pandas(data[qc_variables].to_dataframe(), nan_to_null=False)
         else:
-            raise KeyError(f"[Argo QC] The data is missing variables: ({set(qc_variables) - set(data.keys)}) which are required for QC."
-                           f"Make sure that the variables are present in the data, or use the 'Derive CDT' step to append them.")
+            raise KeyError(f"[Argo QC] The data is missing variables: ({set(qc_variables) - set(data.keys())}) which are required for QC."
+                           f" Make sure that the variables are present in the data, or use the 'Derive CDT' step to append them.")
 
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [flag_column for flag_column in df.columns if '_QC' in flag_column]
@@ -269,9 +336,17 @@ class ArgoQCStep(BaseStep):
 
         # Run through all of the QC steps and add the flags to flag_store
         for step_number in order:
-            qc_function = qc_function_dict[step_number]
-            returned_flags = qc_function(df)
+            # Create an instance of this test step
+            qc_test_instance = qc_classes[step_number](df)
+            if qc_test_instance.test_number != step_number:
+                raise DeprecationWarning('[Argo QC] WARNING: Using a QC test instance that lacks a test number.')
+            returned_flags = qc_test_instance.return_qc()
             self.organise_flags(returned_flags)
+            # Diagnostic plotting
+            if self.parameters['diagnostics']:
+                qc_test_instance.plot_diagnostics()
+            # Once finished, remove the test instance from memory
+            del qc_test_instance
 
         # Append the flags from self.flag_store to the xarray data and push back into context
         for flag_column in self.flag_store.columns:

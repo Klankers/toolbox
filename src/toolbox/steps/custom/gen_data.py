@@ -74,5 +74,7 @@ class GenerateData(BaseStep):
         # Make the xarray data from the polars dataframe and ship it
         # TODO: Add metadata flexibility
         data = df.to_pandas().to_xarray()
+        data['N_PARAM'] = list(data.keys())
+        data = data.rename({'index': 'N_MEASUREMENTS'})
         self.context['data'] = data
         return self.context

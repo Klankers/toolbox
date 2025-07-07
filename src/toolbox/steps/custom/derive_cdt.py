@@ -32,7 +32,7 @@ class DeriveCDTVariables(BaseStep):
             'LONGITUDE': self.parameters["latitude_longitude_conversion_factor"]
         }
         for var_name, multiplier in conversion_dict.items():
-            data[var_name][:] *= multiplier
+            data[var_name][:] *= float(multiplier)
 
         # Convert data to polars for fast processing
         df = pl.from_pandas(

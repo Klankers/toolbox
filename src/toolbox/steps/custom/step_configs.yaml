@@ -18,10 +18,16 @@
 
   - name: "Derive CDT"
     parameters:
-      conductivity_unit_conversion_factor: 10,
-      pressure_unit_conversion_factor: 10,
+      conductivity_unit_conversion_factor: 10
+      pressure_unit_conversion_factor: 10
       latitude_longitude_conversion_factor: 0.01
       interpolate_latitude_longitude: true
+      diagnostics: true
+
+  - name: "Argo QC"
+    parameters:
+      step_order: null # null causes default order. Define which QC tests to perform using a list, eg. [2, 3, 5, 9].
+                       # Tests are run from left to right. All tests are defined in src/toolbox/steps/custom/qc.py
       diagnostics: true
 
   - name: "Find Profiles"
