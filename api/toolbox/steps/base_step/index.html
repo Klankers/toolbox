@@ -51,6 +51,16 @@
           
   <section id="module-toolbox.steps.base_step">
 <span id="toolbox-steps-base-step"></span><h1>toolbox.steps.base_step<a class="headerlink" href="#module-toolbox.steps.base_step" title="Link to this heading">¶</a></h1>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.base_step.REGISTERED_STEPS" title="toolbox.steps.base_step.REGISTERED_STEPS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REGISTERED_STEPS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
@@ -61,8 +71,29 @@
 </tbody>
 </table>
 </section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.base_step.register_step" title="toolbox.steps.base_step.register_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_step</span></code></a>(cls)</p></td>
+<td><p>Decorator to mark a step class for inclusion in the pipeline.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="toolbox.steps.base_step.REGISTERED_STEPS">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">REGISTERED_STEPS</span></span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#REGISTERED_STEPS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.REGISTERED_STEPS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.steps.base_step.register_step">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">register_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#register_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.register_step" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator to mark a step class for inclusion in the pipeline.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep" title="Link to this definition">¶</a></dt>

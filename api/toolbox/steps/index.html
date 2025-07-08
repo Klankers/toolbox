@@ -51,7 +51,6 @@
           
   <section id="module-toolbox.steps">
 <span id="toolbox-steps"></span><h1>toolbox.steps<a class="headerlink" href="#module-toolbox.steps" title="Link to this heading">¶</a></h1>
-<p>Step Factory</p>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -65,10 +64,13 @@
 <h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.STEP_CLASSES" title="toolbox.steps.STEP_CLASSES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STEP_CLASSES</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.REGISTERED_STEPS" title="toolbox.steps.REGISTERED_STEPS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REGISTERED_STEPS</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.STEP_DEPENDENCIES" title="toolbox.steps.STEP_DEPENDENCIES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STEP_DEPENDENCIES</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.STEP_CLASSES" title="toolbox.steps.STEP_CLASSES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STEP_CLASSES</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.STEP_DEPENDENCIES" title="toolbox.steps.STEP_DEPENDENCIES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STEP_DEPENDENCIES</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -89,10 +91,10 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.discover_steps" title="toolbox.steps.discover_steps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">discover_steps</span></code></a>()</p></td>
-<td><p>Dynamically populate the STEP_CLASSES dictionary from custom step classes.</p></td>
+<td><p>Import all custom step modules to populate the decorator-based registry.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.create_step" title="toolbox.steps.create_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_step</span></code></a>(step_config, _context)</p></td>
-<td><p>Dynamically create a step instance from config</p></td>
+<td><p></p></td>
 </tr>
 </tbody>
 </table>
@@ -137,6 +139,11 @@
 </dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="toolbox.steps.REGISTERED_STEPS">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">REGISTERED_STEPS</span></span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#REGISTERED_STEPS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.REGISTERED_STEPS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="toolbox.steps.STEP_CLASSES">
 <span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">STEP_CLASSES</span></span><a class="reference internal" href="../../../_modules/toolbox/steps.html#STEP_CLASSES"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.STEP_CLASSES" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -149,14 +156,13 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.steps.discover_steps">
 <span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">discover_steps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps.html#discover_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.discover_steps" title="Link to this definition">¶</a></dt>
-<dd><p>Dynamically populate the STEP_CLASSES dictionary from custom step classes.</p>
+<dd><p>Import all custom step modules to populate the decorator-based registry.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.steps.create_step">
 <span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">create_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps.html#create_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.create_step" title="Link to this definition">¶</a></dt>
-<dd><p>Dynamically create a step instance from config</p>
-</dd></dl>
+<dd></dd></dl>
 
 </section>
 </section>

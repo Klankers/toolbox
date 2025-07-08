@@ -49,9 +49,30 @@
         <div id="main-content" role="main">
           
   <h1>Source code for toolbox.steps.base_step</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Registry of explicitly registered step classes</span>
+<div class="viewcode-block" id="REGISTERED_STEPS">
+<a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.REGISTERED_STEPS">[docs]</a>
+<span class="n">REGISTERED_STEPS</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+
+<div class="viewcode-block" id="register_step">
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.register_step">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register_step</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator to mark a step class for inclusion in the pipeline.&quot;&quot;&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">&quot;step_name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is missing required &#39;step_name&#39; attribute.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">REGISTERED_STEPS</span><span class="p">[</span><span class="n">step_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+    <span class="k">return</span> <span class="bp">cls</span></div>
+
+
+
 <div class="viewcode-block" id="BaseStep">
 <a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.BaseStep">[docs]</a>
-<span></span><span class="k">class</span><span class="w"> </span><span class="nc">BaseStep</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseStep</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="BaseStep.name">
 <a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.name">[docs]</a>

@@ -49,18 +49,13 @@
         <div id="main-content" role="main">
           
   <h1>Source code for toolbox.steps</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Step Factory&quot;&quot;&quot;</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">REGISTERED_STEPS</span>
 
-<span class="c1"># Automatically populate STEP_CLASSES by inspecting custom step classes</span>
 <div class="viewcode-block" id="STEP_CLASSES">
 <a class="viewcode-back" href="../../api/toolbox/steps/index.html#toolbox.steps.STEP_CLASSES">[docs]</a>
 <span class="n">STEP_CLASSES</span> <span class="o">=</span> <span class="p">{}</span></div>
-
 
 <div class="viewcode-block" id="STEP_DEPENDENCIES">
 <a class="viewcode-back" href="../../api/toolbox/steps/index.html#toolbox.steps.STEP_DEPENDENCIES">[docs]</a>
@@ -73,53 +68,42 @@
 <div class="viewcode-block" id="discover_steps">
 <a class="viewcode-back" href="../../api/toolbox/steps/index.html#toolbox.steps.discover_steps">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">discover_steps</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dynamically populate the STEP_CLASSES dictionary from custom step classes.&quot;&quot;&quot;</span>
-    <span class="c1"># Get the path to the custom directory</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import all custom step modules to populate the decorator-based registry.&quot;&quot;&quot;</span>
     <span class="n">custom_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;custom&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Get all Python files in the custom directory (excluding __init__.py)</span>
     <span class="n">module_files</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">custom_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.py&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">!=</span> <span class="s2">&quot;__init__.py&quot;</span>
     <span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered custom step modules: </span><span class="si">{</span><span class="n">module_files</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Loop through each file, import the module, and inspect its classes</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discovered step modules: </span><span class="si">{</span><span class="n">module_files</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">module_file</span> <span class="ow">in</span> <span class="n">module_files</span><span class="p">:</span>
-        <span class="c1"># Get the module name by stripping the &#39;.py&#39; extension</span>
         <span class="n">module_name</span> <span class="o">=</span> <span class="n">module_file</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.custom.</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">package</span><span class="o">=</span><span class="s2">&quot;steps&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Dynamically import the module from the custom folder</span>
-        <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.custom.</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">package</span><span class="o">=</span><span class="s2">&quot;steps&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Inspect the module for classes</span>
-        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">step_class</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">):</span>
-            <span class="c1"># Ensure the class is a subclass of BaseStep</span>
-            <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">step_class</span><span class="p">,</span> <span class="n">BaseStep</span><span class="p">)</span> <span class="ow">and</span> <span class="n">step_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">BaseStep</span><span class="p">:</span>
-                <span class="c1"># Get the step_name attribute, if it exists</span>
-                <span class="n">step_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">step_class</span><span class="p">,</span> <span class="s2">&quot;step_name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">step_name</span><span class="p">:</span>
-                    <span class="n">STEP_CLASSES</span><span class="p">[</span><span class="n">step_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">step_class</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Registered step: </span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+    <span class="c1"># Populate STEP_CLASSES using decorator-based registry</span>
+    <span class="n">STEP_CLASSES</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">REGISTERED_STEPS</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">step_name</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Registered step: </span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 
-<span class="c1"># Discover all steps during module import</span>
+<span class="c1"># Automatically discover on import</span>
 <span class="n">discover_steps</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="create_step">
 <a class="viewcode-back" href="../../api/toolbox/steps/index.html#toolbox.steps.create_step">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dynamically create a step instance from config&quot;&quot;&quot;</span>
     <span class="n">step_name</span> <span class="o">=</span> <span class="n">step_config</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
     <span class="n">step_class</span> <span class="o">=</span> <span class="n">STEP_CLASSES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">step_name</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">step_class</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; not recognized.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; not recognized or missing @register_step.&quot;</span>
+        <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">step_class</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="p">{}),</span>
-        <span class="n">diagnostics</span><span class="o">=</span><span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="n">diagnostics</span><span class="o">=</span><span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
         <span class="n">context</span><span class="o">=</span><span class="n">_context</span><span class="p">,</span>
     <span class="p">)</span></div>
 
