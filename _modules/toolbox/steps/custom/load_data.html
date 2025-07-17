@@ -52,8 +52,8 @@
 <span></span><span class="sd">&quot;&quot;&quot;Class definition for loading data steps.&quot;&quot;&quot;</span>
 
 <span class="c1">#### Mandatory imports ####</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
@@ -62,6 +62,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
 
 
+<span class="nd">@register_step</span>
 <div class="viewcode-block" id="LoadOG1">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LoadOG1</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
