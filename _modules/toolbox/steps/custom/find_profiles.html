@@ -193,13 +193,13 @@
 <div class="viewcode-block" id="FindProfilesStep.run">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.FindProfilesStep.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[FindProfiles] attempting to designate profile numbers&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;attempting to designate profile numbers&quot;</span><span class="p">)</span>
 
         <span class="c1"># Check if the data is in the context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No data found in context. Please load data first.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Data found in context.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;gradient_thresholds&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;filter_window_sizes&quot;</span><span class="p">]</span>
@@ -373,8 +373,8 @@
             <span class="n">generate_plot</span><span class="p">()</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">on_save</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[FindProfiles] continuing with parameters: </span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;continuing with parameters: </span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;  Gradient Thresholds: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;  Filter Window Sizes: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;  Depth column: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
