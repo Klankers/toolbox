@@ -10,15 +10,15 @@ class ExportStep(BaseStep):
     step_name = "Data Export"
 
     def run(self):
-        print(
-            f"[Export] Exporting data in {self.parameters['export_format']} format to {self.parameters['output_path']}"
+        self.log(
+            f"Exporting data in {self.parameters['export_format']} format to {self.parameters['output_path']}"
         )
 
         # Check if the data is in the context
         if "data" not in self.context:
             raise ValueError("No data found in context. Please load data first.")
         else:
-            print(f"[Export] Data found in context.")
+            self.log(f"Data found in context.")
         data = self.context["data"]
         export_format = self.parameters["export_format"]
         output_path = self.parameters["output_path"]
@@ -45,11 +45,11 @@ class ExportStep(BaseStep):
             data.to_parquet(output_path)
         else:
             raise ValueError(f"Unsupported export format: {export_format}")
-        print(f"[Export] Data exported successfully to {output_path}")
+        self.log(f"Data exported successfully to {output_path}")
         return self.context
 
     def generate_diagnostics(self):
         """Generate diagnostics for the export step."""
-        print(f"[Export] Generating diagnostics for {self.step_name}")
+        self.log(f"Generating diagnostics for {self.step_name}")
         diag.generate_diagnostics(self.context, self.step_name)
-        print(f"[Export] Diagnostics generated successfully.")
+        self.log(f"Diagnostics generated successfully.")

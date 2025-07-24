@@ -132,13 +132,13 @@ class FindProfilesStep(BaseStep):
     step_name = "Find Profiles"
 
     def run(self):
-        print("[FindProfiles] attempting to designate profile numbers")
+        self.log("attempting to designate profile numbers")
 
         # Check if the data is in the context
         if "data" not in self.context:
             raise ValueError("No data found in context. Please load data first.")
         else:
-            print(f"[Export] Data found in context.")
+            self.log(f"Data found in context.")
         data = self.context["data"]
         self.thresholds = self.parameters["gradient_thresholds"]
         self.win_sizes = self.parameters["filter_window_sizes"]
@@ -309,8 +309,8 @@ class FindProfilesStep(BaseStep):
             generate_plot()
 
         def on_save():
-            print(
-                f"[FindProfiles] continuing with parameters: \n"
+            self.log(
+                f"continuing with parameters: \n"
                 f"  Gradient Thresholds: {self.thresholds}\n"
                 f"  Filter Window Sizes: {self.win_sizes}\n"
                 f"  Depth column: {self.depth_col}\n"

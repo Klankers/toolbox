@@ -71,7 +71,7 @@ class AdjustSalinity(BaseStep):
         """
         self.log(f"Running ADJ")
         self.log(
-            f"[Salinity ADJ] Run with diagnostics to determine if CTlag and thermal lag correction should be applied. Diagnostics: {self.diagnostics}"
+            f"Run with diagnostics to determine if CTlag and thermal lag correction should be applied. Diagnostics: {self.diagnostics}"
         )
 
         # Check if the data is in the context
@@ -105,7 +105,7 @@ class AdjustSalinity(BaseStep):
 
     def generate_diagnostics(self):
         plt.ion()
-        self.log(f"[Salinity ADJ] Generating diagnostics...")
+        self.log(f"Generating diagnostics...")
 
         if self.parameters["CTLag"]:
             self.tsr = self.call_CTlag()
@@ -116,7 +116,7 @@ class AdjustSalinity(BaseStep):
         self.display_tsr_raw()
         self.display_tsr_adj()
         plt.ioff()
-        self.log(f"[Salinity ADJ] Diagnostics generated.")
+        self.log(f"Diagnostics generated.")
 
     def thermal_lag_correction(self):
 
