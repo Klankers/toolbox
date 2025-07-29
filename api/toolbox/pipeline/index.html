@@ -59,6 +59,9 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.pipeline.Pipeline" title="toolbox.pipeline.Pipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pipeline</span></code></a></p></td>
 <td><p></p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.pipeline.PipelineManager" title="toolbox.pipeline.PipelineManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PipelineManager</span></code></a></p></td>
+<td><p>A class enabling the execution of multiple pipelines in sequence.</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -122,6 +125,47 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.export_config">
 <span class="sig-name descname"><span class="pre">export_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'generated_pipeline.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.export_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.export_config" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.pipeline.</span></span><span class="sig-name descname"><span class="pre">PipelineManager</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager" title="Link to this definition">¶</a></dt>
+<dd><p>A class enabling the execution of multiple pipelines in sequence.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.pipelines">
+<span class="sig-name descname"><span class="pre">pipelines</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.pipelines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.pipelines" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.alignment_map">
+<span class="sig-name descname"><span class="pre">alignment_map</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.alignment_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.alignment_map" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.load_mission_control">
+<span class="sig-name descname"><span class="pre">load_mission_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.load_mission_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.load_mission_control" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.add_pipeline">
+<span class="sig-name descname"><span class="pre">add_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.add_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.add_pipeline" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.run_all">
+<span class="sig-name descname"><span class="pre">run_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.run_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.run_all" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.get_contexts">
+<span class="sig-name descname"><span class="pre">get_contexts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.get_contexts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.get_contexts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.align_variable">
+<span class="sig-name descname"><span class="pre">align_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">standard_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.align_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.align_variable" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
