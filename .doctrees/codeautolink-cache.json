@@ -1,7 +1,6 @@
 {
   "api/index": [],
   "api/toolbox/index": [],
-  "api/toolbox/main/index": [],
   "api/toolbox/pipeline/index": [],
   "api/toolbox/steps/base_step/index": [],
   "api/toolbox/steps/custom/calibration/index": [],
