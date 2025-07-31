@@ -299,6 +299,7 @@ class ArgoQCStep(BaseStep):
 
     def run(self):
         # Defining the order of operations
+        #TODO: config names not numbers
         qc_classes = {
             # step_number: function
             2: impossible_date_test,
