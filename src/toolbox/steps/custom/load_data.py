@@ -22,8 +22,6 @@ class LoadOG1(BaseStep):
         - file_path: Path to the OG1 data file.
         - add_meta: Boolean flag to indicate whether to add metadata.
         - add_elapsed_time: Boolean flag to indicate whether to add elapsed time.
-        - add_depth: Boolean flag to indicate whether to add depth.
-        - lat_label: Label for latitude variable in the dataset. (default: "LATITUDE")
         - diagnostics: Boolean flag to indicate whether to generate diagnostics.
     """
 
@@ -42,15 +40,6 @@ class LoadOG1(BaseStep):
 
         if self.add_elapsed_time:
             self.f_addElapsedTime()
-
-        if self.add_depth:
-            self.f_addDepth(
-                lat_label=(
-                    self.parameters["lat_label"]
-                    if "lat_label" in self.parameters
-                    else "LATITUDE"
-                )
-            )
 
         # Generate diagnostics if enabled
         self.log(f"Diagnostics: {self.diagnostics}")
@@ -122,29 +111,3 @@ class LoadOG1(BaseStep):
                 )
             else:
                 self.log(f"{type(e)}: Something unexpected happened: \n {e}")
-
-    def f_addDepth(self, lat_label="LATITUDE"):
-        """
-        Converts pressure to depth and appends it to the dataset
-        """
-        try:
-            p, lat = self.data["PRES"].values, self.data[lat_label].values
-        except KeyError as e:
-            self.log(
-                f"ERROR: The {lat_label} variable does not appear in the netCDF file. These functions are only intended"
-                " for use with OG1 format netCDF files."
-            )
-            self.log(f"Available variables: {list(self.data.keys())}")
-            raise e
-        # use GSW to convert pressure to depth
-        depth = -1 * gsw.conversions.z_from_p(p, lat)
-        self.data["DEPTH"] = (("N_MEASUREMENTS",), depth)
-        self.data.DEPTH.attrs = {
-            "long_name": "Depth calculated following TEOS-10, implementation by GSW, see"
-            "https://github.com/TEOS-10/GSW-python. Dynamic height anomoly and"
-            "sea surface geopotential are assimed to be 0",
-            "units": "m",
-            "standard_name": "Depth (z)",
-            "valid_min": -10,
-            "valid_max": 10935,
-        }

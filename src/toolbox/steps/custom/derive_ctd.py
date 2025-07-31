@@ -1,14 +1,16 @@
-"""Class definition for deriving CDT variables."""
+"""Class definition for deriving CTD variables."""
 
 #### Mandatory imports ####
-from ..base_step import BaseStep
-import utils.diagnostics as diag
+from toolbox.steps.base_step import BaseStep, register_step
+import toolbox.utils.diagnostics as diag
+
+#### Custom imports ####
 import polars as pl
 import numpy as np
 import gsw
 
-
-class DeriveCDTVariables(BaseStep):
+@register_step
+class DeriveCTDVariables(BaseStep):
     """
     A processing step class for deriving oceanographic variables from CTD data.
 
@@ -19,15 +21,15 @@ class DeriveCDTVariables(BaseStep):
     Inherits from BaseStep and processes data stored in the context dictionary.
 
     Attributes:
-        step_name (str): Identifier for this processing step ("Derive CDT")
+        step_name (str): Identifier for this processing step ("Derive CTD")
     """
 
-    step_name = "Derive CDT"
+    step_name = "Derive CTD"
 
     def run(self):
         """
-        Execute the CDT variable derivation process. The following varibales are
-        required: ['TIME', 'LATITUDE', 'LONGITUDE', 'CNDC', 'PRES', 'TEMP']
+        Execute the CTD variable derivation process. The following varibales are
+        required: ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
 
         This method performs the following operations:
         1. Validates that data exists in the context
@@ -56,10 +58,10 @@ class DeriveCDTVariables(BaseStep):
         # Apply unit conversions to raw sensor measurements
         # TODO: This following two lines should become redundant when BODC releases OG1-like datasets
         conversion_dict = {
-            'CNDC': self.parameters["conductivity_unit_conversion_factor"],      # Conductivity conversion
-            'PRES': self.parameters["pressure_unit_conversion_factor"],          # Pressure conversion
-            'LATITUDE': self.parameters["latitude_longitude_conversion_factor"], # Latitude conversion
-            'LONGITUDE': self.parameters["latitude_longitude_conversion_factor"] # Longitude conversion
+            "CNDC": self.parameters["conductivity_unit_conversion_factor"],      # Conductivity conversion
+            "PRES": self.parameters["pressure_unit_conversion_factor"],          # Pressure conversion
+            "LATITUDE": self.parameters["latitude_longitude_conversion_factor"], # Latitude conversion
+            "LONGITUDE": self.parameters["latitude_longitude_conversion_factor"] # Longitude conversion
         }
 
         # Apply conversion factors to each variable
@@ -69,7 +71,7 @@ class DeriveCDTVariables(BaseStep):
         # Convert xarray Dataset to Polars DataFrame for efficient numerical processing
         # Extract only the variables needed for GSW calculations
         df = pl.from_pandas(
-            data[['TIME', 'LATITUDE', 'LONGITUDE', 'CNDC', 'PRES', 'TEMP']]
+            data[["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]]
             .to_dataframe(), nan_to_null=False
         )
 
@@ -78,23 +80,23 @@ class DeriveCDTVariables(BaseStep):
         if self.parameters["interpolate_latitude_longitude"]:
             df = df.with_columns(
                 # Replace infinite values and NaN with None, then interpolate along TIME dimension
-                *(pl.col(var_name).replace([np.inf, -np.inf, np.nan], None).interpolate_by('TIME')
-                  for var_name in ['LATITUDE', 'LONGITUDE'])
+                *(pl.col(var_name).replace([np.inf, -np.inf, np.nan], None).interpolate_by("TIME")
+                  for var_name in ["LATITUDE", "LONGITUDE"])
             )
 
         # Define GSW (Gibbs SeaWater) function calls for deriving oceanographic variables
         # Each tuple contains: (output_variable_name, gsw_function, [required_input_variables])
         gsw_function_calls = (
-            ('DEPTH', gsw.z_from_p, ['PRES', 'LATITUDE']),
-            ('PRAC_SALINITY', gsw.SP_from_C, ['CNDC', 'TEMP', 'PRES']),
-            ('ABS_SALINITY', gsw.SA_from_SP, ['PRAC_SALINITY', 'PRES', 'LONGITUDE', 'LATITUDE']),
-            ('CONS_TEMP', gsw.CT_from_t, ['ABS_SALINITY', 'TEMP', 'PRES']),
-            ('DENSITY', gsw.rho, ['ABS_SALINITY', 'CONS_TEMP', 'PRES'])
+            ("DEPTH", gsw.z_from_p, ["PRES", "LATITUDE"]),
+            ("PRAC_SALINITY", gsw.SP_from_C, ["CNDC", "TEMP", "PRES"]),
+            ("ABS_SALINITY", gsw.SA_from_SP, ["PRAC_SALINITY", "PRES", "LONGITUDE", "LATITUDE"]),
+            ("CONS_TEMP", gsw.CT_from_t, ["ABS_SALINITY", "TEMP", "PRES"]),
+            ("DENSITY", gsw.rho, ["ABS_SALINITY", "CONS_TEMP", "PRES"])
         )
 
         # Process each GSW function call to derive new variables
         for var_name, func, args in gsw_function_calls:
-            print(f'[Derive CTD Variables] Deriving {var_name}...')
+            print(f"[Derive CTD] Deriving {var_name}...")
 
             # Use Polars struct operations to efficiently apply GSW functions
             # This approach handles vectorized operations across the entire dataset
@@ -110,35 +112,35 @@ class DeriveCDTVariables(BaseStep):
 
         # Define metadata for each derived variable following CF conventions
         variable_metadata = {
-            'DEPTH': {
+            "DEPTH": {
                 "long_name": "Depth from surface (negative down as defined by TEOS-10)",
                 "units": "meters [m]",
                 "standard_name": "DEPTH",
                 "valid_min": -10925,  # Mariana Trench depth
                 "valid_max": 1,         # Above sea level
             },
-            'PRAC_SALINITY': {
+            "PRAC_SALINITY": {
                 "long_name": "Practical salinity",
                 "units": "unitless",
                 "standard_name": "PRAC_SALINITY",
                 "valid_min": 2,   # Extremely fresh water
                 "valid_max": 42,  # Hypersaline conditions
             },
-            'ABS_SALINITY': {
+            "ABS_SALINITY": {
                 "long_name": "Absolute salinity",
                 "units": "g/kg",
                 "standard_name": "ABS_SALINITY",
                 "valid_min": 0,    # Pure water
                 "valid_max": 1000, # Pure salt (theoretical maximum)
             },
-            'CONS_TEMP': {
+            "CONS_TEMP": {
                 "long_name": "Conservative temperature",
                 "units": "°C",
                 "standard_name": "CONS_TEMP",
                 "valid_min": -2,   # Freezing point of seawater
                 "valid_max": 102,  # Boiling point of seawater
             },
-            'DENSITY': {
+            "DENSITY": {
                 "long_name": "Density",
                 "units": "kg/m3",
                 "standard_name": "DENSITY",

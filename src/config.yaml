@@ -7,19 +7,18 @@ pipeline:
 steps:
   - name: "Load OG1"
     parameters:
-      file_path: "/home/adamwa/Downloads/Churchill_647_R.nc" # Path to the input NetCDF file
+      file_path: "" # Path to the input NetCDF file
       add_meta: false # Add metadata to the data
-      add_depth: true  # Add depth information to the data
       add_elapsed_time: false
-      lat_label: "DEPLOYMENT_LATITUDE"
     diagnostics: false  # Enable diagnostics
   
-  - name: "Find Profiles"
+  - name: "Derive CTD"
     parameters:
-      gradient_thresholds: [0.02, -0.02]
-      filter_window_sizes: ["10s", "20s"]
-      depth_column: "DEPTH"
-    diagnostics: true
+      conductivity_unit_conversion_factor: 10
+      pressure_unit_conversion_factor: 10
+      latitude_longitude_conversion_factor: 0.01
+      interpolate_latitude_longitude: true
+      diagnostics: true
 
   # - name: "ADJ: Salinity"
   #   parameters:
@@ -28,8 +27,8 @@ steps:
   #     windowLength: 21 # Length of the window for QC
   #   diagnostics: true  # Enable diagnostics for QC step
 
-  - name: "Data Export"
-    parameters:
-      export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
-      output_path: "../../examples/data/OG1/exported_Churchill_647_R.nc"
-    diagnostics: false  # Disable diagnostics for export step
+#  - name: "Data Export"
+#    parameters:
+#      export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
+#      output_path: "../../examples/data/OG1/exported_Churchill_647_R.nc"
+#    diagnostics: false  # Disable diagnostics for export step

@@ -3,5 +3,5 @@
 from toolbox.pipeline import Pipeline
 
 if __name__ == "__main__":
-    pipeline = Pipeline("src/config.yaml")
+    pipeline = Pipeline("config.yaml")
     pipeline.run()
