@@ -1,8 +1,8 @@
 """Class definition for Calibration steps."""
 
 #### Mandatory imports ####
-from ..base_step import BaseStep
-import utils.diagnostics as diag
+from toolbox.steps.base_step import BaseStep, register_step
+import toolbox.utils.diagnostics as diag
 
 
 class FactoryCalibrationStep(BaseStep):

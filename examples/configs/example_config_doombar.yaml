@@ -1,0 +1,35 @@
+# Pipeline Configuration
+pipeline:
+  name: "Data Processing Pipeline"
+  description: "A pipeline for processing and analyzing multi-dimensional data"
+  visualisation: false  # Enable visualisation of the pipeline
+# Steps in the pipeline
+steps:
+  - name: "Load OG1"
+    parameters:
+      file_path: "/home/adamwa/Downloads/Doombar_648_R.nc" # Path to the input NetCDF file
+      add_meta: false # Add metadata to the data
+      add_depth: true  # Add depth information to the data
+      add_elapsed_time: false
+      lat_label: "DEPLOYMENT_LATITUDE"
+    diagnostics: false  # Enable diagnostics
+  
+  - name: "Find Profiles"
+    parameters:
+      gradient_thresholds: [0.02, -0.02]
+      filter_window_sizes: ["10s", "20s"]
+      depth_column: "DEPTH"
+    diagnostics: true
+
+  # - name: "ADJ: Salinity"
+  #   parameters:
+  #     CTLag: True
+  #     ThermalLag: True
+  #     windowLength: 21 # Length of the window for QC
+  #   diagnostics: true  # Enable diagnostics for QC step
+
+  - name: "Data Export"
+    parameters:
+      export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
+      output_path: "../../examples/data/OG1/exported_Doombar_648_R.nc"
+    diagnostics: false  # Disable diagnostics for export step

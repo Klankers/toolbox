@@ -1,8 +1,8 @@
 """Class definition for loading data steps."""
 
 #### Mandatory imports ####
-from ..base_step import BaseStep
-import utils.diagnostics as diag
+from toolbox.steps.base_step import BaseStep, register_step
+import toolbox.utils.diagnostics as diag
 
 #### Custom imports ####
 import xarray as xr
@@ -11,6 +11,7 @@ import numpy as np
 import gsw
 
 
+@register_step
 class LoadOG1(BaseStep):
     """
     Step for loading OG1 data.
@@ -31,8 +32,8 @@ class LoadOG1(BaseStep):
     def run(self):
 
         source = self.parameters["file_path"]
-        print(f"Params: {self.parameters}")
-        print(f"[LoadData] Loading {source} OG1")
+        self.log(f"Params: {self.parameters}")
+        self.log(f"Loading {source} OG1")
         # load data from xarray
         self.data = xr.open_dataset(source)
 
@@ -52,7 +53,7 @@ class LoadOG1(BaseStep):
             )
 
         # Generate diagnostics if enabled
-        print(f"[LoadData] Diagnostics: {self.diagnostics}")
+        self.log(f"Diagnostics: {self.diagnostics}")
         if self.diagnostics:
             self.generate_diagnostics()
 
@@ -61,12 +62,12 @@ class LoadOG1(BaseStep):
         return self.context
 
     def generate_diagnostics(self):
-        print(f"[LoadData] Generating diagnostics...")
-        # Print summary stats
+        self.log(f"Generating diagnostics...")
+        # self.log summary stats
         diag.generate_info(self.data)
 
     def f_addMeta(self):
-        print(f"[LoadData] Adding metadata...")
+        self.log(f"Adding metadata...")
         # Add Length
         self.data.attrs["N_MEASUREMENTS_Length"] = int(
             (len(self.data.N_MEASUREMENTS.values))
@@ -115,12 +116,12 @@ class LoadOG1(BaseStep):
             }
         except Exception as e:
             if type(e) == AttributeError:
-                print(
+                self.log(
                     "ERROR: The TIME variable does not appear in the netCDF file. These functions are only intended"
                     " for use with OG1 format netCDF files."
                 )
             else:
-                print(f"{type(e)}: Something unexpected happened: \n {e}")
+                self.log(f"{type(e)}: Something unexpected happened: \n {e}")
 
     def f_addDepth(self, lat_label="LATITUDE"):
         """
@@ -129,11 +130,11 @@ class LoadOG1(BaseStep):
         try:
             p, lat = self.data["PRES"].values, self.data[lat_label].values
         except KeyError as e:
-            print(
+            self.log(
                 f"ERROR: The {lat_label} variable does not appear in the netCDF file. These functions are only intended"
                 " for use with OG1 format netCDF files."
             )
-            print(f"Available variables: {list(self.data.keys())}")
+            self.log(f"Available variables: {list(self.data.keys())}")
             raise e
         # use GSW to convert pressure to depth
         depth = -1 * gsw.conversions.z_from_p(p, lat)

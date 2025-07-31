@@ -1,7 +1,7 @@
 """Pipeline Class"""
 
 import yaml
-from steps import create_step, STEP_CLASSES
+from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
 from graphviz import Digraph
 
 
@@ -13,13 +13,32 @@ class Pipeline:
         self.graph = Digraph("Pipeline", format="png", graph_attr={"rankdir": "TB"})
 
         if config_path:
-            # Load pipeline configuration from file
             with open(config_path, "r") as file:
                 config = yaml.safe_load(file)
-            # Add steps from config
-            self.steps = config["steps"]
             self.global_parameters = config["pipeline"]
+            self.build_steps(config["steps"])
         self._context = None
+
+    def build_steps(self, steps_config, parent_name=None):
+        """Recursively build steps from configuration"""
+        for step in steps_config:
+            # Check if the step has required stpes already imported
+            REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
+            for required_step in REQUIRED_STEPS:
+                if required_step not in STEP_CLASSES:
+                    raise ValueError(
+                        f"Required step '{required_step}' for '{step['name']}' is not found."
+                    )
+            self.add_step(
+                step_name=step["name"],
+                parameters=step.get("parameters", {}),
+                diagnostics=step.get("diagnostics", False),
+                parent_name=parent_name,
+                run_immediately=False,
+            )
+            # Recurse into substeps
+            if "substeps" in step:
+                self.build_steps(step["substeps"], parent_name=step["name"])
 
     def add_step(
         self,
@@ -31,8 +50,11 @@ class Pipeline:
     ):
         """Dynamically adds a step and optionally runs it immediately"""
         if step_name not in STEP_CLASSES:
+            print(STEP_CLASSES)
             # Check if the step is recognised
-            raise ValueError(f"Step '{step_name}' is not recognized.")
+            raise ValueError(
+                f"Step '{step_name}' is not recognized. or missing @register_step."
+            )
 
         step_config = {
             "name": step_name,
@@ -131,3 +153,74 @@ class Pipeline:
             add_to_graph(step, step_order=step_order)
 
         self.graph.render("pipeline_visualisation", view=True)
+
+    def generate_config(self):
+        """Generate a configuration dictionary from the current pipeline setup"""
+        return {
+            "pipeline": (
+                self.global_parameters if hasattr(self, "global_parameters") else {}
+            ),
+            "steps": self.steps,
+        }
+
+    def export_config(self, output_path="generated_pipeline.yaml"):
+        config_dict = self.generate_config()
+        with open(output_path, "w") as f:
+            yaml.dump(config_dict, f, sort_keys=False)
+        print(f"Pipeline config exported to {output_path}")
+        return config_dict
+
+
+class PipelineManager:
+    """A class enabling the execution of multiple pipelines in sequence."""
+
+    def __init__(self):
+        self.pipelines = {}
+        self.alignment_map = {}
+
+    def load_mission_control(self, config_path):
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # Add pipelines
+        for p in config.get("pipelines", []):
+            self.add_pipeline(p["name"], p["config"])
+
+        # Store alignment rules
+        for var in config.get("alignment", {}).get("variables", []):
+            std_name = var["standard_name"]
+            self.alignment_map[std_name] = var["aliases"]
+
+    def add_pipeline(self, name, config_path):
+        if name in self.pipelines:
+            raise ValueError(f"Pipeline '{name}' already added.")
+        self.pipelines[name] = Pipeline(config_path)
+
+    def run_all(self):
+        for name, pipeline in self.pipelines.items():
+            print("#" * 20)
+            print(f"Running pipeline: {name}")
+            pipeline.run()
+
+    def get_contexts(self):
+        return {name: p._context for name, p in self.pipelines.items()}
+
+    def align_variable(self, standard_name):
+        aliases = self.alignment_map.get(standard_name)
+        if not aliases:
+            raise ValueError(f"No alias map for variable: {standard_name}")
+
+        contexts = self.get_contexts()
+        aligned = {}
+
+        for pipeline_name, alias in aliases.items():
+            if pipeline_name not in contexts:
+                raise ValueError(f"Pipeline '{pipeline_name}' not found.")
+            context = contexts[pipeline_name]
+            if alias not in context:
+                raise ValueError(
+                    f"'{alias}' not found in pipeline '{pipeline_name}' context."
+                )
+            aligned[pipeline_name] = context[alias]
+
+        return aligned

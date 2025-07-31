@@ -1,58 +1,57 @@
-"""Step Factory"""
-
-import inspect
 import os
 import importlib
-from .base_step import BaseStep
+import pathlib
+from .base_step import BaseStep, REGISTERED_STEPS
 
-# Automatically populate STEP_CLASSES by inspecting custom step classes
 STEP_CLASSES = {}
+
+STEP_DEPENDENCIES = {
+    "QC: Salinity": ["Load OG1"],
+}
 
 
 def discover_steps():
-    """Dynamically populate the STEP_CLASSES dictionary from custom step classes."""
-    # Get the path to the custom directory
-    custom_dir = os.path.join(os.path.dirname(__file__), "custom")
+    """Dynamically discover and import step modules from the custom directory."""
+    base_dir = pathlib.Path(__file__).parent.resolve()
+    custom_dir = base_dir / "custom"
+    print(f"[Discovery] Scanning for step modules in {custom_dir}")
 
-    # Get all Python files in the custom directory (excluding __init__.py)
-    module_files = [
-        f for f in os.listdir(custom_dir) if f.endswith(".py") and f != "__init__.py"
-    ]
-    print(f"Discovered custom steps: {module_files}")
+    for py_file in custom_dir.rglob("*.py"):
+        if py_file.name == "__init__.py":
+            continue
 
-    # Loop through each file, import the module, and inspect its classes
-    for module_file in module_files:
-        # Get the module name by stripping the '.py' extension
-        module_name = module_file[:-3]
+        # Convert file path to module path
+        relative_path = py_file.resolve().relative_to(base_dir)
+        module_name = ".".join(("toolbox.steps",) + relative_path.with_suffix("").parts)
 
-        # Dynamically import the module from the custom folder
-        module = importlib.import_module(f".custom.{module_name}", package="steps")
+        try:
+            print(f"[Discovery] Importing step module: {module_name}")
+            importlib.import_module(module_name)
+        except Exception as e:
+            print(f"[Discovery] Failed to import {module_name}: {e}")
 
-        # Inspect the module for classes
-        for _, step_class in inspect.getmembers(module, inspect.isclass):
-            # Ensure the class is a subclass of BaseStep
-            if issubclass(step_class, BaseStep) and step_class is not BaseStep:
-                # Get the step_name attribute, if it exists
-                step_name = getattr(step_class, "step_name", None)
-                if step_name:
-                    STEP_CLASSES[step_name] = step_class
-                    print(f"Registered step: {step_name} from {module_name}")
+    # Populate step classes
+    STEP_CLASSES.update(REGISTERED_STEPS)
+    for step_name in STEP_CLASSES:
+        print(f"[Discovery] Registered step: {step_name}")
 
 
-# Discover all steps during module import
+# Auto-discover steps on import
 discover_steps()
 
 
 def create_step(step_config, _context):
-    """Dynamically create a step instance from config"""
+    """Create a step instance based on the provided configuration."""
     step_name = step_config["name"]
     step_class = STEP_CLASSES.get(step_name)
     if not step_class:
-        raise ValueError(f"Step '{step_name}' not recognized.")
+        raise ValueError(
+            f"Step '{step_name}' not recognized or missing @register_step."
+        )
 
     return step_class(
         name=step_name,
         parameters=step_config.get("parameters", {}),
-        diagnostics=step_config.get("parameters", {}).get("diagnostics", False),
+        diagnostics=step_config.get("diagnostics", False),
         context=_context,
     )

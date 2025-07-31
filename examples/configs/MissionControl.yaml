@@ -1,0 +1,7 @@
+pipelines:
+  - name: Churchill
+    config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_churchill.yaml"
+  - name: Doombar
+    config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_doombar.yaml"
+
+
