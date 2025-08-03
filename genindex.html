@@ -60,9 +60,11 @@
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
@@ -90,13 +92,15 @@
 </li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.add_step">add_step() (toolbox.pipeline.Pipeline method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/variables/salinity/index.html#toolbox.steps.custom.variables.salinity.AdjustSalinity">AdjustSalinity (class in toolbox.steps.custom.variables.salinity)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.align_variable">align_variable() (toolbox.pipeline.PipelineManager method)</a>
 </li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.alignment_map">alignment_map (toolbox.pipeline.PipelineManager attribute)</a>
+</li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.ArgoQCStep">ArgoQCStep (class in toolbox.steps.custom.argo_qc)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -144,16 +148,22 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/derive_ctd/index.html#toolbox.steps.custom.derive_ctd.DeriveCTDVariables">DeriveCTDVariables (class in toolbox.steps.custom.derive_ctd)</a>
 </li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_date_test.df">df (toolbox.steps.custom.argo_qc.impossible_date_test attribute)</a>
+
+      <ul>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_location_test.df">(toolbox.steps.custom.argo_qc.impossible_location_test attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.diagnostics">diagnostics (toolbox.steps.base_step.BaseStep attribute)</a>
 
       <ul>
         <li><a href="api/toolbox/steps/index.html#toolbox.steps.BaseStep.diagnostics">(toolbox.steps.BaseStep attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/toolbox/steps/index.html#toolbox.steps.discover_steps">discover_steps() (in module toolbox.steps)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/index.html#toolbox.steps.discover_steps">discover_steps() (in module toolbox.steps)</a>
+</li>
       <li><a href="api/toolbox/steps/custom/variables/salinity/index.html#toolbox.steps.custom.variables.salinity.AdjustSalinity.display_adj_profiles">display_adj_profiles() (toolbox.steps.custom.variables.salinity.AdjustSalinity method)</a>
 </li>
       <li><a href="api/toolbox/steps/custom/variables/salinity/index.html#toolbox.steps.custom.variables.salinity.AdjustSalinity.display_CTLag">display_CTLag() (toolbox.steps.custom.variables.salinity.AdjustSalinity method)</a>
@@ -186,14 +196,20 @@
 </li>
       <li><a href="api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.f_addMeta">f_addMeta() (toolbox.steps.custom.load_data.LoadOG1 method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.FactoryCalibrationStep">FactoryCalibrationStep (class in toolbox.steps.custom.calibration)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.find_profiles">find_profiles() (in module toolbox.steps.custom.find_profiles)</a>
 </li>
       <li><a href="api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.FindProfilesStep">FindProfilesStep (class in toolbox.steps.custom.find_profiles)</a>
 </li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_date_test.flags">flags (toolbox.steps.custom.argo_qc.impossible_date_test attribute)</a>
+
+      <ul>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_location_test.flags">(toolbox.steps.custom.argo_qc.impossible_location_test attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -224,7 +240,23 @@
 </li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.get_contexts">get_contexts() (toolbox.pipeline.PipelineManager method)</a>
 </li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.global_range_test">global_range_test() (in module toolbox.steps.custom.argo_qc)</a>
+</li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.graph">graph (toolbox.pipeline.Pipeline attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_date_test">impossible_date_test (class in toolbox.steps.custom.argo_qc)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_location_test">impossible_location_test (class in toolbox.steps.custom.argo_qc)</a>
+</li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_speed_test">impossible_speed_test() (in module toolbox.steps.custom.argo_qc)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -264,6 +296,8 @@
 </li>
         <li><a href="api/toolbox/steps/custom/index.html#module-toolbox.steps.custom">toolbox.steps.custom</a>
 </li>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#module-toolbox.steps.custom.argo_qc">toolbox.steps.custom.argo_qc</a>
+</li>
         <li><a href="api/toolbox/steps/custom/calibration/index.html#module-toolbox.steps.custom.calibration">toolbox.steps.custom.calibration</a>
 </li>
         <li><a href="api/toolbox/steps/custom/derive_ctd/index.html#module-toolbox.steps.custom.derive_ctd">toolbox.steps.custom.derive_ctd</a>
@@ -300,6 +334,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.ArgoQCStep.organise_flags">organise_flags() (toolbox.steps.custom.argo_qc.ArgoQCStep method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -313,23 +355,39 @@
 </li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager">PipelineManager (class in toolbox.pipeline)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.pipelines">pipelines (toolbox.pipeline.PipelineManager attribute)</a>
 </li>
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_boxplot">plot_boxplot() (in module toolbox.utils.diagnostics)</a>
 </li>
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_correlation_matrix">plot_correlation_matrix() (in module toolbox.utils.diagnostics)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_date_test.plot_diagnostics">plot_diagnostics() (toolbox.steps.custom.argo_qc.impossible_date_test method)</a>
+
+      <ul>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_location_test.plot_diagnostics">(toolbox.steps.custom.argo_qc.impossible_location_test method)</a>
+</li>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.QC_Test.plot_diagnostics">(toolbox.steps.custom.argo_qc.QC_Test method)</a>
+</li>
+      </ul></li>
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_histogram">plot_histogram() (in module toolbox.utils.diagnostics)</a>
 </li>
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_time_series">plot_time_series() (in module toolbox.utils.diagnostics)</a>
+</li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.position_on_land_test">position_on_land_test() (in module toolbox.steps.custom.argo_qc)</a>
+</li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.pressure_increasing_test">pressure_increasing_test() (in module toolbox.steps.custom.argo_qc)</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="Q">Q</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.QC_Test">QC_Test (class in toolbox.steps.custom.argo_qc)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/variables/salinity/index.html#toolbox.steps.custom.variables.salinity.QCSalinity">QCSalinity (class in toolbox.steps.custom.variables.salinity)</a>
 </li>
@@ -339,6 +397,8 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.regional_range_test">regional_range_test() (in module toolbox.steps.custom.argo_qc)</a>
+</li>
       <li><a href="api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.register_step">register_step() (in module toolbox.steps.base_step)</a>
 </li>
       <li><a href="api/toolbox/steps/index.html#toolbox.steps.REGISTERED_STEPS">REGISTERED_STEPS (in module toolbox.steps)</a>
@@ -347,12 +407,26 @@
         <li><a href="api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.REGISTERED_STEPS">(in module toolbox.steps.base_step)</a>
 </li>
       </ul></li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_date_test.return_qc">return_qc() (toolbox.steps.custom.argo_qc.impossible_date_test method)</a>
+
+      <ul>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_location_test.return_qc">(toolbox.steps.custom.argo_qc.impossible_location_test method)</a>
+</li>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.QC_Test.return_qc">(toolbox.steps.custom.argo_qc.QC_Test method)</a>
+</li>
+      </ul></li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.run">run() (toolbox.pipeline.Pipeline method)</a>
 
       <ul>
         <li><a href="api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.run">(toolbox.steps.base_step.BaseStep method)</a>
 </li>
         <li><a href="api/toolbox/steps/index.html#toolbox.steps.BaseStep.run">(toolbox.steps.BaseStep method)</a>
+</li>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.ArgoQCStep.run">(toolbox.steps.custom.argo_qc.ArgoQCStep method)</a>
+</li>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.SalinityQCStep.run">(toolbox.steps.custom.argo_qc.SalinityQCStep method)</a>
+</li>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.TemperatureQCStep.run">(toolbox.steps.custom.argo_qc.TemperatureQCStep method)</a>
 </li>
         <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.FactoryCalibrationStep.run">(toolbox.steps.custom.calibration.FactoryCalibrationStep method)</a>
 </li>
@@ -385,15 +459,21 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.SalinityQCStep">SalinityQCStep (class in toolbox.steps.custom.argo_qc)</a>
+</li>
       <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.SensorCalibrationStep">SensorCalibrationStep (class in toolbox.steps.custom.calibration)</a>
+</li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.spike_test">spike_test() (in module toolbox.steps.custom.argo_qc)</a>
 </li>
       <li><a href="api/toolbox/steps/index.html#toolbox.steps.STEP_CLASSES">STEP_CLASSES (in module toolbox.steps)</a>
 </li>
       <li><a href="api/toolbox/steps/index.html#toolbox.steps.STEP_DEPENDENCIES">STEP_DEPENDENCIES (in module toolbox.steps)</a>
 </li>
-      <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.FactoryCalibrationStep.step_name">step_name (toolbox.steps.custom.calibration.FactoryCalibrationStep attribute)</a>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.ArgoQCStep.step_name">step_name (toolbox.steps.custom.argo_qc.ArgoQCStep attribute)</a>
 
       <ul>
+        <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.FactoryCalibrationStep.step_name">(toolbox.steps.custom.calibration.FactoryCalibrationStep attribute)</a>
+</li>
         <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.SensorCalibrationStep.step_name">(toolbox.steps.custom.calibration.SensorCalibrationStep attribute)</a>
 </li>
         <li><a href="api/toolbox/steps/custom/derive_ctd/index.html#id0">(toolbox.steps.custom.derive_ctd.DeriveCTDVariables attribute)</a>, <a href="api/toolbox/steps/custom/derive_ctd/index.html#toolbox.steps.custom.derive_ctd.DeriveCTDVariables.step_name">[1]</a>
@@ -421,6 +501,14 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.TemperatureQCStep">TemperatureQCStep (class in toolbox.steps.custom.argo_qc)</a>
+</li>
+      <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_date_test.test_number">test_number (toolbox.steps.custom.argo_qc.impossible_date_test attribute)</a>
+
+      <ul>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.impossible_location_test.test_number">(toolbox.steps.custom.argo_qc.impossible_location_test attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/toolbox/steps/custom/variables/salinity/index.html#toolbox.steps.custom.variables.salinity.AdjustSalinity.thermal_lag_correction">thermal_lag_correction() (toolbox.steps.custom.variables.salinity.AdjustSalinity method)</a>
 </li>
       <li>
@@ -459,12 +547,21 @@
 </li>
       </ul></li>
       <li>
+    toolbox.steps.custom.argo_qc
+
+      <ul>
+        <li><a href="api/toolbox/steps/custom/argo_qc/index.html#module-toolbox.steps.custom.argo_qc">module</a>
+</li>
+      </ul></li>
+      <li>
     toolbox.steps.custom.calibration
 
       <ul>
         <li><a href="api/toolbox/steps/custom/calibration/index.html#module-toolbox.steps.custom.calibration">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     toolbox.steps.custom.derive_ctd
 
@@ -472,8 +569,6 @@
         <li><a href="api/toolbox/steps/custom/derive_ctd/index.html#module-toolbox.steps.custom.derive_ctd">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     toolbox.steps.custom.export
 
