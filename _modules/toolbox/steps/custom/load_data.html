@@ -75,6 +75,8 @@
 <span class="sd">        - file_path: Path to the OG1 data file.</span>
 <span class="sd">        - add_meta: Boolean flag to indicate whether to add metadata.</span>
 <span class="sd">        - add_elapsed_time: Boolean flag to indicate whether to add elapsed time.</span>
+<span class="sd">        - add_depth: Boolean flag to indicate whether to add depth.</span>
+<span class="sd">        - lat_label: Label for latitude variable in the dataset. (default: &quot;LATITUDE&quot;)</span>
 <span class="sd">        - diagnostics: Boolean flag to indicate whether to generate diagnostics.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -98,6 +100,15 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_elapsed_time</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">f_addElapsedTime</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_depth</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f_addDepth</span><span class="p">(</span>
+                <span class="n">lat_label</span><span class="o">=</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lat_label&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;lat_label&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+                    <span class="k">else</span> <span class="s2">&quot;LATITUDE&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
 
         <span class="c1"># Generate diagnostics if enabled</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Diagnostics: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -178,6 +189,35 @@
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">: Something unexpected happened: </span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LoadOG1.f_addDepth">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.f_addDepth">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_addDepth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat_label</span><span class="o">=</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts pressure to depth and appends it to the dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">lat_label</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ERROR: The </span><span class="si">{</span><span class="n">lat_label</span><span class="si">}</span><span class="s2"> variable does not appear in the netCDF file. These functions are only intended&quot;</span>
+                <span class="s2">&quot; for use with OG1 format netCDF files.&quot;</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="c1"># use GSW to convert pressure to depth</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">z_from_p</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">depth</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DEPTH</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth calculated following TEOS-10, implementation by GSW, see&quot;</span>
+            <span class="s2">&quot;https://github.com/TEOS-10/GSW-python. Dynamic height anomoly and&quot;</span>
+            <span class="s2">&quot;sea surface geopotential are assimed to be 0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;m&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth (z)&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span>
+            <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">10935</span><span class="p">,</span>
+        <span class="p">}</span></div>
 </div>
 
 </pre></div>
