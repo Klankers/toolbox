@@ -53,6 +53,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_median_datetime</span>
 
 
 <div class="viewcode-block" id="plot_time_series">
@@ -166,6 +169,155 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Missing Values in Xarray Dataset:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">missing</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Missing value check only supported for xarray Dataset &quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="summarising_profiles">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.summarising_profiles">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">summarising_profiles</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">source_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Summarise profiles from an xarray Dataset by computing medians of TIME, LATITUDE, LONGITUDE</span>
+<span class="sd">    grouped by PROFILE_NUMBER. Handles datetime median safely using pandas.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xr.Dataset</span>
+<span class="sd">        Input dataset with PROFILE_NUMBER as a coordinate.</span>
+
+<span class="sd">    source_name : str</span>
+<span class="sd">        Name of the glider/source to include in output.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        Profile-level summary DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Dataset must include PROFILE_NUMBER.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
+
+    <span class="n">summary_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">]</span>
+
+    <span class="n">medians</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">summary_vars</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">da</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">da</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+            <span class="n">da</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
+
+        <span class="n">grouped</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">da</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">):</span>
+            <span class="c1"># Use pandas to compute median datetime safely</span>
+            <span class="n">medians</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grouped</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">safe_median_datetime</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">medians</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grouped</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">medians</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;glider_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">source_name</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="s2">&quot;profile_id&quot;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># sort by time</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="find_closest_prof">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.find_closest_prof">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_closest_prof</span><span class="p">(</span><span class="n">df_a</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">df_b</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For each profile in df_a, find the closest profile in df_b based on time,</span>
+<span class="sd">    and calculate spatial distance to it.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_a : pd.DataFrame</span>
+<span class="sd">        Summary dataframe for glider A (reference).</span>
+
+<span class="sd">    df_b : pd.DataFrame</span>
+<span class="sd">        Summary dataframe for glider B (comparison).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        df_a with additional columns:</span>
+<span class="sd">            - closest_glider_b_profile</span>
+<span class="sd">            - glider_b_time_diff</span>
+<span class="sd">            - glider_b_distance_km</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">a_times</span> <span class="o">=</span> <span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">a_lats</span> <span class="o">=</span> <span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">a_lons</span> <span class="o">=</span> <span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="n">b_times</span> <span class="o">=</span> <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">b_lats</span> <span class="o">=</span> <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">b_lons</span> <span class="o">=</span> <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">b_ids</span> <span class="o">=</span> <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="n">closest_ids</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">time_diffs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">distances</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">a_time</span><span class="p">,</span> <span class="n">a_lat</span><span class="p">,</span> <span class="n">a_lon</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">a_times</span><span class="p">,</span> <span class="n">a_lats</span><span class="p">,</span> <span class="n">a_lons</span><span class="p">):</span>
+        <span class="n">time_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">b_times</span> <span class="o">-</span> <span class="n">a_time</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">time_diff</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+
+        <span class="n">closest_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_ids</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+        <span class="n">time_diffs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time_diff</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">([</span><span class="n">a_lat</span><span class="p">,</span> <span class="n">a_lon</span><span class="p">,</span> <span class="n">b_lats</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">b_lons</span><span class="p">[</span><span class="n">idx</span><span class="p">]])):</span>
+            <span class="n">dist_km</span> <span class="o">=</span> <span class="n">geodesic</span><span class="p">((</span><span class="n">a_lat</span><span class="p">,</span> <span class="n">a_lon</span><span class="p">),</span> <span class="p">(</span><span class="n">b_lats</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">b_lons</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span><span class="o">.</span><span class="n">km</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dist_km</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">distances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dist_km</span><span class="p">)</span>
+
+    <span class="n">df_result</span> <span class="o">=</span> <span class="n">df_a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_result</span><span class="p">[</span><span class="s2">&quot;closest_glider_b_profile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">closest_ids</span>
+    <span class="n">df_result</span><span class="p">[</span><span class="s2">&quot;glider_b_time_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_diffs</span>
+    <span class="n">df_result</span><span class="p">[</span><span class="s2">&quot;glider_b_distance_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distances</span>
+
+    <span class="k">return</span> <span class="n">df_result</span></div>
+
+
+
+<div class="viewcode-block" id="plot_distance_ts">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_distance_ts">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_distance_ts</span><span class="p">(</span><span class="n">matchup_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">glider_ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">glider_comp</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot time series of distance between glider_ref and closest glider_comp profiles.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    matchup_df : pd.DataFrame</span>
+<span class="sd">        Output from find_closest_prof().</span>
+
+<span class="sd">    glider_ref : str</span>
+<span class="sd">        Name of the reference glider.</span>
+
+<span class="sd">    glider_comp : str</span>
+<span class="sd">        Name of the comparison glider.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">matchup_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;glider_name&quot;</span><span class="p">):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">group</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">],</span>
+            <span class="n">group</span><span class="p">[</span><span class="s2">&quot;glider_b_distance_km&quot;</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+            <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Datetime&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Distance to Closest Profile (km)&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Distance between </span><span class="si">{</span><span class="n">glider_ref</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">glider_comp</span><span class="si">}</span><span class="s2"> Over Time&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
 
 </pre></div>
 

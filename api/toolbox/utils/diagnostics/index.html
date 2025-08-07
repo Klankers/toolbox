@@ -73,6 +73,15 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.diagnostics.check_missing_values" title="toolbox.utils.diagnostics.check_missing_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_missing_values</span></code></a>(data)</p></td>
 <td><p>Check for missing values in the dataset.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.diagnostics.summarising_profiles" title="toolbox.utils.diagnostics.summarising_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summarising_profiles</span></code></a>(→ pandas.DataFrame)</p></td>
+<td><p>Summarise profiles from an xarray Dataset by computing medians of TIME, LATITUDE, LONGITUDE</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.diagnostics.find_closest_prof" title="toolbox.utils.diagnostics.find_closest_prof"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_closest_prof</span></code></a>(→ pandas.DataFrame)</p></td>
+<td><p>For each profile in df_a, find the closest profile in df_b based on time,</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.diagnostics.plot_distance_ts" title="toolbox.utils.diagnostics.plot_distance_ts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_distance_ts</span></code></a>(matchup_df, glider_ref, glider_comp)</p></td>
+<td><p>Plot time series of distance between glider_ref and closest glider_comp profiles.</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -112,6 +121,71 @@
 <dt class="sig sig-object py" id="toolbox.utils.diagnostics.check_missing_values">
 <span class="sig-prename descclassname"><span class="pre">toolbox.utils.diagnostics.</span></span><span class="sig-name descname"><span class="pre">check_missing_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/diagnostics.html#check_missing_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.diagnostics.check_missing_values" title="Link to this definition">¶</a></dt>
 <dd><p>Check for missing values in the dataset.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.diagnostics.summarising_profiles">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.diagnostics.</span></span><span class="sig-name descname"><span class="pre">summarising_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.1)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/diagnostics.html#summarising_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.diagnostics.summarising_profiles" title="Link to this definition">¶</a></dt>
+<dd><p>Summarise profiles from an xarray Dataset by computing medians of TIME, LATITUDE, LONGITUDE
+grouped by PROFILE_NUMBER. Handles datetime median safely using pandas.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> (<em>xr.Dataset</em>) – Input dataset with PROFILE_NUMBER as a coordinate.</p></li>
+<li><p><strong>source_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Name of the glider/source to include in output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Profile-level summary DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.diagnostics.find_closest_prof">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.diagnostics.</span></span><span class="sig-name descname"><span class="pre">find_closest_prof</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.1)"><span class="pre">pandas.DataFrame</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.1)"><span class="pre">pandas.DataFrame</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.1)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/diagnostics.html#find_closest_prof"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.diagnostics.find_closest_prof" title="Link to this definition">¶</a></dt>
+<dd><p>For each profile in df_a, find the closest profile in df_b based on time,
+and calculate spatial distance to it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df_a</strong> (<em>pd.DataFrame</em>) – Summary dataframe for glider A (reference).</p></li>
+<li><p><strong>df_b</strong> (<em>pd.DataFrame</em>) – Summary dataframe for glider B (comparison).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>df_a with additional columns:</dt><dd><ul class="simple">
+<li><p>closest_glider_b_profile</p></li>
+<li><p>glider_b_time_diff</p></li>
+<li><p>glider_b_distance_km</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.diagnostics.plot_distance_ts">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.diagnostics.</span></span><span class="sig-name descname"><span class="pre">plot_distance_ts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matchup_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.1)"><span class="pre">pandas.DataFrame</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">glider_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">glider_comp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/diagnostics.html#plot_distance_ts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.diagnostics.plot_distance_ts" title="Link to this definition">¶</a></dt>
+<dd><p>Plot time series of distance between glider_ref and closest glider_comp profiles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>matchup_df</strong> (<em>pd.DataFrame</em>) – Output from find_closest_prof().</p></li>
+<li><p><strong>glider_ref</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Name of the reference glider.</p></li>
+<li><p><strong>glider_comp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Name of the comparison glider.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

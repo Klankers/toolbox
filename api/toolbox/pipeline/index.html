@@ -143,30 +143,62 @@
 <span class="sig-name descname"><span class="pre">alignment_map</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.alignment_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.alignment_map" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.settings">
+<span class="sig-name descname"><span class="pre">settings</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.settings" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.load_mission_control">
 <span class="sig-name descname"><span class="pre">load_mission_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.load_mission_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.load_mission_control" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Load pipeline and alignment configuration from a mission control YAML file.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.add_pipeline">
 <span class="sig-name descname"><span class="pre">add_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.add_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.add_pipeline" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Add a single pipeline with a unique name.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.run_all">
 <span class="sig-name descname"><span class="pre">run_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.run_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.run_all" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Run all registered pipelines and cache the resulting contexts.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.get_contexts">
 <span class="sig-name descname"><span class="pre">get_contexts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.get_contexts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.get_contexts" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Retrieve the context dictionary from each pipeline.</p>
+</dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.align_variable">
-<span class="sig-name descname"><span class="pre">align_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">standard_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.align_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.align_variable" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.get_cached_contexts">
+<span class="sig-name descname"><span class="pre">get_cached_contexts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.get_cached_contexts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.get_cached_contexts" title="Link to this definition">¶</a></dt>
+<dd><p>Return previously cached contexts after run_all().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.summarise_all_profiles">
+<span class="sig-name descname"><span class="pre">summarise_all_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.1)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.summarise_all_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.summarise_all_profiles" title="Link to this definition">¶</a></dt>
+<dd><p>For all pipelines, summarise profiles and plot glider-to-glider distance time series.
+This includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Computing median TIME, LATITUDE, LONGITUDE per profile</p></li>
+<li><p>Matching each profile to its closest in time from another source</p></li>
+<li><p>Plotting a distance grid comparing all gliders</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Concatenated summary of all glider profiles, with closest match info appended.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

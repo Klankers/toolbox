@@ -14,7 +14,10 @@
   "api/toolbox/steps/custom/variables/index": [],
   "api/toolbox/steps/custom/variables/salinity/index": [],
   "api/toolbox/steps/index": [],
+  "api/toolbox/utils/alignment/index": [],
+  "api/toolbox/utils/calibration/index": [],
   "api/toolbox/utils/diagnostics/index": [],
   "api/toolbox/utils/index": [],
+  "api/toolbox/utils/time/index": [],
   "index": []
 }

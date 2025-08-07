@@ -98,8 +98,6 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/variables/salinity/index.html#toolbox.steps.custom.variables.salinity.AdjustSalinity">AdjustSalinity (class in toolbox.steps.custom.variables.salinity)</a>
 </li>
-      <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.align_variable">align_variable() (toolbox.pipeline.PipelineManager method)</a>
-</li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.alignment_map">alignment_map (toolbox.pipeline.PipelineManager attribute)</a>
 </li>
       <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.ArgoQCStep">ArgoQCStep (class in toolbox.steps.custom.argo_qc)</a>
@@ -200,6 +198,8 @@
 </li>
       <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.FactoryCalibrationStep">FactoryCalibrationStep (class in toolbox.steps.custom.calibration)</a>
 </li>
+      <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.find_closest_prof">find_closest_prof() (in module toolbox.utils.diagnostics)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.find_profiles">find_profiles() (in module toolbox.steps.custom.find_profiles)</a>
@@ -239,6 +239,8 @@
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.generate_info">generate_info() (in module toolbox.utils.diagnostics)</a>
 </li>
       <li><a href="api/toolbox/steps/custom/gen_data/index.html#toolbox.steps.custom.gen_data.GenerateData">GenerateData (class in toolbox.steps.custom.gen_data)</a>
+</li>
+      <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.get_cached_contexts">get_cached_contexts() (toolbox.pipeline.PipelineManager method)</a>
 </li>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.get_contexts">get_contexts() (toolbox.pipeline.PipelineManager method)</a>
 </li>
@@ -318,7 +320,13 @@
 </li>
         <li><a href="api/toolbox/utils/index.html#module-toolbox.utils">toolbox.utils</a>
 </li>
+        <li><a href="api/toolbox/utils/alignment/index.html#module-toolbox.utils.alignment">toolbox.utils.alignment</a>
+</li>
+        <li><a href="api/toolbox/utils/calibration/index.html#module-toolbox.utils.calibration">toolbox.utils.calibration</a>
+</li>
         <li><a href="api/toolbox/utils/diagnostics/index.html#module-toolbox.utils.diagnostics">toolbox.utils.diagnostics</a>
+</li>
+        <li><a href="api/toolbox/utils/time/index.html#module-toolbox.utils.time">toolbox.utils.time</a>
 </li>
       </ul></li>
   </ul></td>
@@ -373,6 +381,8 @@
         <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.QC_Test.plot_diagnostics">(toolbox.steps.custom.argo_qc.QC_Test method)</a>
 </li>
       </ul></li>
+      <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_distance_ts">plot_distance_ts() (in module toolbox.utils.diagnostics)</a>
+</li>
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_histogram">plot_histogram() (in module toolbox.utils.diagnostics)</a>
 </li>
       <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_time_series">plot_time_series() (in module toolbox.utils.diagnostics)</a>
@@ -461,9 +471,13 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/toolbox/utils/time/index.html#toolbox.utils.time.safe_median_datetime">safe_median_datetime() (in module toolbox.utils.time)</a>
+</li>
       <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.SalinityQCStep">SalinityQCStep (class in toolbox.steps.custom.argo_qc)</a>
 </li>
       <li><a href="api/toolbox/steps/custom/calibration/index.html#toolbox.steps.custom.calibration.SensorCalibrationStep">SensorCalibrationStep (class in toolbox.steps.custom.calibration)</a>
+</li>
+      <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.settings">settings (toolbox.pipeline.PipelineManager attribute)</a>
 </li>
       <li><a href="api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.spike_test">spike_test() (in module toolbox.steps.custom.argo_qc)</a>
 </li>
@@ -496,6 +510,10 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.steps">steps (toolbox.pipeline.Pipeline attribute)</a>
+</li>
+      <li><a href="api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.summarise_all_profiles">summarise_all_profiles() (toolbox.pipeline.PipelineManager method)</a>
+</li>
+      <li><a href="api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.summarising_profiles">summarising_profiles() (in module toolbox.utils.diagnostics)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -562,8 +580,6 @@
         <li><a href="api/toolbox/steps/custom/calibration/index.html#module-toolbox.steps.custom.calibration">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     toolbox.steps.custom.derive_ctd
 
@@ -578,6 +594,8 @@
         <li><a href="api/toolbox/steps/custom/export/index.html#module-toolbox.steps.custom.export">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     toolbox.steps.custom.find_profiles
 
@@ -621,10 +639,31 @@
 </li>
       </ul></li>
       <li>
+    toolbox.utils.alignment
+
+      <ul>
+        <li><a href="api/toolbox/utils/alignment/index.html#module-toolbox.utils.alignment">module</a>
+</li>
+      </ul></li>
+      <li>
+    toolbox.utils.calibration
+
+      <ul>
+        <li><a href="api/toolbox/utils/calibration/index.html#module-toolbox.utils.calibration">module</a>
+</li>
+      </ul></li>
+      <li>
     toolbox.utils.diagnostics
 
       <ul>
         <li><a href="api/toolbox/utils/diagnostics/index.html#module-toolbox.utils.diagnostics">module</a>
+</li>
+      </ul></li>
+      <li>
+    toolbox.utils.time
+
+      <ul>
+        <li><a href="api/toolbox/utils/time/index.html#module-toolbox.utils.time">module</a>
 </li>
       </ul></li>
   </ul></td>

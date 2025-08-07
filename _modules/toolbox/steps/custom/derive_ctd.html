@@ -104,15 +104,13 @@
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If no data is found in the context</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Derive CTD Variables] Processing CTD...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing CTD...&quot;</span><span class="p">)</span>
 
         <span class="c1"># Validate that data exists in the processing context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;[Derive CTD Variables] No data found in context. Please load data first.&quot;</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No data found in context. Please load data first.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Derive CTD Variables] Data found in context.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
 
@@ -167,7 +165,7 @@
 
         <span class="c1"># Process each GSW function call to derive new variables</span>
         <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">gsw_function_calls</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Derive CTD] Deriving </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deriving </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
 
             <span class="c1"># Use Polars struct operations to efficiently apply GSW functions</span>
             <span class="c1"># This approach handles vectorized operations across the entire dataset</span>
@@ -177,9 +175,9 @@
                 <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">var_name</span><span class="p">)</span>
             <span class="p">)</span>
 
-        <span class="c1"># Print diagnostic information if diagnostics are enabled</span>
+        <span class="c1"># self.log diagnostic information if diagnostics are enabled</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">percentiles</span><span class="o">=</span><span class="p">[]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">percentiles</span><span class="o">=</span><span class="p">[]))</span>
 
         <span class="c1"># Define metadata for each derived variable following CF conventions</span>
         <span class="n">variable_metadata</span> <span class="o">=</span> <span class="p">{</span>
