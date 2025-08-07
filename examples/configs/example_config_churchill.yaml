@@ -26,7 +26,7 @@ steps:
       gradient_thresholds: [0.02, -0.02]
       filter_window_sizes: ["10s", "20s"]
       depth_column: "DEPTH"
-    diagnostics: true
+    diagnostics: false
 
   # - name: "ADJ: Salinity"
   #   parameters:
