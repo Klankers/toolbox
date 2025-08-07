@@ -1,0 +1,44 @@
+# Temporary file for storing all of the config blocks for each step.
+
+  - name: "Load OG1"
+    parameters:
+      file_path: "" # Path to the input NetCDF file
+      add_meta: false # Add metadata to the data
+      add_depth: true  # Add depth information to the data
+      add_elapsed_time: false
+      lat_label: "DEPLOYMENT_LATITUDE"
+      diagnostics: false  # Enable diagnostics
+
+  - name: "Generate Data"
+    parameters:
+      sampling_info: [ '2025-01-01', '2025-06-01', 300 ]  # [start_date ('y-m-d'), end_date ('y-m-d'), sample_period (seconds)]
+      additional_variables: [ 'foo', 'bar' ]  # additional column names to generate
+      value_limits: { 'foo': [ 3, 4 ] }  # dict of [lower, upper] limits on the random values for specified variables
+      diagnostics: true
+
+  - name: "Derive CDT"
+    parameters:
+      conductivity_unit_conversion_factor: 10
+      pressure_unit_conversion_factor: 10
+      latitude_longitude_conversion_factor: 0.01
+      interpolate_latitude_longitude: true
+      diagnostics: true
+
+  - name: "Argo QC"
+    parameters:
+      step_order: null # null causes default order. Define which QC tests to perform using a list, eg. [2, 3, 5, 9].
+                       # Tests are run from left to right. All tests are defined in src/toolbox/steps/custom/qc.py
+      diagnostics: true
+
+  - name: "Find Profiles"
+    parameters:
+      gradient_thresholds: [ 0.02, -0.02 ]
+      filter_window_sizes: [ "10s", "20s" ]
+      depth_column: "DEPTH"
+      diagnostics: true
+
+  - name: "Data Export"
+    parameters:
+      export_format: "netcdf"  # Define the export format (e.g., OG1, CSV, etc.)
+      output_path: ""
+    diagnostics: false  # Disable diagnostics for export step

@@ -7,13 +7,18 @@ pipeline:
 steps:
   - name: "Load OG1"
     parameters:
-      file_path: "/home/adamwa/Downloads/Churchill_647_R.nc" # Path to the input NetCDF file
+      file_path: "../../examples/data/OG1/Churchill_647_R.nc" # Path to the input NetCDF file
       add_meta: false # Add metadata to the data
-      add_depth: true  # Add depth information to the data
       add_elapsed_time: false
-      lat_label: "LATITUDE"
-      add_dev_cols: true  # Add missing columns for development purposes
     diagnostics: false  # Enable diagnostics
+
+  - name: "Derive CTD"
+    parameters:
+      conductivity_unit_conversion_factor: 10
+      pressure_unit_conversion_factor: 10
+      latitude_longitude_conversion_factor: 0.01
+      interpolate_latitude_longitude: true
+    diagnostics: true
   
   - name: "Find Profiles"
     parameters:
@@ -34,3 +39,4 @@ steps:
       export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
       output_path: "../../examples/data/OG1/exported_Churchill_647_R.nc"
     diagnostics: false  # Disable diagnostics for export step
+
