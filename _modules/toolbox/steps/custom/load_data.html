@@ -77,6 +77,7 @@
 <span class="sd">        - add_elapsed_time: Boolean flag to indicate whether to add elapsed time.</span>
 <span class="sd">        - add_depth: Boolean flag to indicate whether to add depth.</span>
 <span class="sd">        - lat_label: Label for latitude variable in the dataset. (default: &quot;LATITUDE&quot;)</span>
+<span class="sd">        - add_dev_cols: Boolean flag to indicate whether to add development columns.</span>
 <span class="sd">        - diagnostics: Boolean flag to indicate whether to generate diagnostics.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -109,6 +110,8 @@
                     <span class="k">else</span> <span class="s2">&quot;LATITUDE&quot;</span>
                 <span class="p">)</span>
             <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_dev_cols</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_missing_columns_dev</span><span class="p">()</span>
 
         <span class="c1"># Generate diagnostics if enabled</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Diagnostics: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -118,6 +121,23 @@
         <span class="c1"># add data to context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
+
+
+<div class="viewcode-block" id="LoadOG1.add_missing_columns_dev">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/load_data/index.html#toolbox.steps.custom.load_data.LoadOG1.add_missing_columns_dev">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_missing_columns_dev</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds missing columns to the dataset for development purposes.</span>
+<span class="sd">        This is a placeholder for future development.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Adding missing columns for development purposes...&quot;</span><span class="p">)</span>
+        <span class="c1"># look for TIME_CTD</span>
+        <span class="k">if</span> <span class="s2">&quot;TIME_CTD&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="c1"># copy TIME to TIME_CTD</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME_CTD&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TIME_CTD</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TIME</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">TIME_CTD</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;long_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;CTD Time&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Added TIME_CTD column to dataset. Derived from TIME.&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="LoadOG1.generate_diagnostics">
