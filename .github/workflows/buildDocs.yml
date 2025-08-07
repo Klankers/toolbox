@@ -26,9 +26,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r docs/requirements.txt
 
-      - name: Clean Build Directory
+      - name: Clean Python Cache and Docs Artifacts
         run: |
-          # Remove the previous build and autoapi directory if they exists
+          find . -name '__pycache__' -type d -exec rm -r {} +
+          find . -name '*.pyc' -delete
           rm -rf docs/_build/
           rm -rf docs/api/
           ls . 

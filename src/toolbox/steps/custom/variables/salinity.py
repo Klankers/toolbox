@@ -50,7 +50,7 @@ class AdjustSalinity(BaseStep):
         These coefficients should be valid for pumped SeaBird CTsail as described in Woo (2019) by using their flow rate in the conductivity cell.
         This function should further be adapted to unpumped CTD by taking into account the glider velocity through the water based on the pitch angle or a hydrodynamic flight model.
 
-        Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (http://dx.doi.org/ 10.26198/5c997b5fdc9bd).
+        Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (http://dx.doi.org/10.26198/5c997b5fdc9bd).
 
         Parameters
         -----------
@@ -175,9 +175,9 @@ class AdjustSalinity(BaseStep):
         for vari in varsi:
             if 1 in self.tsr.keys():  # Means call_CTlag was called before
                 self.tsr[2][vari] = xr.DataArray(
-                    np.full(self.tsr[0].time.shape[0], np.nan),
+                    np.full(self.tsr[0].TIME.shape[0], np.nan),
                     dims=["time"],
-                    coords=dict(time=self.tsr[0].time),
+                    coords=dict(time=self.tsr[0].TIME),
                 )
                 self.tsr[2][vari].attrs = self.tsr[0][vari[:-3]].attrs.copy()
                 self.tsr[2][vari].attrs["comment"] = (
@@ -185,7 +185,7 @@ class AdjustSalinity(BaseStep):
                     + " with CT lag alignment and cell thermal mass correction (coefficients of Morrison et al. 1994)"
                 )
             else:
-                self.tsr[2][vari].values = np.full(self.tsr[0].time.shape[0], np.nan)
+                self.tsr[2][vari].values = np.full(self.tsr[0].TIME.shape[0], np.nan)
                 self.tsr[2][vari].attrs = self.tsr[0][vari[:-3]].attrs.copy()
                 self.tsr[2][vari].attrs["comment"] = (
                     vari
@@ -338,11 +338,11 @@ class AdjustSalinity(BaseStep):
 
         varsi = ["CNDC_ADJ", "PSAL_ADJ", "DENSITY_ADJ", "SIGMA0_ADJ"]
         for vari in varsi:
-            dim_name = self.tsr[1].time.dims[0]  # typically 'N_MEASUREMENTS'
+            dim_name = self.tsr[1].TIME.dims[0]  # typically 'N_MEASUREMENTS'
             self.tsr[1][vari] = xr.DataArray(
                 np.full(self.tsr[1].dims[dim_name], np.nan),
                 dims=[dim_name],
-                coords={dim_name: self.tsr[1].time},
+                coords={dim_name: self.tsr[1].TIME},
             )
             self.tsr[1][vari].attrs = self.tsr[0][vari[:-3]].attrs.copy()
             self.tsr[1][vari].attrs["comment"] = vari + " with CT lag alignment"
@@ -515,7 +515,7 @@ class AdjustSalinity(BaseStep):
             vmax -= 0.1 * (vmax - vmin)
 
             cs[i] = ax[i].scatter(
-                self.tsrs.time,
+                self.tsrs.TIME,
                 -self.tsrs.DEPTH,
                 c=data,
                 cmap=colormaps[i],
@@ -567,7 +567,7 @@ class AdjustSalinity(BaseStep):
 
             if i == 2:
                 cs[i] = ax[i].scatter(
-                    self.tsrs.time,
+                    self.tsrs.TIME,
                     -self.tsrs.DEPTH,
                     c=data,
                     cmap=colormaps[i],
@@ -576,7 +576,7 @@ class AdjustSalinity(BaseStep):
                 )
             else:
                 cs[i] = ax[i].scatter(
-                    self.tsrs.time,
+                    self.tsrs.TIME,
                     -self.tsrs.DEPTH,
                     c=data,
                     cmap=colormaps[i],

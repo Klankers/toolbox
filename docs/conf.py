@@ -83,6 +83,7 @@ html_theme_options = {
 }
 html_baseurl = "https://noc-obg-autonomy.github.io/toolbox/"
 html_static_path = ["_static"]
+html_last_updated_fmt = "%b %d, %Y"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -121,3 +122,9 @@ autodoc_default_options = {
 }
 
 add_module_names = True
+
+pygments_style = "friendly"
+pygments_dark_style = "monokai"
+
+copybutton_prompt_text = r">>> |\$ "
+copybutton_prompt_is_regexp = True
