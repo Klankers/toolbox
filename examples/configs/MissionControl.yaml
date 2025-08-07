@@ -10,3 +10,8 @@ alignment:
       aliases:
         Churchill: CNDC
         Doombar: CNDC
+
+settings:
+  diagnostics:
+    show_plots: true
+    save_plots: false

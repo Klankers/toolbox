@@ -1,6 +1,15 @@
 """Pipeline Class"""
 
 import yaml
+import pandas as pd
+import xarray as xr
+from toolbox.utils.diagnostics import (
+    summarising_profiles,
+    find_closest_prof,
+    plot_distance_ts,
+)
+from matplotlib import pyplot as plt
+
 from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
 from graphviz import Digraph
 
@@ -175,52 +184,146 @@ class PipelineManager:
     """A class enabling the execution of multiple pipelines in sequence."""
 
     def __init__(self):
-        self.pipelines = {}
-        self.alignment_map = {}
+        self.pipelines = {}  # {pipeline_name: Pipeline instance}
+        self.alignment_map = {}  # {standard_name: {pipeline_name: alias}}
+        self._contexts = None  # stores the result of get_contexts()
+        self.settings = {}
 
     def load_mission_control(self, config_path):
+        """Load pipeline and alignment configuration from a mission control YAML file."""
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        # Add pipelines
-        for p in config.get("pipelines", []):
-            self.add_pipeline(p["name"], p["config"])
+        # Load pipelines
+        for entry in config.get("pipelines", []):
+            self.add_pipeline(entry["name"], entry["config"])
 
-        # Store alignment rules
-        for var in config.get("alignment", {}).get("variables", []):
-            std_name = var["standard_name"]
-            self.alignment_map[std_name] = var["aliases"]
+        # Load alignment variable aliases
+        alignment_vars = config.get("alignment", {}).get("variables", {})
+        for std_var, details in alignment_vars.items():
+            aliases = details.get("aliases", {})
+            self.alignment_map[std_var] = aliases
+
+        # Load settings
+        self.settings = config.get("settings", {})
 
     def add_pipeline(self, name, config_path):
+        """Add a single pipeline with a unique name."""
         if name in self.pipelines:
             raise ValueError(f"Pipeline '{name}' already added.")
         self.pipelines[name] = Pipeline(config_path)
 
     def run_all(self):
+        """Run all registered pipelines and cache the resulting contexts."""
         for name, pipeline in self.pipelines.items():
             print("#" * 20)
             print(f"Running pipeline: {name}")
             pipeline.run()
 
+        self._contexts = self.get_contexts()
+        print("#" * 20)
+        print("All pipelines executed successfully.")
+        print(f"Contexts cached: {self._contexts.keys()}")
+        print("#" * 20)
+
     def get_contexts(self):
+        """Retrieve the context dictionary from each pipeline."""
         return {name: p._context for name, p in self.pipelines.items()}
 
-    def align_variable(self, standard_name):
-        aliases = self.alignment_map.get(standard_name)
-        if not aliases:
-            raise ValueError(f"No alias map for variable: {standard_name}")
+    def get_cached_contexts(self):
+        """Return previously cached contexts after run_all()."""
+        if self._contexts is None:
+            raise RuntimeError("Pipelines must be run before accessing contexts.")
+        return self._contexts
 
-        contexts = self.get_contexts()
-        aligned = {}
+    def summarise_all_profiles(self) -> pd.DataFrame:
+        """
+        For all pipelines, summarise profiles and plot glider-to-glider distance time series.
+        This includes:
+            - Computing median TIME, LATITUDE, LONGITUDE per profile
+            - Matching each profile to its closest in time from another source
+            - Plotting a distance grid comparing all gliders
 
-        for pipeline_name, alias in aliases.items():
-            if pipeline_name not in contexts:
-                raise ValueError(f"Pipeline '{pipeline_name}' not found.")
-            context = contexts[pipeline_name]
-            if alias not in context:
-                raise ValueError(
-                    f"'{alias}' not found in pipeline '{pipeline_name}' context."
-                )
-            aligned[pipeline_name] = context[alias]
+        Returns
+        -------
+        pd.DataFrame
+            Concatenated summary of all glider profiles, with closest match info appended.
+        """
+        if self._contexts is None:
+            raise RuntimeError("Pipelines must be run before generating summaries.")
 
-        return aligned
+        # Extract diagnostic flags from settings
+        show_plots = self.settings.get("diagnostics", {}).get("show_plots", True)
+        output_path = self.settings.get("diagnostics", {}).get(
+            "distance_plot_output", None
+        )
+        print("[Pipeline Manager] Generating glider distance summaries...")
+        # Step 1: Generate per-glider summaries
+        summary_per_glider = {}
+        for pipeline_name, context in self._contexts.items():
+            ds = context["data"]
+            if not isinstance(ds, xr.Dataset):
+                raise TypeError(f"Pipeline '{pipeline_name}' has invalid dataset.")
+            else:
+                print(f"[Pipeline Manager] Processing dataset for {pipeline_name}...")
+            # Apply alias renaming for alignment vars
+            renamed_vars = {
+                alias: std
+                for std, alias_map in self.alignment_map.items()
+                if (alias := alias_map.get(pipeline_name)) and alias in ds
+            }
+            print(f"[Pipeline Manager] Renaming variables: {renamed_vars}")
+
+            ds = ds.rename(renamed_vars)
+            summary_df = summarising_profiles(ds, pipeline_name)
+            summary_per_glider[pipeline_name] = summary_df
+
+        # Step 2: Build pairwise distance plots
+        glider_names = list(summary_per_glider.keys())
+        grid_size = len(glider_names)
+        fig, axes = plt.subplots(
+            grid_size, grid_size, figsize=(15, 15), sharex=True, sharey=True
+        )
+        fig.suptitle("Distance between Gliders Over Time", fontsize=16)
+
+        combined_summaries = []
+
+        for i, g_id in enumerate(glider_names):
+            for j, g_b_id in enumerate(glider_names):
+                ref_df = summary_per_glider[g_id]
+                comp_df = summary_per_glider[g_b_id]
+
+                paired_df = find_closest_prof(ref_df, comp_df)
+                combined_summaries.append(paired_df)
+
+                ax = axes[i, j]
+                for name, group in paired_df.groupby("glider_name"):
+                    ax.plot(
+                        group["median_TIME"],
+                        group["glider_b_distance_km"],
+                        label=name,
+                        marker="o",
+                        linestyle="-",
+                    )
+
+                ax.set_title(f"{g_id} vs {g_b_id}")
+                ax.grid(True)
+                if i == grid_size - 1:
+                    ax.set_xlabel("Datetime")
+                if j == 0:
+                    ax.set_ylabel("Distance (km)")
+                if i == j:
+                    ax.legend()
+
+        fig.tight_layout()
+
+        if output_path:
+            plt.savefig(output_path)
+            print(f"[Diagnostics] Saved glider distance grid to: {output_path}")
+        elif show_plots:
+            plt.show()
+        else:
+            plt.close()
+
+        # Step 3: Return concatenated summary (optional)
+        return pd.concat(combined_summaries, ignore_index=True)
