@@ -24,6 +24,7 @@ class LoadOG1(BaseStep):
         - add_elapsed_time: Boolean flag to indicate whether to add elapsed time.
         - add_depth: Boolean flag to indicate whether to add depth.
         - lat_label: Label for latitude variable in the dataset. (default: "LATITUDE")
+        - add_dev_cols: Boolean flag to indicate whether to add development columns.
         - diagnostics: Boolean flag to indicate whether to generate diagnostics.
     """
 
@@ -51,6 +52,8 @@ class LoadOG1(BaseStep):
                     else "LATITUDE"
                 )
             )
+        if self.add_dev_cols:
+            self.add_missing_columns_dev()
 
         # Generate diagnostics if enabled
         self.log(f"Diagnostics: {self.diagnostics}")
@@ -60,6 +63,20 @@ class LoadOG1(BaseStep):
         # add data to context
         self.context["data"] = self.data
         return self.context
+
+    def add_missing_columns_dev(self):
+        """
+        Adds missing columns to the dataset for development purposes.
+        This is a placeholder for future development.
+        """
+        self.log("Adding missing columns for development purposes...")
+        # look for TIME_CTD
+        if "TIME_CTD" not in self.data:
+            # copy TIME to TIME_CTD
+            self.data["TIME_CTD"] = self.data["TIME"].copy()
+            self.data.TIME_CTD.attrs = self.data.TIME.attrs.copy()
+            self.data.TIME_CTD.attrs["long_name"] = "CTD Time"
+            self.log("Added TIME_CTD column to dataset. Derived from TIME.")
 
     def generate_diagnostics(self):
         self.log(f"Generating diagnostics...")

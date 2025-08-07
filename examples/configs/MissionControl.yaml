@@ -4,4 +4,9 @@ pipelines:
   - name: Doombar
     config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_doombar.yaml"
 
-
+alignment:
+  variables:
+    salinity:
+      aliases:
+        Churchill: CNDC
+        Doombar: CNDC
