@@ -1,20 +1,22 @@
 import polars as pl
 import xarray as xr
 import numpy as np
-from ..base_step import BaseStep
+from ..base_step import BaseStep, register_step
 from datetime import date, timedelta
 
+
+@register_step
 class GenerateData(BaseStep):
-    step_name = 'Generate Data'
+    step_name = "Generate Data"
 
     def run(self):
-        print(
-            '[Generate Data] Generating random data...'
-        )
+        print("[Generate Data] Generating random data...")
 
         # Check if the data is already in the context
         if "data" in self.context:
-            raise ValueError("[Generate Data] WARNING: Data found in context. This will be replaced by randomly generated data.")
+            raise ValueError(
+                "[Generate Data] WARNING: Data found in context. This will be replaced by randomly generated data."
+            )
 
         # Load config parameters
         start_date, end_date, sample_period = self.parameters["sampling_info"]
@@ -23,32 +25,30 @@ class GenerateData(BaseStep):
         diagnostics = self.parameters["diagnostics"]
 
         # Add aditional variables
-        variable_names = {'LATITUDE', 'LONGITUDE', 'PRES', 'TEMP', 'CNDC'}
+        variable_names = {"LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}
         variable_names.update(additional_variables)
 
         # Define variable limits and update with user values
         variable_limits = {
-            'LATITUDE': [-90, 90],  # Degrees
-            'LONGITUDE': [-180, 180],  # Degrees
-            'PRES': [0, 100],  # Bar
-            'TEMP': [0, 20],  # Celcius
-            'CNDC': [34, 35]  # S/m
+            "LATITUDE": [-90, 90],  # Degrees
+            "LONGITUDE": [-180, 180],  # Degrees
+            "PRES": [0, 100],  # Bar
+            "TEMP": [0, 20],  # Celcius
+            "CNDC": [34, 35],  # S/m
         }
         for variable_name, limits in user_value_limits.items():
             variable_limits[variable_name] = limits
         if diagnostics:
-            print(
-                f'[Generate Data] Variables: {variable_limits}'
-            )
+            print(f"[Generate Data] Variables: {variable_limits}")
 
         # Make time index for dataframe (df)
         df = pl.select(
             pl.datetime_range(
-                date(*map(int, start_date.split('-'))),
-                date(*map(int, end_date.split('-'))),
+                date(*map(int, start_date.split("-"))),
+                date(*map(int, end_date.split("-"))),
                 timedelta(seconds=sample_period),
-                time_unit="ns"
-            ).alias('TIME')
+                time_unit="ns",
+            ).alias("TIME")
         )
         data_length = len(df)
 
@@ -58,23 +58,26 @@ class GenerateData(BaseStep):
             if variable_name in variable_limits.keys():
                 lower, upper = variable_limits[variable_name]
                 if upper <= lower:
-                    raise ValueError(f'Upper limit must be greater than lower limit for {variable_name}')
+                    raise ValueError(
+                        f"Upper limit must be greater than lower limit for {variable_name}"
+                    )
             else:
                 print(
-                    f'[Generate Data] The additional variable {variable_name} has not been set limits. Defaulting to [0, 1].'
+                    f"[Generate Data] The additional variable {variable_name} has not been set limits. Defaulting to [0, 1]."
                 )
                 lower, upper = [0, 1]
 
             # Add the new column
             df = df.with_columns(
-                pl.lit(np.random.uniform(lower, upper, data_length))
-                .alias(variable_name)
+                pl.lit(np.random.uniform(lower, upper, data_length)).alias(
+                    variable_name
+                )
             )
 
         # Make the xarray data from the polars dataframe and ship it
         # TODO: Add metadata flexibility
         data = df.to_pandas().to_xarray()
-        data['N_PARAM'] = list(data.keys())
-        data = data.rename({'index': 'N_MEASUREMENTS'})
-        self.context['data'] = data
+        data["N_PARAM"] = list(data.keys())
+        data = data.rename({"index": "N_MEASUREMENTS"})
+        self.context["data"] = data
         return self.context

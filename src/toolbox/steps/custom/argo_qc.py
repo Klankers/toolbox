@@ -1,7 +1,7 @@
 """Class definition for quality control steps."""
 
 #### Mandatory imports ####
-from ..base_step import BaseStep
+from ..base_step import BaseStep, register_step
 import toolbox.utils.diagnostics as diag
 import polars as pl
 import xarray as xr
@@ -14,6 +14,7 @@ import matplotlib
 # TODO: Do we need a bin nan rows QC to speed up processing?
 
 
+@register_step
 class QC_Test(ABC):
 
     @abstractmethod
