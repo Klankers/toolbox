@@ -52,27 +52,29 @@
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">timedelta</span>
 
+
+<span class="nd">@register_step</span>
 <div class="viewcode-block" id="GenerateData">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/gen_data/index.html#toolbox.steps.custom.gen_data.GenerateData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GenerateData</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <div class="viewcode-block" id="GenerateData.step_name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/gen_data/index.html#toolbox.steps.custom.gen_data.GenerateData.step_name">[docs]</a>
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s1">&#39;Generate Data&#39;</span></div>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Generate Data&quot;</span></div>
 
 
 <div class="viewcode-block" id="GenerateData.run">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/gen_data/index.html#toolbox.steps.custom.gen_data.GenerateData.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span>
-            <span class="s1">&#39;[Generate Data] Generating random data...&#39;</span>
-        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Generate Data] Generating random data...&quot;</span><span class="p">)</span>
 
         <span class="c1"># Check if the data is already in the context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;[Generate Data] WARNING: Data found in context. This will be replaced by randomly generated data.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;[Generate Data] WARNING: Data found in context. This will be replaced by randomly generated data.&quot;</span>
+            <span class="p">)</span>
 
         <span class="c1"># Load config parameters</span>
         <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">sample_period</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;sampling_info&quot;</span><span class="p">]</span>
@@ -81,32 +83,30 @@
         <span class="n">diagnostics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">]</span>
 
         <span class="c1"># Add aditional variables</span>
-        <span class="n">variable_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;LATITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;PRES&#39;</span><span class="p">,</span> <span class="s1">&#39;TEMP&#39;</span><span class="p">,</span> <span class="s1">&#39;CNDC&#39;</span><span class="p">}</span>
+        <span class="n">variable_names</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">}</span>
         <span class="n">variable_names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">additional_variables</span><span class="p">)</span>
 
         <span class="c1"># Define variable limits and update with user values</span>
         <span class="n">variable_limits</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;LATITUDE&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>  <span class="c1"># Degrees</span>
-            <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">],</span>  <span class="c1"># Degrees</span>
-            <span class="s1">&#39;PRES&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>  <span class="c1"># Bar</span>
-            <span class="s1">&#39;TEMP&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span>  <span class="c1"># Celcius</span>
-            <span class="s1">&#39;CNDC&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">34</span><span class="p">,</span> <span class="mi">35</span><span class="p">]</span>  <span class="c1"># S/m</span>
+            <span class="s2">&quot;LATITUDE&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>  <span class="c1"># Degrees</span>
+            <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">],</span>  <span class="c1"># Degrees</span>
+            <span class="s2">&quot;PRES&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>  <span class="c1"># Bar</span>
+            <span class="s2">&quot;TEMP&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span>  <span class="c1"># Celcius</span>
+            <span class="s2">&quot;CNDC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">34</span><span class="p">,</span> <span class="mi">35</span><span class="p">],</span>  <span class="c1"># S/m</span>
         <span class="p">}</span>
         <span class="k">for</span> <span class="n">variable_name</span><span class="p">,</span> <span class="n">limits</span> <span class="ow">in</span> <span class="n">user_value_limits</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">variable_limits</span><span class="p">[</span><span class="n">variable_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">limits</span>
         <span class="k">if</span> <span class="n">diagnostics</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s1">&#39;[Generate Data] Variables: </span><span class="si">{</span><span class="n">variable_limits</span><span class="si">}</span><span class="s1">&#39;</span>
-            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Generate Data] Variables: </span><span class="si">{</span><span class="n">variable_limits</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="c1"># Make time index for dataframe (df)</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
             <span class="n">pl</span><span class="o">.</span><span class="n">datetime_range</span><span class="p">(</span>
-                <span class="n">date</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">start_date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">))),</span>
-                <span class="n">date</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">end_date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">))),</span>
+                <span class="n">date</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">start_date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))),</span>
+                <span class="n">date</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">end_date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))),</span>
                 <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">sample_period</span><span class="p">),</span>
-                <span class="n">time_unit</span><span class="o">=</span><span class="s2">&quot;ns&quot;</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s1">&#39;TIME&#39;</span><span class="p">)</span>
+                <span class="n">time_unit</span><span class="o">=</span><span class="s2">&quot;ns&quot;</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="n">data_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 
@@ -116,25 +116,28 @@
             <span class="k">if</span> <span class="n">variable_name</span> <span class="ow">in</span> <span class="n">variable_limits</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="n">variable_limits</span><span class="p">[</span><span class="n">variable_name</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">upper</span> <span class="o">&lt;=</span> <span class="n">lower</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Upper limit must be greater than lower limit for </span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Upper limit must be greater than lower limit for </span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s1">&#39;[Generate Data] The additional variable </span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s1"> has not been set limits. Defaulting to [0, 1].&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The additional variable </span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2"> has not been set limits. Defaulting to [0, 1].&quot;</span>
                 <span class="p">)</span>
                 <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
             <span class="c1"># Add the new column</span>
             <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">data_length</span><span class="p">))</span>
-                <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">variable_name</span><span class="p">)</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">data_length</span><span class="p">))</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span>
+                    <span class="n">variable_name</span>
+                <span class="p">)</span>
             <span class="p">)</span>
 
         <span class="c1"># Make the xarray data from the polars dataframe and ship it</span>
         <span class="c1"># TODO: Add metadata flexibility</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span><span class="o">.</span><span class="n">to_xarray</span><span class="p">()</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;N_PARAM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="s1">&#39;N_MEASUREMENTS&#39;</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_PARAM&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 </div>
 

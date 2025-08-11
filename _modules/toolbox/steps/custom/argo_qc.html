@@ -52,7 +52,7 @@
 <span></span><span class="sd">&quot;&quot;&quot;Class definition for quality control steps.&quot;&quot;&quot;</span>
 
 <span class="c1">#### Mandatory imports ####</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
@@ -65,6 +65,7 @@
 <span class="c1"># TODO: Do we need a bin nan rows QC to speed up processing?</span>
 
 
+<span class="nd">@register_step</span>
 <div class="viewcode-block" id="QC_Test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.QC_Test">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">QC_Test</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
