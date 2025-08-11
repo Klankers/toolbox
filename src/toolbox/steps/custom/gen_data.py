@@ -62,8 +62,8 @@ class GenerateData(BaseStep):
                         f"Upper limit must be greater than lower limit for {variable_name}"
                     )
             else:
-                print(
-                    f"[Generate Data] The additional variable {variable_name} has not been set limits. Defaulting to [0, 1]."
+                self.log(
+                    f"The additional variable {variable_name} has not been set limits. Defaulting to [0, 1]."
                 )
                 lower, upper = [0, 1]
 
