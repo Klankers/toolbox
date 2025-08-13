@@ -65,7 +65,6 @@
 <span class="c1"># TODO: Do we need a bin nan rows QC to speed up processing?</span>
 
 
-<span class="nd">@register_step</span>
 <div class="viewcode-block" id="QC_Test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.QC_Test">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">QC_Test</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
@@ -429,6 +428,7 @@
 
 
 
+<span class="nd">@register_step</span>
 <div class="viewcode-block" id="ArgoQCStep">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.ArgoQCStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ArgoQCStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
@@ -482,7 +482,7 @@
                 <span class="s2">&quot;[Argo QC] No data found in context. Please load data first.&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Argo QC] Data found in context.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
         <span class="c1"># Convert data to polars for fast processing</span>
         <span class="n">qc_variables</span> <span class="o">=</span> <span class="p">[</span>
@@ -535,30 +535,6 @@
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-</div>
-
-
-
-<div class="viewcode-block" id="SalinityQCStep">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.SalinityQCStep">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SalinityQCStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-<div class="viewcode-block" id="SalinityQCStep.run">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.SalinityQCStep.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[SalinityQC] Running QC with threshold </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;threshold&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
-</div>
-
-
-
-<div class="viewcode-block" id="TemperatureQCStep">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.TemperatureQCStep">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">TemperatureQCStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-<div class="viewcode-block" id="TemperatureQCStep.run">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/argo_qc/index.html#toolbox.steps.custom.argo_qc.TemperatureQCStep.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[TemperatureQC] Running QC with threshold </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;threshold&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span></div>
 </div>
 
 </pre></div>
