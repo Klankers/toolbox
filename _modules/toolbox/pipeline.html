@@ -393,7 +393,7 @@
         <span class="k">if</span> <span class="n">show_plots</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Plotting distance time grid...&quot;</span><span class="p">)</span>
             <span class="c1"># After generating all summaries...</span>
-            <span class="n">plot_distance_time_grid</span><span class="p">(</span>
+            <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">plot_distance_time_grid</span><span class="p">(</span>
                 <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
                 <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                     <span class="s2">&quot;distance_plot_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
@@ -411,8 +411,11 @@
 
                     <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
                     <span class="n">combined_summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span>
+            <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">combined_summaries</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Finding closest profiles across gliders...&quot;</span><span class="p">)</span>
+        <span class="c1"># compute time taken for caluclations</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
         <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
             <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
             <span class="n">time_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
@@ -422,8 +425,10 @@
             <span class="p">),</span>
             <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span>
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Heatmap grid plotted in </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">combined_summaries</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="k">return</span></div>
 </div>
 
 </pre></div>
