@@ -324,6 +324,10 @@
 
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">glider_names</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g_b_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">glider_names</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">g_id</span> <span class="o">==</span> <span class="n">g_b_id</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_id</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">g_b_id</span><span class="si">}</span><span class="s2"> (self-comparison)&quot;</span><span class="p">)</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
             <span class="n">ref_df</span> <span class="o">=</span> <span class="n">summaries</span><span class="p">[</span><span class="n">g_id</span><span class="p">]</span>
             <span class="n">comp_df</span> <span class="o">=</span> <span class="n">summaries</span><span class="p">[</span><span class="n">g_b_id</span><span class="p">]</span>
 
