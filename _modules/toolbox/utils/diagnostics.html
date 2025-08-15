@@ -56,6 +56,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_median_datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 
 <div class="viewcode-block" id="plot_time_series">
@@ -172,6 +173,9 @@
 
 
 
+<span class="c1">#### General Diagnostics Functions ####</span>
+
+
 <div class="viewcode-block" id="summarising_profiles">
 <a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.summarising_profiles">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">summarising_profiles</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">source_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
@@ -284,40 +288,262 @@
 
 
 
-<div class="viewcode-block" id="plot_distance_ts">
-<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_distance_ts">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">plot_distance_ts</span><span class="p">(</span><span class="n">matchup_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">glider_ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">glider_comp</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_distance_time_grid">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_distance_time_grid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_distance_time_grid</span><span class="p">(</span>
+    <span class="n">summaries</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot time series of distance between glider_ref and closest glider_comp profiles.</span>
+<span class="sd">    Plot a grid of distance-over-time plots for all glider pair combinations.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    matchup_df : pd.DataFrame</span>
-<span class="sd">        Output from find_closest_prof().</span>
+<span class="sd">    summaries : dict</span>
+<span class="sd">        Dictionary of {glider_name: pd.DataFrame} from summarising_profiles().</span>
 
-<span class="sd">    glider_ref : str</span>
-<span class="sd">        Name of the reference glider.</span>
+<span class="sd">    output_path : str, optional</span>
+<span class="sd">        If provided, the grid will be saved to this path.</span>
 
-<span class="sd">    glider_comp : str</span>
-<span class="sd">        Name of the comparison glider.</span>
+<span class="sd">    show : bool</span>
+<span class="sd">        If True, plt.show() will be called.</span>
+
+<span class="sd">    figsize : tuple</span>
+<span class="sd">        Size of the full figure.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">matchup_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;glider_name&quot;</span><span class="p">):</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-            <span class="n">group</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">],</span>
-            <span class="n">group</span><span class="p">[</span><span class="s2">&quot;glider_b_distance_km&quot;</span><span class="p">],</span>
-            <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
-            <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span>
+    <span class="n">glider_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">summaries</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">grid_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">glider_names</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+        <span class="n">grid_size</span><span class="p">,</span> <span class="n">grid_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Distance Between Gliders Over Time&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">glider_names</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g_b_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">glider_names</span><span class="p">):</span>
+            <span class="n">ref_df</span> <span class="o">=</span> <span class="n">summaries</span><span class="p">[</span><span class="n">g_id</span><span class="p">]</span>
+            <span class="n">comp_df</span> <span class="o">=</span> <span class="n">summaries</span><span class="p">[</span><span class="n">g_b_id</span><span class="p">]</span>
+
+            <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
+
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">paired_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_id</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">g_b_id</span><span class="si">}</span><span class="se">\n</span><span class="s2">(no data)&quot;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">paired_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;glider_name&quot;</span><span class="p">):</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="n">group</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">],</span>
+                    <span class="n">group</span><span class="p">[</span><span class="s2">&quot;glider_b_distance_km&quot;</span><span class="p">],</span>
+                    <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+                    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_id</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">g_b_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">grid_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Datetime&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Distance (km)&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Diagnostics] Saved glider distance grid to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<span class="c1">#### HEATMAPS ####</span>
+
+
+<div class="viewcode-block" id="find_candidate_glider_pairs">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.find_candidate_glider_pairs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_candidate_glider_pairs</span><span class="p">(</span>
+    <span class="n">df_a</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">df_b</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">glider_a_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">glider_b_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">time_thresh_hr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">dist_thresh_km</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Identify glider profile pairs within time and distance thresholds.</span>
+<span class="sd">    Returns a DataFrame with best match from glider B for each profile in A.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">df_a</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">df_b</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">df_a</span> <span class="o">=</span> <span class="n">df_a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_b</span> <span class="o">=</span> <span class="n">df_b</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">])</span>
+    <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">])</span>
+
+    <span class="n">matches</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">idx_a</span><span class="p">,</span> <span class="n">row_a</span> <span class="ow">in</span> <span class="n">df_a</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">time_diffs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="o">/</span> <span class="mf">3600.0</span>
+        <span class="p">)</span>
+        <span class="n">df_b_filtered</span> <span class="o">=</span> <span class="n">df_b</span><span class="p">[</span><span class="n">time_diffs</span> <span class="o">&lt;=</span> <span class="n">time_thresh_hr</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_diffs</span><span class="p">[</span><span class="n">time_diffs</span> <span class="o">&lt;=</span> <span class="n">time_thresh_hr</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="n">geodesic</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">],</span> <span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">]),</span>
+                    <span class="p">(</span><span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">],</span> <span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">]),</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">km</span>
+                <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">])</span>
+                <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">])</span>
+                <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">])</span>
+                <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">])</span>
+                <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row_b</span> <span class="ow">in</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()</span>
+        <span class="p">]</span>
+
+        <span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distances</span>
+        <span class="n">df_b_filtered</span> <span class="o">=</span> <span class="n">df_b_filtered</span><span class="p">[</span><span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dist_thresh_km</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">best_match</span> <span class="o">=</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()]</span>
+        <span class="n">matches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;glider_a_profile_id&quot;</span><span class="p">:</span> <span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;glider_name&quot;</span><span class="p">:</span> <span class="n">glider_a_name</span><span class="p">,</span>
+                <span class="s2">&quot;glider_b_profile_id&quot;</span><span class="p">:</span> <span class="n">best_match</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;glider_b_name&quot;</span><span class="p">:</span> <span class="n">glider_b_name</span><span class="p">,</span>
+                <span class="s2">&quot;time_diff_hr&quot;</span><span class="p">:</span> <span class="n">best_match</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;dist_km&quot;</span><span class="p">:</span> <span class="n">best_match</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">],</span>
+            <span class="p">}</span>
         <span class="p">)</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Datetime&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Distance to Closest Profile (km)&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Distance between </span><span class="si">{</span><span class="n">glider_ref</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">glider_comp</span><span class="si">}</span><span class="s2"> Over Time&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_heatmap_glider_df">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_heatmap_glider_df">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_heatmap_glider_df</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span>
+    <span class="n">matchup_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">time_bins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">dist_bins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">glider_a_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">glider_b_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot cumulative 2D histogram of time/distance matchups for a glider pair on a given axis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">matchup_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_a_name</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">glider_b_name</span><span class="si">}</span><span class="s2"> (no matches)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">H</span><span class="p">,</span> <span class="n">xedges</span><span class="p">,</span> <span class="n">yedges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram2d</span><span class="p">(</span>
+        <span class="n">matchup_df</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">],</span> <span class="n">matchup_df</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="p">[</span><span class="n">time_bins</span><span class="p">,</span> <span class="n">dist_bins</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">H_cum</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">yedges</span><span class="p">,</span> <span class="n">xedges</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">H_cum</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;PuBu&quot;</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Distance Threshold (km)&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Time Threshold (hr)&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_a_name</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">glider_b_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Annotate values</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">H_cum</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">H_cum</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">H_cum</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">x_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">yedges</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">yedges</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="n">y_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">xedges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">xedges</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">H_cum</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                    <span class="n">x_center</span><span class="p">,</span>
+                    <span class="n">y_center</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span>
+                    <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                    <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                    <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_glider_pair_heatmap_grid">
+<a class="viewcode-back" href="../../../api/toolbox/utils/diagnostics/index.html#toolbox.utils.diagnostics.plot_glider_pair_heatmap_grid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
+    <span class="n">summaries</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">time_bins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">dist_bins</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate an NxN grid of cumulative heatmaps for all glider pair combinations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">glider_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">summaries</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">grid_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">glider_names</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+        <span class="n">grid_size</span><span class="p">,</span> <span class="n">grid_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Heatmap of Matchups Between Gliders&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">glider_names</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g_b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">glider_names</span><span class="p">):</span>
+            <span class="n">df_a</span> <span class="o">=</span> <span class="n">summaries</span><span class="p">[</span><span class="n">g_a</span><span class="p">]</span>
+            <span class="n">df_b</span> <span class="o">=</span> <span class="n">summaries</span><span class="p">[</span><span class="n">g_b</span><span class="p">]</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+            <span class="n">matches</span> <span class="o">=</span> <span class="n">find_candidate_glider_pairs</span><span class="p">(</span>
+                <span class="n">df_a</span><span class="p">,</span>
+                <span class="n">df_b</span><span class="p">,</span>
+                <span class="n">glider_a_name</span><span class="o">=</span><span class="n">g_a</span><span class="p">,</span>
+                <span class="n">glider_b_name</span><span class="o">=</span><span class="n">g_b</span><span class="p">,</span>
+                <span class="n">time_thresh_hr</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">time_bins</span><span class="p">),</span>
+                <span class="n">dist_thresh_km</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">dist_bins</span><span class="p">),</span>
+            <span class="p">)</span>
+
+            <span class="n">plot_heatmap_glider_df</span><span class="p">(</span>
+                <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                <span class="n">matchup_df</span><span class="o">=</span><span class="n">matches</span><span class="p">,</span>
+                <span class="n">time_bins</span><span class="o">=</span><span class="n">time_bins</span><span class="p">,</span>
+                <span class="n">dist_bins</span><span class="o">=</span><span class="n">dist_bins</span><span class="p">,</span>
+                <span class="n">glider_a_name</span><span class="o">=</span><span class="n">g_a</span><span class="p">,</span>
+                <span class="n">glider_b_name</span><span class="o">=</span><span class="n">g_b</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Diagnostics] Saved glider heatmap grid to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 </pre></div>
 
