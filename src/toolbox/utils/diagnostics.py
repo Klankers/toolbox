@@ -247,6 +247,10 @@ def plot_distance_time_grid(
 
     for i, g_id in enumerate(glider_names):
         for j, g_b_id in enumerate(glider_names):
+            if g_id == g_b_id:
+                axes[i, j].set_title(f"{g_id} vs {g_b_id} (self-comparison)")
+                axes[i, j].axis("off")
+                continue
             ref_df = summaries[g_id]
             comp_df = summaries[g_b_id]
 
