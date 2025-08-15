@@ -389,19 +389,66 @@
         <span class="c1"># Step 2: Find closest profiles across gliders</span>
         <span class="c1"># Extract diagnostic flags from settings</span>
         <span class="n">show_plots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-
+        <span class="n">save_plots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_plots&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="n">distance_over_time_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;distance_over_time_matrix&quot;</span><span class="p">,</span> <span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">matchup_thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{}</span>
+        <span class="p">)</span>
+        <span class="n">max_time_threshold</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_time_threshold&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">max_distance_threshold</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_distance_threshold&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">bin_size</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bin_size&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">show_plots</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Plotting distance time grid...&quot;</span><span class="p">)</span>
-            <span class="c1"># After generating all summaries...</span>
-            <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">plot_distance_time_grid</span><span class="p">(</span>
-                <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
-                <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                    <span class="s2">&quot;distance_plot_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
-                <span class="p">),</span>
-                <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">distance_over_time_matrix</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Distance over time matrix is disabled.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Plotting distance time grid...&quot;</span><span class="p">)</span>
+                <span class="c1"># After generating all summaries...</span>
+                <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">plot_distance_time_grid</span><span class="p">(</span>
+                    <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
+                    <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="s2">&quot;distance_plot_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">matchup_thresholds</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;[Pipeline Manager] Matchup thresholds are not set. Skipping heatmap grid.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Finding closest profiles across gliders...&quot;</span><span class="p">)</span>
+                <span class="c1"># compute time taken for caluclations</span>
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
+                    <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
+                    <span class="n">time_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
+                    <span class="n">dist_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_distance_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
+                    <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="s2">&quot;heatmap_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Heatmap grid plotted in </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Skipping distance time grid plot.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Skipping plots.&quot;</span><span class="p">)</span>
             <span class="c1"># Generate combined_summaries without plotting</span>
             <span class="n">combined_summaries</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_id</span> <span class="ow">in</span> <span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -412,21 +459,6 @@
                     <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
                     <span class="n">combined_summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span>
             <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">combined_summaries</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Finding closest profiles across gliders...&quot;</span><span class="p">)</span>
-        <span class="c1"># compute time taken for caluclations</span>
-        <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-        <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
-            <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
-            <span class="n">time_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-            <span class="n">dist_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-            <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                <span class="s2">&quot;heatmap_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
-            <span class="p">),</span>
-            <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="n">end_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Heatmap grid plotted in </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">return</span></div>
 </div>
