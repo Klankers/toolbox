@@ -319,67 +319,87 @@ def find_candidate_glider_pairs(
     dist_thresh_km: float = 5.0,
 ) -> pd.DataFrame:
     """
-    Identify glider profile pairs within time and distance thresholds.
-    Returns a DataFrame with best match from glider B for each profile in A.
+    Vectorised version: match glider A profiles to glider B profiles within time and space thresholds.
+    Returns one match per glider A profile (closest B match within threshold).
     """
+
     if df_a.empty or df_b.empty:
         return pd.DataFrame()
 
-    df_a = df_a.copy()
-    df_b = df_b.copy()
-
+    # Ensure datetime format
     df_a["median_datetime"] = pd.to_datetime(df_a["median_TIME"])
     df_b["median_datetime"] = pd.to_datetime(df_b["median_TIME"])
 
-    matches = []
+    # Cartesian join: every profile A against every profile B
+    df_a["_key"] = 1
+    df_b["_key"] = 1
+    df_cross = pd.merge(df_a, df_b, on="_key", suffixes=("_a", "_b")).drop(
+        columns="_key"
+    )
 
-    for idx_a, row_a in df_a.iterrows():
-        time_diffs = (
-            np.abs(
-                (df_b["median_datetime"] - row_a["median_datetime"]).dt.total_seconds()
-            )
-            / 3600.0
-        )
-        df_b_filtered = df_b[time_diffs <= time_thresh_hr].copy()
-        df_b_filtered["time_diff_hr"] = time_diffs[time_diffs <= time_thresh_hr]
-
-        if df_b_filtered.empty:
-            continue
-
-        distances = [
+    # Time difference
+    df_cross["time_diff_hr"] = (
+        np.abs(
             (
-                geodesic(
-                    (row_a["median_LATITUDE"], row_a["median_LONGITUDE"]),
-                    (row_b["median_LATITUDE"], row_b["median_LONGITUDE"]),
-                ).km
-                if pd.notnull(row_a["median_LATITUDE"])
-                and pd.notnull(row_a["median_LONGITUDE"])
-                and pd.notnull(row_b["median_LATITUDE"])
-                and pd.notnull(row_b["median_LONGITUDE"])
-                else np.nan
-            )
-            for _, row_b in df_b_filtered.iterrows()
-        ]
-
-        df_b_filtered["dist_km"] = distances
-        df_b_filtered = df_b_filtered[df_b_filtered["dist_km"] <= dist_thresh_km]
-
-        if df_b_filtered.empty:
-            continue
-
-        best_match = df_b_filtered.loc[df_b_filtered["dist_km"].idxmin()]
-        matches.append(
-            {
-                "glider_a_profile_id": row_a["profile_id"],
-                "glider_name": glider_a_name,
-                "glider_b_profile_id": best_match["profile_id"],
-                "glider_b_name": glider_b_name,
-                "time_diff_hr": best_match["time_diff_hr"],
-                "dist_km": best_match["dist_km"],
-            }
+                df_cross["median_datetime_a"] - df_cross["median_datetime_b"]
+            ).dt.total_seconds()
         )
+        / 3600.0
+    )
 
-    return pd.DataFrame(matches)
+    # Filter time threshold early
+    df_cross = df_cross[df_cross["time_diff_hr"] <= time_thresh_hr]
+
+    if df_cross.empty:
+        return pd.DataFrame()
+
+    # Vectorised geodesic distance using np.vectorize
+    def compute_dist_km(lat_a, lon_a, lat_b, lon_b):
+        if pd.isna(lat_a) or pd.isna(lon_a) or pd.isna(lat_b) or pd.isna(lon_b):
+            return np.nan
+        return geodesic((lat_a, lon_a), (lat_b, lon_b)).km
+
+    dist_func = np.vectorize(compute_dist_km)
+
+    df_cross["dist_km"] = dist_func(
+        df_cross["median_LATITUDE_a"],
+        df_cross["median_LONGITUDE_a"],
+        df_cross["median_LATITUDE_b"],
+        df_cross["median_LONGITUDE_b"],
+    )
+
+    # Filter by distance threshold
+    df_cross = df_cross[df_cross["dist_km"] <= dist_thresh_km]
+
+    if df_cross.empty:
+        return pd.DataFrame()
+
+    # Keep only best match (min dist) per profile_id_a
+    best_matches = df_cross.loc[
+        df_cross.groupby("profile_id_a")["dist_km"].idxmin()
+    ].copy()
+
+    # Return clean structure
+    best_matches = best_matches.rename(
+        columns={
+            "profile_id_a": "glider_a_profile_id",
+            "profile_id_b": "glider_b_profile_id",
+        }
+    )
+
+    best_matches["glider_name"] = glider_a_name
+    best_matches["glider_b_name"] = glider_b_name
+
+    return best_matches[
+        [
+            "glider_a_profile_id",
+            "glider_name",
+            "glider_b_profile_id",
+            "glider_b_name",
+            "time_diff_hr",
+            "dist_km",
+        ]
+    ].reset_index(drop=True)
 
 
 def plot_heatmap_glider_df(
@@ -411,10 +431,10 @@ def plot_heatmap_glider_df(
     # add additional axis if top row or right column
     if i == 0:
         secax = ax.secondary_xaxis("top")
-        secax.set_xlabel("Time Threshold (hr)")
+        secax.set_xlabel("Distance Threshold (km)")
     if j == grid_size - 1:
         secax = ax.secondary_yaxis("right")
-        secax.set_ylabel("Distance Threshold (km)")
+        secax.set_ylabel("Time Threshold (hr)")
 
     if i == grid_size - 1:
         ax.set_xlabel("Distance Threshold (km)")
