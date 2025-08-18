@@ -399,67 +399,87 @@
     <span class="n">dist_thresh_km</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Identify glider profile pairs within time and distance thresholds.</span>
-<span class="sd">    Returns a DataFrame with best match from glider B for each profile in A.</span>
+<span class="sd">    Vectorised version: match glider A profiles to glider B profiles within time and space thresholds.</span>
+<span class="sd">    Returns one match per glider A profile (closest B match within threshold).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="n">df_a</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">df_b</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
 
-    <span class="n">df_a</span> <span class="o">=</span> <span class="n">df_a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">df_b</span> <span class="o">=</span> <span class="n">df_b</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
+    <span class="c1"># Ensure datetime format</span>
     <span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">])</span>
     <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">])</span>
 
-    <span class="n">matches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Cartesian join: every profile A against every profile B</span>
+    <span class="n">df_a</span><span class="p">[</span><span class="s2">&quot;_key&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;_key&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">df_cross</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_a</span><span class="p">,</span> <span class="n">df_b</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;_key&quot;</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;_a&quot;</span><span class="p">,</span> <span class="s2">&quot;_b&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="s2">&quot;_key&quot;</span>
+    <span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">idx_a</span><span class="p">,</span> <span class="n">row_a</span> <span class="ow">in</span> <span class="n">df_a</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-        <span class="n">time_diffs</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">df_b</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
-            <span class="p">)</span>
-            <span class="o">/</span> <span class="mf">3600.0</span>
-        <span class="p">)</span>
-        <span class="n">df_b_filtered</span> <span class="o">=</span> <span class="n">df_b</span><span class="p">[</span><span class="n">time_diffs</span> <span class="o">&lt;=</span> <span class="n">time_thresh_hr</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_diffs</span><span class="p">[</span><span class="n">time_diffs</span> <span class="o">&lt;=</span> <span class="n">time_thresh_hr</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-            <span class="k">continue</span>
-
-        <span class="n">distances</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># Time difference</span>
+    <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
             <span class="p">(</span>
-                <span class="n">geodesic</span><span class="p">(</span>
-                    <span class="p">(</span><span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">],</span> <span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">]),</span>
-                    <span class="p">(</span><span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">],</span> <span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">]),</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">km</span>
-                <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">])</span>
-                <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">])</span>
-                <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">])</span>
-                <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">row_b</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">])</span>
-                <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row_b</span> <span class="ow">in</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()</span>
-        <span class="p">]</span>
-
-        <span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distances</span>
-        <span class="n">df_b_filtered</span> <span class="o">=</span> <span class="n">df_b_filtered</span><span class="p">[</span><span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dist_thresh_km</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-            <span class="k">continue</span>
-
-        <span class="n">best_match</span> <span class="o">=</span> <span class="n">df_b_filtered</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df_b_filtered</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()]</span>
-        <span class="n">matches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;glider_a_profile_id&quot;</span><span class="p">:</span> <span class="n">row_a</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;glider_name&quot;</span><span class="p">:</span> <span class="n">glider_a_name</span><span class="p">,</span>
-                <span class="s2">&quot;glider_b_profile_id&quot;</span><span class="p">:</span> <span class="n">best_match</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;glider_b_name&quot;</span><span class="p">:</span> <span class="n">glider_b_name</span><span class="p">,</span>
-                <span class="s2">&quot;time_diff_hr&quot;</span><span class="p">:</span> <span class="n">best_match</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;dist_km&quot;</span><span class="p">:</span> <span class="n">best_match</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">],</span>
-            <span class="p">}</span>
+                <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_datetime_a&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_datetime_b&quot;</span><span class="p">]</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
         <span class="p">)</span>
+        <span class="o">/</span> <span class="mf">3600.0</span>
+    <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span></div>
+    <span class="c1"># Filter time threshold early</span>
+    <span class="n">df_cross</span> <span class="o">=</span> <span class="n">df_cross</span><span class="p">[</span><span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">time_thresh_hr</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="c1"># Vectorised geodesic distance using np.vectorize</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_dist_km</span><span class="p">(</span><span class="n">lat_a</span><span class="p">,</span> <span class="n">lon_a</span><span class="p">,</span> <span class="n">lat_b</span><span class="p">,</span> <span class="n">lon_b</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lat_a</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lon_a</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lat_b</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lon_b</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="n">geodesic</span><span class="p">((</span><span class="n">lat_a</span><span class="p">,</span> <span class="n">lon_a</span><span class="p">),</span> <span class="p">(</span><span class="n">lat_b</span><span class="p">,</span> <span class="n">lon_b</span><span class="p">))</span><span class="o">.</span><span class="n">km</span>
+
+    <span class="n">dist_func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">compute_dist_km</span><span class="p">)</span>
+
+    <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist_func</span><span class="p">(</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE_a&quot;</span><span class="p">],</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE_a&quot;</span><span class="p">],</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE_b&quot;</span><span class="p">],</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE_b&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Filter by distance threshold</span>
+    <span class="n">df_cross</span> <span class="o">=</span> <span class="n">df_cross</span><span class="p">[</span><span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dist_thresh_km</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="c1"># Keep only best match (min dist) per profile_id_a</span>
+    <span class="n">best_matches</span> <span class="o">=</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">df_cross</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;profile_id_a&quot;</span><span class="p">)[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># Return clean structure</span>
+    <span class="n">best_matches</span> <span class="o">=</span> <span class="n">best_matches</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;profile_id_a&quot;</span><span class="p">:</span> <span class="s2">&quot;glider_a_profile_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;profile_id_b&quot;</span><span class="p">:</span> <span class="s2">&quot;glider_b_profile_id&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="n">best_matches</span><span class="p">[</span><span class="s2">&quot;glider_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glider_a_name</span>
+    <span class="n">best_matches</span><span class="p">[</span><span class="s2">&quot;glider_b_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glider_b_name</span>
+
+    <span class="k">return</span> <span class="n">best_matches</span><span class="p">[</span>
+        <span class="p">[</span>
+            <span class="s2">&quot;glider_a_profile_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;glider_name&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;glider_b_profile_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;glider_b_name&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;time_diff_hr&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;dist_km&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
 
@@ -494,10 +514,10 @@
     <span class="c1"># add additional axis if top row or right column</span>
     <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">secax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">secondary_xaxis</span><span class="p">(</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
-        <span class="n">secax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time Threshold (hr)&quot;</span><span class="p">)</span>
+        <span class="n">secax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Distance Threshold (km)&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">grid_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">secax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">secondary_yaxis</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
-        <span class="n">secax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Distance Threshold (km)&quot;</span><span class="p">)</span>
+        <span class="n">secax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Time Threshold (hr)&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">grid_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Distance Threshold (km)&quot;</span><span class="p">)</span>
