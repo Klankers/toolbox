@@ -84,14 +84,24 @@
 <div class="viewcode-block" id="add_datetime_secondary_xaxis">
 <a class="viewcode-back" href="../../../api/toolbox/utils/time/index.html#toolbox.utils.time.add_datetime_secondary_xaxis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">add_datetime_secondary_xaxis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">):</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mdates</span>
-
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a secondary datetime x-axis (on top) that mirrors the main x-axis ticks and labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Create secondary axis with identity transform</span>
     <span class="n">secax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">secondary_xaxis</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">))</span>
-    <span class="n">secax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">))</span>
-    <span class="n">secax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">rotation</span><span class="p">)</span>
+
+    <span class="c1"># Copy tick locator and formatter from the main axis</span>
+    <span class="n">secax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_major_locator</span><span class="p">())</span>
+    <span class="n">secax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_major_formatter</span><span class="p">())</span>
+
+    <span class="c1"># Set label and rotation</span>
     <span class="n">secax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Datetime&quot;</span><span class="p">)</span>
+    <span class="n">secax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">rotation</span><span class="p">)</span>
+
+    <span class="c1"># Optional: alignment tweak</span>
     <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">secax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">():</span>
         <span class="n">label</span><span class="o">.</span><span class="n">set_ha</span><span class="p">(</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">secax</span></div>
 
 </pre></div>
