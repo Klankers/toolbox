@@ -51,6 +51,85 @@
           
   <section id="module-toolbox.utils.alignment">
 <span id="toolbox-utils-alignment"></span><h1>toolbox.utils.alignment<a class="headerlink" href="#module-toolbox.utils.alignment" title="Link to this heading">¶</a></h1>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.interpolate_DEPTH" title="toolbox.utils.alignment.interpolate_DEPTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interpolate_DEPTH</span></code></a>(df)</p></td>
+<td><p>Interpolate missing DEPTH values in a DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.aggregate_vars" title="toolbox.utils.alignment.aggregate_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregate_vars</span></code></a>(df, vars_to_aggregate)</p></td>
+<td><p>Aggregate specified variables by profile_id and DEPTH_bin.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.merge_depth_binned_profiles" title="toolbox.utils.alignment.merge_depth_binned_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_depth_binned_profiles</span></code></a>(→ pandas.DataFrame)</p></td>
+<td><p>Merge depth-binned profile data for a target glider and multiple others.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.interpolate_DEPTH">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">interpolate_DEPTH</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#interpolate_DEPTH"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.interpolate_DEPTH" title="Link to this definition">¶</a></dt>
+<dd><p>Interpolate missing DEPTH values in a DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with a ‘DEPTH’ column.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DataFrame with interpolated ‘DEPTH’ values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.aggregate_vars">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">aggregate_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars_to_aggregate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#aggregate_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.aggregate_vars" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate specified variables by profile_id and DEPTH_bin.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with ‘profile_id’, ‘DEPTH_bin’, and variables to aggregate.</p></li>
+<li><p><strong>vars_to_aggregate</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – List of variable names to aggregate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Aggregated DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.merge_depth_binned_profiles">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">merge_depth_binned_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">binned_dfs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DEPTH_bin'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#merge_depth_binned_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.merge_depth_binned_profiles" title="Link to this definition">¶</a></dt>
+<dd><p>Merge depth-binned profile data for a target glider and multiple others.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the target glider (used as the left/base of the join).</p></li>
+<li><p><strong>binned_dfs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – Dictionary of {glider_name: binned_df} where each DataFrame includes
+‘profile_id’ and ‘DEPTH_bin’, and is the result of interpolate_DEPTH + aggregate_vars.</p></li>
+<li><p><strong>bin_column</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the depth bin column to join on.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Merged DataFrame with depth-binned values from target and all other gliders,
+using consistent suffixes like _TARGET_{target_name} and _{glider}.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 </section>
 
 

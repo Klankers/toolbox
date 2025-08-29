@@ -61,6 +61,7 @@
     <span class="n">plot_distance_time_grid</span><span class="p">,</span>
     <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">STEP_DEPENDENCIES</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">graphviz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Digraph</span>
@@ -284,6 +285,7 @@
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.settings">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="p">{}</span></div>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_summary_ran</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="PipelineManager.load_mission_control">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.load_mission_control">[docs]</a>
@@ -362,6 +364,7 @@
 <span class="sd">        pd.DataFrame</span>
 <span class="sd">            Concatenated summary of all glider profiles, with closest match info appended.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_summary_ran</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Pipelines must be run before generating summaries.&quot;</span><span class="p">)</span>
 
@@ -384,7 +387,7 @@
 
             <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">renamed_vars</span><span class="p">)</span>
             <span class="n">summary_df</span> <span class="o">=</span> <span class="n">summarising_profiles</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">)</span>
-            <span class="n">summary_per_glider</span><span class="p">[</span><span class="n">pipeline_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary_df</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">pipeline_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary_df</span>
 
         <span class="c1"># Step 2: Find closest profiles across gliders</span>
         <span class="c1"># Extract diagnostic flags from settings</span>
@@ -393,7 +396,7 @@
         <span class="n">distance_over_time_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
             <span class="s2">&quot;distance_over_time_matrix&quot;</span><span class="p">,</span> <span class="kc">False</span>
         <span class="p">)</span>
-        <span class="n">matchup_thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">matchup_thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
             <span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{}</span>
         <span class="p">)</span>
         <span class="n">max_time_threshold</span> <span class="o">=</span> <span class="p">(</span>
@@ -418,14 +421,14 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Plotting distance time grid...&quot;</span><span class="p">)</span>
                 <span class="c1"># After generating all summaries...</span>
                 <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">plot_distance_time_grid</span><span class="p">(</span>
-                    <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
+                    <span class="n">summaries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">,</span>
                     <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                         <span class="s2">&quot;distance_plot_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
                     <span class="p">),</span>
                     <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
                 <span class="p">)</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">matchup_thresholds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">matchup_thresholds</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span>
                     <span class="s2">&quot;[Pipeline Manager] Matchup thresholds are not set. Skipping heatmap grid.&quot;</span>
                 <span class="p">)</span>
@@ -434,7 +437,7 @@
                 <span class="c1"># compute time taken for caluclations</span>
                 <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
                 <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
-                    <span class="n">summaries</span><span class="o">=</span><span class="n">summary_per_glider</span><span class="p">,</span>
+                    <span class="n">summaries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">,</span>
                     <span class="n">time_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
                     <span class="n">dist_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_distance_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
                     <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
@@ -451,18 +454,52 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Skipping plots.&quot;</span><span class="p">)</span>
             <span class="c1"># Generate combined_summaries without plotting</span>
             <span class="n">combined_summaries</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_id</span> <span class="ow">in</span> <span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g_b_id</span> <span class="ow">in</span> <span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">ref_df</span> <span class="o">=</span> <span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_id</span><span class="p">]</span>
-                    <span class="n">comp_df</span> <span class="o">=</span> <span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_b_id</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g_b_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">ref_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_id</span><span class="p">]</span>
+                    <span class="n">comp_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_b_id</span><span class="p">]</span>
 
                     <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
                     <span class="n">combined_summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span>
             <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">combined_summaries</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="PipelineManager.align_to_target">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.align_to_target">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">align_to_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Align all datasets to a target dataset based on the summaries provided.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target : str</span>
+<span class="sd">            The name of the target pipeline to align others to.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_ran</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;PipelineManager.summarise_all_profiles() must be run before alignment.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target pipeline &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
+
+        <span class="n">target_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span>
+
+        <span class="c1"># create a matchup df for the target, and every other source</span>
+        <span class="k">for</span> <span class="n">source</span><span class="p">,</span> <span class="n">source_summary</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="n">target</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Aligning &#39;</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">&#39; to target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
+            <span class="c1"># Find closest profiles between source and target</span>
+            <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">source_summary</span><span class="p">,</span> <span class="n">target_summary</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> matched profiles between &#39;</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">&#39; and &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span></div>
 </div>
 
+            <span class="c1"># interpolate DEPTH values per profile_id</span>
 </pre></div>
 
         </div>
