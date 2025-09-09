@@ -49,7 +49,8 @@
         <div id="main-content" role="main">
           
   <h1>Source code for toolbox.utils.alignment</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">pearsonr</span>
 
@@ -58,56 +59,124 @@
 
 <div class="viewcode-block" id="interpolate_DEPTH">
 <a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.interpolate_DEPTH">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">interpolate_DEPTH</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interpolate missing DEPTH values in a DataFrame.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">interpolate_DEPTH</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpolate missing DEPTH values and compute 5m depth bins, all using xarray operations.</span>
 
-<span class="sd">    Args:</span>
-<span class="sd">        df (pd.DataFrame): Input DataFrame with a &#39;DEPTH&#39; column.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ds : xr.Dataset</span>
+<span class="sd">        Input Dataset with variables &#39;DEPTH&#39;, &#39;TIME&#39;, and &#39;PROFILE_NUMBER&#39;.</span>
 
-<span class="sd">    Returns:</span>
-<span class="sd">        pd.DataFrame: DataFrame with interpolated &#39;DEPTH&#39; values.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    xr.Dataset</span>
+<span class="sd">        Same dataset with new data variables:</span>
+<span class="sd">            - DEPTH_interpolated</span>
+<span class="sd">            - DEPTH_bin (floored to nearest 5 m)</span>
+<span class="sd">            - DEPTH_range (string label like &quot;50–55m&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s2">&quot;DEPTH&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain a &#39;DEPTH&#39; column.&quot;</span><span class="p">)</span>
+    <span class="c1"># Validate required variables</span>
+    <span class="n">required_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span> <span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">required_vars</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset must contain variable: </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="c1"># sort df  by [profile_id, TIME]</span>
-    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="s2">&quot;TIME&quot;</span><span class="p">])</span>
-    <span class="c1"># Interpolate missing DEPTH values within each profile_id group</span>
-    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DEPTH_interpolated&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;profile_id&quot;</span><span class="p">)[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
-        <span class="k">lambda</span> <span class="n">group</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">limit_direction</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">)</span>
+    <span class="c1"># Get dimensions</span>
+    <span class="k">if</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Dataset must have a profile-wise measurement dimension (e.g., &#39;N_MEASUREMENTS&#39;).&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Interpolate missing values per PROFILE_NUMBER</span>
+    <span class="c1"># Approach: loop over unique profile numbers using xarray vectorized selection</span>
+    <span class="k">if</span> <span class="s2">&quot;DEPTH&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DEPTH not found in dataset.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;PROFILE_NUMBER must be present for per-profile interpolation.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># filter PROFILE_NUMBER &gt; 0</span>
+    <span class="c1"># (-1 is surfacing behaviour)</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Interpolating missing DEPTH values by PROFILE_NUMBER...&quot;</span><span class="p">)</span>
+
+    <span class="c1">##### DEV ONLY #####</span>
+    <span class="c1"># For debugging, limit to first 3 profiles</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1">###################</span>
+
+    <span class="c1"># Use xarray groupby to interpolate within each profile</span>
+    <span class="n">DEPTH_interp</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">map</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="n">g</span><span class="o">.</span><span class="n">interpolate_na</span><span class="p">(</span>
+                <span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s2">&quot;extrapolate&quot;</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">reindex_like</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+        <span class="p">)</span>
     <span class="p">)</span>
-    <span class="c1"># add DEPTH_bin to sort into 5m bins</span>
-    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;DEPTH_interpolated&quot;</span><span class="p">]</span> <span class="o">//</span> <span class="mi">5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">5</span>
-    <span class="c1"># add string range for DEPTH_bin</span>
-    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DEPTH_range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="mi">5</span><span class="si">}</span><span class="s2">m&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">df</span></div>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">assign</span><span class="p">({</span><span class="s2">&quot;DEPTH_interpolated&quot;</span><span class="p">:</span> <span class="n">DEPTH_interp</span><span class="p">})</span>
+
+    <span class="c1"># Compute 5 m bins</span>
+    <span class="n">bin_size</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">DEPTH_bin</span> <span class="o">=</span> <span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s2">&quot;DEPTH_interpolated&quot;</span><span class="p">]</span> <span class="o">//</span> <span class="n">bin_size</span><span class="p">)</span> <span class="o">*</span> <span class="n">bin_size</span>
+    <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEPTH_bin</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="c1"># Add range label (as a string)</span>
+    <span class="n">bin_start</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">]</span>
+    <span class="n">bin_end</span> <span class="o">=</span> <span class="n">bin_start</span> <span class="o">+</span> <span class="n">bin_size</span>
+    <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;DEPTH_range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">apply_ufunc</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">defchararray</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">start</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;–&quot;</span><span class="p">),</span> <span class="n">end</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">bin_start</span><span class="p">,</span>
+        <span class="n">bin_end</span><span class="p">,</span>
+        <span class="n">vectorize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">dask</span><span class="o">=</span><span class="s2">&quot;parallelized&quot;</span><span class="p">,</span>
+        <span class="n">output_dtypes</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ds</span></div>
 
 
 
 <div class="viewcode-block" id="aggregate_vars">
 <a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.aggregate_vars">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">aggregate_vars</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">vars_to_aggregate</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aggregate specified variables by profile_id and DEPTH_bin.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        df (pd.DataFrame): Input DataFrame with &#39;profile_id&#39;, &#39;DEPTH_bin&#39;, and variables to aggregate.</span>
+<span class="sd">        df (pd.DataFrame): Input DataFrame with &#39;PROFILE_NUMBER&#39;, &#39;DEPTH_bin&#39;, and variables to aggregate.</span>
 <span class="sd">        vars_to_aggregate (list): List of variable names to aggregate.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        pd.DataFrame: Aggregated DataFrame.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s2">&quot;profile_id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="ow">or</span> <span class="s2">&quot;DEPTH_bin&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;profile_id&#39; and &#39;DEPTH_bin&#39; columns.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="ow">or</span> <span class="s2">&quot;DEPTH_bin&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;DataFrame must contain &#39;PROFILE_NUMBER&#39; and &#39;DEPTH_bin&#39; columns.&quot;</span>
+        <span class="p">)</span>
 
     <span class="c1"># Agg over median, with alias of _media{var}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Aggregating variables...&quot;</span><span class="p">)</span>
     <span class="n">agg_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="p">:</span> <span class="s2">&quot;median&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_to_aggregate</span><span class="p">}</span>
-    <span class="n">aggregated_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">agg_dict</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="n">aggregated_df</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">agg_dict</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="p">)</span>
     <span class="c1"># Rename columns</span>
     <span class="n">aggregated_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
         <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">var</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_to_aggregate</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
-    <span class="c1"># sort by profile_id and DEPTH_bin</span>
-    <span class="n">aggregated_df</span> <span class="o">=</span> <span class="n">aggregated_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">])</span>
+    <span class="c1"># sort by PROFILE_NUMBER and DEPTH_bin</span>
+    <span class="n">aggregated_df</span> <span class="o">=</span> <span class="n">aggregated_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">])</span>
     <span class="c1"># drop nulls</span>
     <span class="n">aggregated_df</span> <span class="o">=</span> <span class="n">aggregated_df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span>
         <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_to_aggregate</span><span class="p">]</span>
@@ -131,7 +200,7 @@
 
 <span class="sd">    binned_dfs : dict</span>
 <span class="sd">        Dictionary of {glider_name: binned_df} where each DataFrame includes</span>
-<span class="sd">        &#39;profile_id&#39; and &#39;DEPTH_bin&#39;, and is the result of interpolate_DEPTH + aggregate_vars.</span>
+<span class="sd">        &#39;PROFILE_NUMBER&#39; and &#39;DEPTH_bin&#39;, and is the result of interpolate_DEPTH + aggregate_vars.</span>
 
 <span class="sd">    bin_column : str</span>
 <span class="sd">        The name of the depth bin column to join on.</span>
@@ -144,25 +213,25 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">target_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">binned_dfs</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target &#39;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&#39; not found in binned_dfs.&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Add glider_profile_id to each glider&#39;s dataframe</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Merging depth-binned profiles...&quot;</span><span class="p">)</span>
+    <span class="c1"># Add glider_PROFILE_NUMBER to each glider&#39;s dataframe</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">binned_dfs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_profile_id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
             <span class="n">binned_dfs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">binned_dfs</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_profile_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">df</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">binned_dfs</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
     <span class="c1"># Use target as base</span>
     <span class="n">target_df</span> <span class="o">=</span> <span class="n">binned_dfs</span><span class="p">[</span><span class="n">target_name</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">target_profile_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_profile_id&quot;</span>
+    <span class="n">target_profile_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
 
     <span class="c1"># Rename target columns with _TARGET suffix (except join keys)</span>
     <span class="n">target_df_renamed</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
         <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
             <span class="n">col</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">target_df</span><span class="o">.</span><span class="n">columns</span>
-            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">bin_column</span><span class="p">,</span> <span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="n">target_profile_col</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">bin_column</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">target_profile_col</span><span class="p">]</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
@@ -173,14 +242,14 @@
         <span class="k">if</span> <span class="n">glider_name</span> <span class="o">==</span> <span class="n">target_name</span><span class="p">:</span>
             <span class="k">continue</span>
 
-        <span class="n">profile_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">_profile_id&quot;</span>
+        <span class="n">profile_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
 
         <span class="c1"># Rename glider columns (excluding join keys)</span>
         <span class="n">glider_df_renamed</span> <span class="o">=</span> <span class="n">glider_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
             <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
                 <span class="n">col</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">glider_df</span><span class="o">.</span><span class="n">columns</span>
-                <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">bin_column</span><span class="p">,</span> <span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="n">profile_col</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">bin_column</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">profile_col</span><span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -243,7 +312,7 @@
 <span class="sd">        Other glider names to compare against</span>
 
 <span class="sd">    group_columns : list</span>
-<span class="sd">        Columns to group by (default: profile_id + DEPTH_bin)</span>
+<span class="sd">        Columns to group by (default: PROFILE_NUMBER + DEPTH_bin)</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -253,13 +322,14 @@
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="n">grouped</span> <span class="o">=</span> <span class="n">merged_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
-        <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_profile_id&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">_profile_id&quot;</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">other_names</span><span class="p">]</span>
+        <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span>
+        <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">other_names</span><span class="p">]</span>
     <span class="p">)</span>
 
     <span class="k">for</span> <span class="n">keys</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">grouped</span><span class="p">:</span>
-        <span class="n">row</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_profile_id&quot;</span><span class="p">:</span> <span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">other</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">other_names</span><span class="p">):</span>
-            <span class="n">row</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">_profile_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">row</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
             <span class="n">col_target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
