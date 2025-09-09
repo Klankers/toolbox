@@ -153,9 +153,11 @@ def summarising_profiles(ds: xr.Dataset, source_name: str) -> pd.DataFrame:
 
     df = xr.Dataset(medians).to_dataframe().reset_index()
     df["glider_name"] = source_name
-    df.rename(columns={"PROFILE_NUMBER": "profile_id"}, inplace=True)
+    df.rename(columns={"PROFILE_NUMBER": "PROFILE_NUMBER"}, inplace=True)
     # sort by time
     df.sort_values(by="median_TIME", inplace=True)
+    # also add to the dataset
+
     return df
 
 
@@ -187,7 +189,7 @@ def find_closest_prof(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     b_times = df_b["median_TIME"].values
     b_lats = df_b["median_LATITUDE"].values
     b_lons = df_b["median_LONGITUDE"].values
-    b_ids = df_b["profile_id"].values
+    b_ids = df_b["PROFILE_NUMBER"].values
 
     closest_ids = []
     time_diffs = []
@@ -374,16 +376,16 @@ def find_candidate_glider_pairs(
     if df_cross.empty:
         return pd.DataFrame()
 
-    # Keep only best match (min dist) per profile_id_a
+    # Keep only best match (min dist) per PROFILE_NUMBER_a
     best_matches = df_cross.loc[
-        df_cross.groupby("profile_id_a")["dist_km"].idxmin()
+        df_cross.groupby("PROFILE_NUMBER_a")["dist_km"].idxmin()
     ].copy()
 
     # Return clean structure
     best_matches = best_matches.rename(
         columns={
-            "profile_id_a": "glider_a_profile_id",
-            "profile_id_b": "glider_b_profile_id",
+            "PROFILE_NUMBER_a": "glider_a_PROFILE_NUMBER",
+            "PROFILE_NUMBER_b": "glider_b_PROFILE_NUMBER",
         }
     )
 
@@ -392,9 +394,9 @@ def find_candidate_glider_pairs(
 
     return best_matches[
         [
-            "glider_a_profile_id",
+            "glider_a_PROFILE_NUMBER",
             "glider_name",
-            "glider_b_profile_id",
+            "glider_b_PROFILE_NUMBER",
             "glider_b_name",
             "time_diff_hr",
             "dist_km",

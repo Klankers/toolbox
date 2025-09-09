@@ -270,16 +270,9 @@ class PipelineManager:
                 raise TypeError(f"Pipeline '{pipeline_name}' has invalid dataset.")
             else:
                 print(f"[Pipeline Manager] Processing dataset for {pipeline_name}...")
-            # Apply alias renaming for alignment vars
-            renamed_vars = {
-                alias: std
-                for std, alias_map in self.alignment_map.items()
-                if (alias := alias_map.get(pipeline_name)) and alias in ds
-            }
-            print(f"[Pipeline Manager] Renaming variables: {renamed_vars}")
 
-            ds = ds.rename(renamed_vars)
             summary_df = summarising_profiles(ds, pipeline_name)
+            print("Summary Columns:", summary_df.columns.tolist())
             self.summary_per_glider[pipeline_name] = summary_df
 
         # Step 2: Find closest profiles across gliders
@@ -374,14 +367,33 @@ class PipelineManager:
         if target not in self.pipelines:
             raise ValueError(f"Target pipeline '{target}' not found.")
 
-        target_summary = self.summary_per_glider[target]
+        target_data = self._contexts[target]["data"]
+
+        # add summary data to data
+
+        # rename variables in target_data based on alias in alignment_map
+        # Apply alias renaming for alignment vars
+        renamed_vars = {
+            alias: std
+            for std, alias_map in self.alignment_map.items()
+            if (alias := alias_map.get(target)) and alias in target_data
+        }
+        print(f"[Pipeline Manager] Renaming variables: {renamed_vars}")
+        target_data = target_data.rename(renamed_vars)
+        target_summary = self.summary_per_glider[target].reset_index()
 
         r2_results_all = []
 
         # Determine which variables to align
         alignment_vars = list(self.alignment_map.keys())
 
-        for ancillary_name, ancillary_summary in self.summary_per_glider.items():
+        # get all pipeline names and data from self._contexts
+        data = {
+            name: (ctx["data"], self.summary_per_glider[name])
+            for name, ctx in self._contexts.items()
+        }
+
+        for ancillary_name, (ancillary_data, ancillary_summary) in data.items():
             if ancillary_name == target:
                 continue
 
@@ -393,8 +405,8 @@ class PipelineManager:
             paired_df = find_closest_prof(ancillary_summary, target_summary)
             paired_df = paired_df.rename(
                 columns={
-                    "glider_a_profile_id": f"{ancillary_name}_profile_id",
-                    "glider_b_profile_id": f"{target}_profile_id",
+                    "glider_a_PROFILE_NUMBER": f"{ancillary_name}_PROFILE_NUMBER",
+                    "glider_b_PROFILE_NUMBER": f"{target}_PROFILE_NUMBER",
                     "glider_b_time_diff": f"time_diff_hr_{ancillary_name}",
                     "glider_b_distance_km": f"distance_km_{ancillary_name}",
                 }
@@ -406,9 +418,12 @@ class PipelineManager:
 
             # Step 2: Interpolate and bin all datasets involved
             binned_dfs = {}
-            for glider_name in [target, ancillary_name]:
-                raw_df = self.summary_per_glider[glider_name].reset_index()
-                df_interp = interpolate_DEPTH(raw_df)
+            for glider_name, gilder_data in [
+                (target, target_data),
+                (ancillary_name, ancillary_data),
+            ]:
+                print(f"[Pipeline Manager] Binning data for {glider_name}...")
+                df_interp = interpolate_DEPTH(gilder_data)
                 df_binned = aggregate_vars(df_interp, alignment_vars)
                 binned_dfs[glider_name] = df_binned
 
@@ -419,11 +434,11 @@ class PipelineManager:
 
             # Step 4: Filter merged_df for only profile pairs in matched list
             merged_df = merged_df[
-                merged_df[f"{target}_profile_id"].isin(
-                    paired_df[f"{target}_profile_id"]
+                merged_df[f"{target}_PROFILE_NUMBER"].isin(
+                    paired_df[f"{target}_PROFILE_NUMBER"]
                 )
-                & merged_df[f"{ancillary_name}_profile_id"].isin(
-                    paired_df[f"{ancillary_name}_profile_id"]
+                & merged_df[f"{ancillary_name}_PROFILE_NUMBER"].isin(
+                    paired_df[f"{ancillary_name}_PROFILE_NUMBER"]
                 )
             ]
 
