@@ -58,16 +58,19 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.interpolate_DEPTH" title="toolbox.utils.alignment.interpolate_DEPTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interpolate_DEPTH</span></code></a>(→ xarray.Dataset)</p></td>
 <td><p>Interpolate missing DEPTH values and compute 5m depth bins, all using xarray operations.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.aggregate_vars" title="toolbox.utils.alignment.aggregate_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregate_vars</span></code></a>(df, vars_to_aggregate)</p></td>
-<td><p>Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.aggregate_vars" title="toolbox.utils.alignment.aggregate_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregate_vars</span></code></a>(ds, vars_to_aggregate)</p></td>
+<td><p>Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin using xarray only.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.merge_depth_binned_profiles" title="toolbox.utils.alignment.merge_depth_binned_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_depth_binned_profiles</span></code></a>(→ pandas.DataFrame)</p></td>
-<td><p>Merge depth-binned profile data for a target glider and multiple others.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.filter_xarray_by_profile_ids" title="toolbox.utils.alignment.filter_xarray_by_profile_ids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_xarray_by_profile_ids</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Filters an xarray.Dataset to include only rows with PROFILE_NUMBER in a list of valid IDs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.major_axis_r2" title="toolbox.utils.alignment.major_axis_r2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">major_axis_r2</span></code></a>(→ float)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.merge_profile_pairs_on_depth_bin" title="toolbox.utils.alignment.merge_profile_pairs_on_depth_bin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_profile_pairs_on_depth_bin</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Merge binned datasets for each unique (target_profile, ancillary_profile) pair on DEPTH_bin.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.major_axis_r2" title="toolbox.utils.alignment.major_axis_r2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">major_axis_r2</span></code></a>(→ float)</p></td>
 <td><p>Compute R² (coefficient of determination) for Major Axis (Type II) regression.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.compute_r2_for_merged_profiles" title="toolbox.utils.alignment.compute_r2_for_merged_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_r2_for_merged_profiles</span></code></a>(→ pandas.DataFrame)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.compute_r2_for_merged_profiles" title="toolbox.utils.alignment.compute_r2_for_merged_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_r2_for_merged_profiles</span></code></a>(→ pandas.DataFrame)</p></td>
 <td><p>Compute R² values for each variable between target and all other gliders.</p></td>
 </tr>
 </tbody>
@@ -102,43 +105,78 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.utils.alignment.aggregate_vars">
-<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">aggregate_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars_to_aggregate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#aggregate_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.aggregate_vars" title="Link to this definition">¶</a></dt>
-<dd><p>Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin.</p>
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">aggregate_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars_to_aggregate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#aggregate_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.aggregate_vars" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin using xarray only.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with ‘PROFILE_NUMBER’, ‘DEPTH_bin’, and variables to aggregate.</p></li>
-<li><p><strong>vars_to_aggregate</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – List of variable names to aggregate.</p></li>
+<li><p><strong>ds</strong> (<em>xr.Dataset</em>) – Dataset containing ‘PROFILE_NUMBER’ and ‘DEPTH_bin’ as coordinates or variables.</p></li>
+<li><p><strong>vars_to_aggregate</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – List of variable names in the dataset to aggregate.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Aggregated DataFrame.</p>
+<dd class="field-even"><p>Dataset with median-aggregated variables named as median_{var},
+indexed by PROFILE_NUMBER and DEPTH_bin.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame</p>
+<dd class="field-odd"><p>xr.Dataset</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="toolbox.utils.alignment.merge_depth_binned_profiles">
-<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">merge_depth_binned_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">binned_dfs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DEPTH_bin'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#merge_depth_binned_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.merge_depth_binned_profiles" title="Link to this definition">¶</a></dt>
-<dd><p>Merge depth-binned profile data for a target glider and multiple others.</p>
+<dt class="sig sig-object py" id="toolbox.utils.alignment.filter_xarray_by_profile_ids">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">filter_xarray_by_profile_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_id_var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#filter_xarray_by_profile_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.filter_xarray_by_profile_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Filters an xarray.Dataset to include only rows with PROFILE_NUMBER in a list of valid IDs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>target_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the target glider (used as the left/base of the join).</p></li>
-<li><p><strong>binned_dfs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – Dictionary of {glider_name: binned_df} where each DataFrame includes
-‘PROFILE_NUMBER’ and ‘DEPTH_bin’, and is the result of interpolate_DEPTH + aggregate_vars.</p></li>
-<li><p><strong>bin_column</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the depth bin column to join on.</p></li>
+<li><p><strong>ds</strong> (<em>xr.Dataset</em>) – The dataset to filter.</p></li>
+<li><p><strong>profile_id_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the variable or coordinate in ds representing the profile ID
+(e.g., ‘PROFILE_NUMBER’, ‘Doombar_PROFILE_NUMBER’, etc.)</p></li>
+<li><p><strong>valid_ids</strong> (<em>array-like</em>) – List or array of profile ID values to retain.</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – If True, prints the number of rows before and after filtering.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Merged DataFrame with depth-binned values from target and all other gliders,
-using consistent suffixes like _TARGET_{target_name} and _{glider}.</p>
+<dd class="field-even"><p>Filtered dataset containing only rows with matching profile IDs.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame</p>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.merge_profile_pairs_on_depth_bin">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">merge_profile_pairs_on_depth_bin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DEPTH_bin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#merge_profile_pairs_on_depth_bin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.merge_profile_pairs_on_depth_bin" title="Link to this definition">¶</a></dt>
+<dd><p>Merge binned datasets for each unique (target_profile, ancillary_profile) pair on DEPTH_bin.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paired_df</strong> (<em>pd.DataFrame</em>) – <dl class="simple">
+<dt>DataFrame with columns:</dt><dd><ul>
+<li><p>f”{target_name}_PROFILE_NUMBER”</p></li>
+<li><p>f”{ancillary_name}_PROFILE_NUMBER”</p></li>
+<li><p>’time_diff_hr’</p></li>
+<li><p>’dist_km’</p></li>
+</ul>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>target_ds</strong> (<em>xr.Dataset</em>) – Depth-binned and filtered xarray Dataset for target glider.</p></li>
+<li><p><strong>ancillary_ds</strong> (<em>xr.Dataset</em>) – Depth-binned and filtered xarray Dataset for ancillary glider.</p></li>
+<li><p><strong>target_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Target glider name (used for suffixing and column access).</p></li>
+<li><p><strong>ancillary_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Ancillary glider name (used for suffixing and column access).</p></li>
+<li><p><strong>bin_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Dimension to align on (e.g., “DEPTH_bin”).</p></li>
+<li><p><strong>max_pairs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – If set, limits the number of profile pairs processed (for debugging).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Combined dataset with one record per (profile_pair, depth_bin), including metadata.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
 </dd>
 </dl>
 </dd></dl>

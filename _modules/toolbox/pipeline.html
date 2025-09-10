@@ -64,7 +64,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.alignment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">interpolate_DEPTH</span><span class="p">,</span>
     <span class="n">aggregate_vars</span><span class="p">,</span>
-    <span class="n">merge_depth_binned_profiles</span><span class="p">,</span>
+    <span class="n">merge_profile_pairs_on_depth_bin</span><span class="p">,</span>
+    <span class="n">filter_xarray_by_profile_ids</span><span class="p">,</span>
     <span class="n">compute_r2_for_merged_profiles</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -457,8 +458,8 @@
                     <span class="n">ref_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_id</span><span class="p">]</span>
                     <span class="n">comp_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_b_id</span><span class="p">]</span>
 
-                    <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
-                    <span class="n">combined_summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span>
+                    <span class="n">paired_ds</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
+                    <span class="n">combined_summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paired_ds</span><span class="p">)</span>
             <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">combined_summaries</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">return</span></div>
@@ -467,13 +468,15 @@
 <div class="viewcode-block" id="PipelineManager.align_to_target">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.align_to_target">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">align_to_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Align all datasets to a target dataset based on the summaries provided.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Align all datasets to a target dataset based on the summaries provided.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        target : str</span>
 <span class="sd">            The name of the target pipeline to align others to.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_ran</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="s2">&quot;PipelineManager.summarise_all_profiles() must be run before alignment.&quot;</span>
@@ -484,10 +487,7 @@
 
         <span class="n">target_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
 
-        <span class="c1"># add summary data to data</span>
-
-        <span class="c1"># rename variables in target_data based on alias in alignment_map</span>
-        <span class="c1"># Apply alias renaming for alignment vars</span>
+        <span class="c1"># Rename variables based on alias map</span>
         <span class="n">renamed_vars</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">alias</span><span class="p">:</span> <span class="n">std</span>
             <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">alias_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -495,14 +495,12 @@
         <span class="p">}</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Renaming variables: </span><span class="si">{</span><span class="n">renamed_vars</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">target_data</span> <span class="o">=</span> <span class="n">target_data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">renamed_vars</span><span class="p">)</span>
-        <span class="n">target_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 
+        <span class="n">target_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="n">r2_results_all</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="c1"># Determine which variables to align</span>
-        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-
-        <span class="c1"># get all pipeline names and data from self._contexts</span>
+        <span class="c1"># Create mapping of all pipeline names to data/summary</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -517,63 +515,57 @@
             <span class="p">)</span>
 
             <span class="c1"># Step 1: Find matched profile pairs</span>
-            <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ancillary_summary</span><span class="p">,</span> <span class="n">target_summary</span><span class="p">)</span>
-            <span class="n">paired_df</span> <span class="o">=</span> <span class="n">paired_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
-                <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
-                    <span class="s2">&quot;glider_a_PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;glider_b_PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;glider_b_time_diff&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;time_diff_hr_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;glider_b_distance_km&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;distance_km_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> matched profiles.&quot;</span><span class="p">)</span>
+            <span class="n">paired_ds</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">target_summary</span><span class="p">,</span> <span class="n">ancillary_summary</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">paired_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">paired_ds</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] No matched profiles found between </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="c1"># Step 2: Interpolate and bin all datasets involved</span>
-            <span class="n">binned_dfs</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">glider_name</span><span class="p">,</span> <span class="n">gilder_data</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="c1"># Rename profile ID columns for merging</span>
+            <span class="n">paired_ds</span> <span class="o">=</span> <span class="n">paired_ds</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;closest_glider_b_profile&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_ds</span><span class="p">)</span><span class="si">}</span><span class="s2"> matched profiles.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unique Pairs: </span><span class="si">{</span><span class="n">paired_ds</span><span class="p">[[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1">_PROFILE_NUMBER&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s1">_PROFILE_NUMBER&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Step 2: Interpolate + aggregate each dataset</span>
+            <span class="n">binned_ds</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">glider_name</span><span class="p">,</span> <span class="n">raw_data</span> <span class="ow">in</span> <span class="p">[</span>
                 <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">target_data</span><span class="p">),</span>
                 <span class="p">(</span><span class="n">ancillary_name</span><span class="p">,</span> <span class="n">ancillary_data</span><span class="p">),</span>
             <span class="p">]:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Binning data for </span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-                <span class="n">df_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">gilder_data</span><span class="p">)</span>
-                <span class="n">df_binned</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">df_interp</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
-                <span class="n">binned_dfs</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_binned</span>
+                <span class="n">ds_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+                <span class="n">ds_binned</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">ds_interp</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
+                <span class="n">binned_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_binned</span>
 
-            <span class="c1"># Step 3: Merge target + source binned values at depth</span>
-            <span class="n">merged_df</span> <span class="o">=</span> <span class="n">merge_depth_binned_profiles</span><span class="p">(</span>
-                <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">binned_dfs</span><span class="o">=</span><span class="n">binned_dfs</span>
-            <span class="p">)</span>
-
-            <span class="c1"># Step 4: Filter merged_df for only profile pairs in matched list</span>
-            <span class="n">merged_df</span> <span class="o">=</span> <span class="n">merged_df</span><span class="p">[</span>
-                <span class="n">merged_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
-                    <span class="n">paired_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span>
+            <span class="c1"># Step 3: Filter both datasets before merging</span>
+            <span class="n">filtered_ds</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">glider_name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">target</span><span class="p">,</span> <span class="n">ancillary_name</span><span class="p">]:</span>
+                <span class="n">profile_ids</span> <span class="o">=</span> <span class="n">paired_ds</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="n">filtered_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_xarray_by_profile_ids</span><span class="p">(</span>
+                    <span class="n">ds</span><span class="o">=</span><span class="n">binned_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">],</span>
+                    <span class="n">profile_id_var</span><span class="o">=</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
+                    <span class="n">valid_ids</span><span class="o">=</span><span class="n">profile_ids</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="o">&amp;</span> <span class="n">merged_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
-                    <span class="n">paired_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span>
-                <span class="p">)</span>
-            <span class="p">]</span>
 
-            <span class="c1"># Step 5: Compute R² per profile-pair for all alignment variables</span>
-            <span class="n">r2_df</span> <span class="o">=</span> <span class="n">compute_r2_for_merged_profiles</span><span class="p">(</span>
-                <span class="n">merged_df</span><span class="o">=</span><span class="n">merged_df</span><span class="p">,</span>
-                <span class="n">variables</span><span class="o">=</span><span class="n">alignment_vars</span><span class="p">,</span>
+            <span class="c1"># Step 4: Merge datasets at depth bin level</span>
+            <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_profile_pairs_on_depth_bin</span><span class="p">(</span>
+                <span class="n">paired_df</span><span class="o">=</span><span class="n">paired_ds</span><span class="p">,</span>
+                <span class="n">target_ds</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">target</span><span class="p">],</span>
+                <span class="n">ancillary_ds</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">],</span>
                 <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-                <span class="n">other_names</span><span class="o">=</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">],</span>
+                <span class="n">ancillary_name</span><span class="o">=</span><span class="n">ancillary_name</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="n">r2_results_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r2_df</span><span class="p">)</span>
-
-        <span class="c1"># Combine and store</span>
-        <span class="n">final_r2</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">r2_results_all</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">r2_results_all</span>
-            <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">r2_alignment_results</span> <span class="o">=</span> <span class="n">final_r2</span></div>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merged dataset dimensions: </span><span class="si">{</span><span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
