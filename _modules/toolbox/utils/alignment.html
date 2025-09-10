@@ -53,7 +53,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">pearsonr</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 
@@ -253,6 +253,118 @@
 
 
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
+
+
+<div class="viewcode-block" id="find_profile_pair_metadata">
+<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.find_profile_pair_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_profile_pair_metadata</span><span class="p">(</span>
+    <span class="n">df_target</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">df_ancillary</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">target_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ancillary_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">time_thresh_hr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">dist_thresh_km</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Identify profile pairs between a target and ancillary glider within time/distance thresholds.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_target : pd.DataFrame</span>
+<span class="sd">        Summary dataframe for the target glider (from `summarising_profiles()`).</span>
+
+<span class="sd">    df_ancillary : pd.DataFrame</span>
+<span class="sd">        Summary dataframe for the ancillary glider.</span>
+
+<span class="sd">    target_name : str</span>
+<span class="sd">        Name of the target glider (used in output column names).</span>
+
+<span class="sd">    ancillary_name : str</span>
+<span class="sd">        Name of the ancillary glider (used in output column names).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        Matched profile pairs with columns:</span>
+<span class="sd">        - [target_name]_PROFILE_NUMBER</span>
+<span class="sd">        - [ancillary_name]_PROFILE_NUMBER</span>
+<span class="sd">        - time_diff_hr</span>
+<span class="sd">        - dist_km</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">df_target</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">df_ancillary</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">df_target</span> <span class="o">=</span> <span class="n">df_target</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_ancillary</span> <span class="o">=</span> <span class="n">df_ancillary</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># Parse datetime columns</span>
+    <span class="n">df_target</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df_target</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">])</span>
+    <span class="n">df_ancillary</span><span class="p">[</span><span class="s2">&quot;median_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df_ancillary</span><span class="p">[</span><span class="s2">&quot;median_TIME&quot;</span><span class="p">])</span>
+
+    <span class="c1"># Cartesian join</span>
+    <span class="n">df_target</span><span class="p">[</span><span class="s2">&quot;_key&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">df_ancillary</span><span class="p">[</span><span class="s2">&quot;_key&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">df_cross</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+        <span class="n">df_target</span><span class="p">,</span> <span class="n">df_ancillary</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;_key&quot;</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;_target&quot;</span><span class="p">,</span> <span class="s2">&quot;_ancillary&quot;</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;_key&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Compute time difference (in hours)</span>
+    <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
+            <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_datetime_target&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_datetime_ancillary&quot;</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="o">/</span> <span class="mf">3600.0</span>
+    <span class="p">)</span>
+
+    <span class="n">df_cross</span> <span class="o">=</span> <span class="n">df_cross</span><span class="p">[</span><span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">time_thresh_hr</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="c1"># Geodesic distance</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_dist_km</span><span class="p">(</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lon1</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lon2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">lon1</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">lon2</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="n">geodesic</span><span class="p">((</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lon1</span><span class="p">),</span> <span class="p">(</span><span class="n">lat2</span><span class="p">,</span> <span class="n">lon2</span><span class="p">))</span><span class="o">.</span><span class="n">km</span>
+
+    <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">compute_dist_km</span><span class="p">)(</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE_target&quot;</span><span class="p">],</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE_target&quot;</span><span class="p">],</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LATITUDE_ancillary&quot;</span><span class="p">],</span>
+        <span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;median_LONGITUDE_ancillary&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">df_cross</span> <span class="o">=</span> <span class="n">df_cross</span><span class="p">[</span><span class="n">df_cross</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dist_thresh_km</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="c1"># Get best match per target profile</span>
+    <span class="n">best_matches</span> <span class="o">=</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">df_cross</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER_target&quot;</span><span class="p">)[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># Rename columns to final format</span>
+    <span class="n">best_matches</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;PROFILE_NUMBER_target&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;PROFILE_NUMBER_ancillary&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">best_matches</span><span class="p">[</span>
+        <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;time_diff_hr&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;dist_km&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="merge_profile_pairs_on_depth_bin">
 <a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.merge_profile_pairs_on_depth_bin">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">merge_profile_pairs_on_depth_bin</span><span class="p">(</span>
@@ -313,12 +425,20 @@
         <span class="n">pairs</span> <span class="o">=</span> <span class="n">pairs</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">max_pairs</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-        <span class="n">pid_target</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">target_profile_col</span><span class="p">]</span>
-        <span class="n">pid_anc</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">ancillary_profile_col</span><span class="p">]</span>
+        <span class="c1"># Ensure integer type to match xarray index dtype</span>
+        <span class="n">pid_target</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">target_profile_col</span><span class="p">])</span>
+        <span class="n">pid_anc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">ancillary_profile_col</span><span class="p">])</span>
         <span class="n">time_diff</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span>
 
-        <span class="c1"># Subset each dataset to just the current profile</span>
+        <span class="k">if</span> <span class="n">pid_target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Skip] Target profile </span><span class="si">{</span><span class="n">pid_target</span><span class="si">}</span><span class="s2"> not in dataset.&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">pid_anc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ancillary_ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Skip] Ancillary profile </span><span class="si">{</span><span class="n">pid_anc</span><span class="si">}</span><span class="s2"> not in dataset.&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
         <span class="n">tgt_sel</span> <span class="o">=</span> <span class="n">target_ds</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">pid_target</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">anc_sel</span> <span class="o">=</span> <span class="n">ancillary_ds</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">pid_anc</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -329,6 +449,15 @@
         <span class="n">anc_sel</span> <span class="o">=</span> <span class="n">anc_sel</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
             <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">anc_sel</span><span class="o">.</span><span class="n">data_vars</span><span class="p">}</span>
         <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">drop_measurements_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_dims</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ds</span>
+
+        <span class="c1"># Apply</span>
+        <span class="n">tgt_sel</span> <span class="o">=</span> <span class="n">drop_measurements_dim</span><span class="p">(</span><span class="n">tgt_sel</span><span class="p">)</span>
+        <span class="n">anc_sel</span> <span class="o">=</span> <span class="n">drop_measurements_dim</span><span class="p">(</span><span class="n">anc_sel</span><span class="p">)</span>
 
         <span class="c1"># Merge on DEPTH_bin</span>
         <span class="n">pair_merged</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
@@ -355,87 +484,112 @@
 
 
 
-<div class="viewcode-block" id="major_axis_r2">
-<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.major_axis_r2">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">major_axis_r2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<div class="viewcode-block" id="major_axis_r2_xr">
+<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.major_axis_r2_xr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">major_axis_r2_xr</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute R² (coefficient of determination) for Major Axis (Type II) regression.</span>
-<span class="sd">    R² is simply the square of the Pearson correlation coefficient.</span>
+<span class="sd">    Compute R² (coefficient of determination) for Major Axis (Type II) regression using xarray.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : xr.DataArray</span>
+<span class="sd">        First variable (e.g., target glider).</span>
+
+<span class="sd">    y : xr.DataArray</span>
+<span class="sd">        Second variable (e.g., ancillary glider).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        R² value, or NaN if fewer than 2 valid observations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-    <span class="n">x_clean</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-    <span class="n">y_clean</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Inputs must be xarray.DataArray.&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_clean</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>  <span class="c1"># Not enough points</span>
+    <span class="c1"># Apply masking</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">xr</span><span class="o">.</span><span class="n">ufuncs</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">xr</span><span class="o">.</span><span class="n">ufuncs</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">x_clean</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">y_clean</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="n">r</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">x_clean</span><span class="p">,</span> <span class="n">y_clean</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x_clean</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">y_clean</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">r</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">x_clean</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">y_clean</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">r</span><span class="o">**</span><span class="mi">2</span></div>
 
 
 
-<div class="viewcode-block" id="compute_r2_for_merged_profiles">
-<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.compute_r2_for_merged_profiles">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">compute_r2_for_merged_profiles</span><span class="p">(</span>
-    <span class="n">merged_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-    <span class="n">variables</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<div class="viewcode-block" id="compute_r2_for_merged_profiles_xr">
+<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.compute_r2_for_merged_profiles_xr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_r2_for_merged_profiles_xr</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">variables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">target_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">other_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">ancillary_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute R² values for each variable between target and all other gliders.</span>
+<span class="sd">    Compute R² for each profile-pair in an xarray.Dataset, and append the results directly to the dataset.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    merged_df : pd.DataFrame</span>
-<span class="sd">        Output of merge_depth_binned_profiles()</span>
+<span class="sd">    ds : xr.Dataset</span>
+<span class="sd">        Dataset with one row per (PAIR_INDEX, DEPTH_bin), and aligned variables for target and ancillary gliders.</span>
 
 <span class="sd">    variables : list of str</span>
-<span class="sd">        List of variable names to compare (e.g., [&quot;salinity&quot;, &quot;temperature&quot;])</span>
+<span class="sd">        List of variable base names (e.g., [&quot;salinity&quot;, &quot;temperature&quot;]).</span>
 
 <span class="sd">    target_name : str</span>
-<span class="sd">        Name of the target glider (used in suffixes)</span>
+<span class="sd">        Name of the target glider (used in suffix suffix: _TARGET_{name}).</span>
 
-<span class="sd">    other_names : list of str</span>
-<span class="sd">        Other glider names to compare against</span>
-
-<span class="sd">    group_columns : list</span>
-<span class="sd">        Columns to group by (default: PROFILE_NUMBER + DEPTH_bin)</span>
+<span class="sd">    ancillary_name : str</span>
+<span class="sd">        Name of the ancillary glider (used in suffix: _{name}).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    pd.DataFrame</span>
-<span class="sd">        One row per target_profile vs comparison_profile pair with R² values for each variable.</span>
+<span class="sd">    xr.Dataset</span>
+<span class="sd">        Same dataset with new variables: r2_{var}_{ancillary_name}, one per profile pair.</span>
+<span class="sd">        These will be aligned with the &quot;PAIR_INDEX&quot; dimension only.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="n">grouped</span> <span class="o">=</span> <span class="n">merged_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
-        <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span>
-        <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">other_names</span><span class="p">]</span>
-    <span class="p">)</span>
+    <span class="n">pair_index</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="k">for</span> <span class="n">keys</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">grouped</span><span class="p">:</span>
-        <span class="n">row</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">other</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">other_names</span><span class="p">):</span>
-            <span class="n">row</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+        <span class="n">target_var</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">anc_var</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span>
 
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
-            <span class="n">col_target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">target_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span> <span class="ow">or</span> <span class="n">anc_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[R²] Skipping variable &#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&#39; — missing data.&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
 
-            <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">other_names</span><span class="p">:</span>
-                <span class="n">col_other</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="k">if</span> <span class="n">col_target</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="n">col_other</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-                    <span class="n">x</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="n">col_target</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
-                    <span class="n">y</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="n">col_other</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
-                    <span class="n">row</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;r2_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">major_axis_r2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">row</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;r2_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">other</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">r2_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="n">pair_index</span><span class="p">:</span>
+            <span class="n">tgt</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">target_var</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PAIR_INDEX</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
+            <span class="n">anc</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">anc_var</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PAIR_INDEX</span><span class="o">=</span><span class="n">pid</span><span class="p">)</span>
 
-        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">tgt</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">anc</span><span class="o">.</span><span class="n">values</span>
 
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+            <span class="c1"># Remove NaNs</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">x_clean</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">y_clean</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_clean</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">r</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">x_clean</span><span class="p">,</span> <span class="n">y_clean</span><span class="p">)</span>
+                <span class="n">r2</span> <span class="o">=</span> <span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+
+            <span class="n">r2_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
+
+        <span class="n">results</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;r2_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">r2_values</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">:</span> <span class="n">pair_index</span><span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Attach R² variables to original dataset</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds</span></div>
 
 </pre></div>
 

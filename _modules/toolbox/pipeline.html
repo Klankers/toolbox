@@ -66,7 +66,8 @@
     <span class="n">aggregate_vars</span><span class="p">,</span>
     <span class="n">merge_profile_pairs_on_depth_bin</span><span class="p">,</span>
     <span class="n">filter_xarray_by_profile_ids</span><span class="p">,</span>
-    <span class="n">compute_r2_for_merged_profiles</span><span class="p">,</span>
+    <span class="n">find_profile_pair_metadata</span><span class="p">,</span>
+    <span class="n">compute_r2_for_merged_profiles_xr</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">STEP_DEPENDENCIES</span>
@@ -413,54 +414,39 @@
             <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
             <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bin_size&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="n">show_plots</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">distance_over_time_matrix</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Distance over time matrix is disabled.&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Plotting distance time grid...&quot;</span><span class="p">)</span>
-                <span class="c1"># After generating all summaries...</span>
-                <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">plot_distance_time_grid</span><span class="p">(</span>
-                    <span class="n">summaries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">,</span>
-                    <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                        <span class="s2">&quot;distance_plot_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
-                    <span class="p">),</span>
-                    <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-                <span class="p">)</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">matchup_thresholds</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span>
-                    <span class="s2">&quot;[Pipeline Manager] Matchup thresholds are not set. Skipping heatmap grid.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Finding closest profiles across gliders...&quot;</span><span class="p">)</span>
-                <span class="c1"># compute time taken for caluclations</span>
-                <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-                <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
-                    <span class="n">summaries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">,</span>
-                    <span class="n">time_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
-                    <span class="n">dist_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_distance_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
-                    <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                        <span class="s2">&quot;heatmap_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
-                    <span class="p">),</span>
-                    <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-                <span class="p">)</span>
-                <span class="n">end_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-                <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Heatmap grid plotted in </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
-
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">distance_over_time_matrix</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Distance over time matrix is disabled.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Skipping plots.&quot;</span><span class="p">)</span>
-            <span class="c1"># Generate combined_summaries without plotting</span>
-            <span class="n">combined_summaries</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">g_b_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">ref_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_id</span><span class="p">]</span>
-                    <span class="n">comp_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">g_b_id</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Plotting distance time grid...&quot;</span><span class="p">)</span>
+            <span class="c1"># After generating all summaries...</span>
+            <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">plot_distance_time_grid</span><span class="p">(</span>
+                <span class="n">summaries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">,</span>
+                <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;distance_plot_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+            <span class="p">)</span>
 
-                    <span class="n">paired_ds</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">comp_df</span><span class="p">)</span>
-                    <span class="n">combined_summaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paired_ds</span><span class="p">)</span>
-            <span class="n">combined_summaries</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">combined_summaries</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">matchup_thresholds</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;[Pipeline Manager] Matchup thresholds are not set. Skipping heatmap grid.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Finding closest profiles across gliders...&quot;</span><span class="p">)</span>
+            <span class="c1"># compute time taken for caluclations</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+            <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">(</span>
+                <span class="n">summaries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">,</span>
+                <span class="n">time_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
+                <span class="n">dist_bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_distance_threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">),</span>
+                <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;heatmap_output&quot;</span><span class="p">,</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="n">show</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Heatmap grid plotted in </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">return</span></div>
 
@@ -469,7 +455,7 @@
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.align_to_target">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">align_to_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Align all datasets to a target dataset based on the summaries provided.</span>
+<span class="sd">        Align all datasets to a target dataset and compute R² against ancillary sources.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -477,17 +463,21 @@
 <span class="sd">            The name of the target pipeline to align others to.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="c1"># === PRECONDITIONS ===</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary_ran</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="s2">&quot;PipelineManager.summarise_all_profiles() must be run before alignment.&quot;</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Run summarise_all_profiles() before alignment.&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target pipeline &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
 
-        <span class="n">target_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="c1"># === CONFIG ===</span>
+        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Reset R² result container</span>
 
-        <span class="c1"># Rename variables based on alias map</span>
+        <span class="n">target_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="n">target_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+        <span class="c1"># Rename using alias map</span>
         <span class="n">renamed_vars</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">alias</span><span class="p">:</span> <span class="n">std</span>
             <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">alias_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -496,11 +486,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Renaming variables: </span><span class="si">{</span><span class="n">renamed_vars</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">target_data</span> <span class="o">=</span> <span class="n">target_data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">renamed_vars</span><span class="p">)</span>
 
-        <span class="n">target_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
-        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="n">r2_results_all</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="c1"># Create mapping of all pipeline names to data/summary</span>
+        <span class="c1"># Collect data and summaries</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -511,61 +497,76 @@
                 <span class="k">continue</span>
 
             <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Aligning &#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&#39; to target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;...&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[Pipeline Manager] Aligning &#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&#39; to target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;...&quot;</span>
             <span class="p">)</span>
 
-            <span class="c1"># Step 1: Find matched profile pairs</span>
-            <span class="n">paired_ds</span> <span class="o">=</span> <span class="n">find_closest_prof</span><span class="p">(</span><span class="n">target_summary</span><span class="p">,</span> <span class="n">ancillary_summary</span><span class="p">)</span>
+            <span class="c1"># === STEP 1: Find Matched Profile Pairs ===</span>
+            <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_profile_pair_metadata</span><span class="p">(</span>
+                <span class="n">df_target</span><span class="o">=</span><span class="n">target_summary</span><span class="p">,</span>
+                <span class="n">df_ancillary</span><span class="o">=</span><span class="n">ancillary_summary</span><span class="p">,</span>
+                <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                <span class="n">ancillary_name</span><span class="o">=</span><span class="n">ancillary_name</span><span class="p">,</span>
+                <span class="n">time_thresh_hr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_time_threshold&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span>
+                <span class="n">dist_thresh_km</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_distance_threshold&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+            <span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">paired_ds</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">paired_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] No matched profiles found between </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] No matched profiles between </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">.&quot;</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="c1"># Rename profile ID columns for merging</span>
-            <span class="n">paired_ds</span> <span class="o">=</span> <span class="n">paired_ds</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
-                <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
-                    <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;closest_glider_b_profile&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_ds</span><span class="p">)</span><span class="si">}</span><span class="s2"> matched profiles.&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Unique Pairs: </span><span class="si">{</span><span class="n">paired_ds</span><span class="p">[[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1">_PROFILE_NUMBER&#39;</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s1">_PROFILE_NUMBER&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> matched profile pairs.&quot;</span><span class="p">)</span>
 
-            <span class="c1"># Step 2: Interpolate + aggregate each dataset</span>
+            <span class="c1"># === STEP 2: Interpolate + Aggregate ===</span>
             <span class="n">binned_ds</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">glider_name</span><span class="p">,</span> <span class="n">raw_data</span> <span class="ow">in</span> <span class="p">[</span>
                 <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">target_data</span><span class="p">),</span>
                 <span class="p">(</span><span class="n">ancillary_name</span><span class="p">,</span> <span class="n">ancillary_data</span><span class="p">),</span>
             <span class="p">]:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Binning data for </span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Binning data for &#39;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
                 <span class="n">ds_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
                 <span class="n">ds_binned</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">ds_interp</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
                 <span class="n">binned_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_binned</span>
 
-            <span class="c1"># Step 3: Filter both datasets before merging</span>
+            <span class="c1"># === STEP 3: Filter Datasets by Matched Profile IDs ===</span>
             <span class="n">filtered_ds</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">glider_name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">target</span><span class="p">,</span> <span class="n">ancillary_name</span><span class="p">]:</span>
-                <span class="n">profile_ids</span> <span class="o">=</span> <span class="n">paired_ds</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="n">profile_ids</span> <span class="o">=</span> <span class="n">paired_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
                 <span class="n">filtered_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_xarray_by_profile_ids</span><span class="p">(</span>
                     <span class="n">ds</span><span class="o">=</span><span class="n">binned_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">],</span>
                     <span class="n">profile_id_var</span><span class="o">=</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
                     <span class="n">valid_ids</span><span class="o">=</span><span class="n">profile_ids</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="c1"># Step 4: Merge datasets at depth bin level</span>
+            <span class="c1"># === STEP 4: Merge on Depth Bins per Profile Pair ===</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merging profile pairs...&quot;</span><span class="p">)</span>
             <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_profile_pairs_on_depth_bin</span><span class="p">(</span>
-                <span class="n">paired_df</span><span class="o">=</span><span class="n">paired_ds</span><span class="p">,</span>
+                <span class="n">paired_df</span><span class="o">=</span><span class="n">paired_df</span><span class="p">,</span>
                 <span class="n">target_ds</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">target</span><span class="p">],</span>
                 <span class="n">ancillary_ds</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">],</span>
                 <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
                 <span class="n">ancillary_name</span><span class="o">=</span><span class="n">ancillary_name</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merged dataset dimensions: </span><span class="si">{</span><span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merged dataset dimensions: </span><span class="si">{</span><span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merged Variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># === STEP 5: Compute R² ===</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Computing R² for &#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
+            <span class="n">r2_ds</span> <span class="o">=</span> <span class="n">compute_r2_for_merged_profiles_xr</span><span class="p">(</span>
+                <span class="n">ds</span><span class="o">=</span><span class="n">merged</span><span class="p">,</span>
+                <span class="n">variables</span><span class="o">=</span><span class="n">alignment_vars</span><span class="p">,</span>
+                <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                <span class="n">ancillary_name</span><span class="o">=</span><span class="n">ancillary_name</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">r2_ds</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Stored R² results for: </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
