@@ -340,7 +340,7 @@ class PipelineManager:
 
     def align_to_target(self, target="None"):
         """
-        Align all datasets to a target dataset based on the summaries provided.
+        Align all datasets to a target dataset and compute R² against ancillary sources.
 
         Parameters
         ----------
@@ -348,17 +348,21 @@ class PipelineManager:
             The name of the target pipeline to align others to.
         """
 
+        # === PRECONDITIONS ===
         if not self._summary_ran:
-            raise RuntimeError(
-                "PipelineManager.summarise_all_profiles() must be run before alignment."
-            )
+            raise RuntimeError("Run summarise_all_profiles() before alignment.")
 
         if target not in self.pipelines:
             raise ValueError(f"Target pipeline '{target}' not found.")
 
-        target_data = self._contexts[target]["data"]
+        # === CONFIG ===
+        alignment_vars = list(self.alignment_map.keys())
+        self.r2_datasets = {}  # Reset R² result container
 
-        # Rename variables based on alias map
+        target_data = self._contexts[target]["data"]
+        target_summary = self.summary_per_glider[target].reset_index()
+
+        # Rename using alias map
         renamed_vars = {
             alias: std
             for std, alias_map in self.alignment_map.items()
@@ -367,10 +371,7 @@ class PipelineManager:
         print(f"[Pipeline Manager] Renaming variables: {renamed_vars}")
         target_data = target_data.rename(renamed_vars)
 
-        target_summary = self.summary_per_glider[target].reset_index()
-        alignment_vars = list(self.alignment_map.keys())
-
-        # Create mapping of all pipeline names to data/summary
+        # Collect data and summaries
         data = {
             name: (ctx["data"], self.summary_per_glider[name])
             for name, ctx in self._contexts.items()
@@ -381,11 +382,11 @@ class PipelineManager:
                 continue
 
             print(
-                f"[Pipeline Manager] Aligning '{ancillary_name}' to target '{target}'..."
+                f"\n[Pipeline Manager] Aligning '{ancillary_name}' to target '{target}'..."
             )
 
-            # Step 1: Find matched profile pairs
-            paired_ds = find_profile_pair_metadata(
+            # === STEP 1: Find Matched Profile Pairs ===
+            paired_df = find_profile_pair_metadata(
                 df_target=target_summary,
                 df_ancillary=ancillary_summary,
                 target_name=target,
@@ -398,48 +399,39 @@ class PipelineManager:
                 .get("max_distance_threshold", 20),
             )
 
-            if paired_ds.empty:
+            if paired_df.empty:
                 print(
-                    f"[Pipeline Manager] No matched profiles found between {target} and {ancillary_name}."
+                    f"[Pipeline Manager] No matched profiles between {target} and {ancillary_name}."
                 )
                 continue
 
-            # Rename profile ID columns for merging
-            paired_ds = paired_ds.rename(
-                columns={
-                    "PROFILE_NUMBER": f"{target}_PROFILE_NUMBER",
-                    "closest_glider_b_profile": f"{ancillary_name}_PROFILE_NUMBER",
-                }
-            )
-            print(f"[Pipeline Manager] Found {len(paired_ds)} matched profiles.")
-            print(
-                f"Unique Pairs: {paired_ds[[f'{target}_PROFILE_NUMBER', f'{ancillary_name}_PROFILE_NUMBER']].drop_duplicates()}"
-            )
+            print(f"[Pipeline Manager] Found {len(paired_df)} matched profile pairs.")
 
-            # Step 2: Interpolate + aggregate each dataset
+            # === STEP 2: Interpolate + Aggregate ===
             binned_ds = {}
             for glider_name, raw_data in [
                 (target, target_data),
                 (ancillary_name, ancillary_data),
             ]:
-                print(f"[Pipeline Manager] Binning data for {glider_name}...")
+                print(f"[Pipeline Manager] Binning data for '{glider_name}'...")
                 ds_interp = interpolate_DEPTH(raw_data)
                 ds_binned = aggregate_vars(ds_interp, alignment_vars)
                 binned_ds[glider_name] = ds_binned
 
-            # Step 3: Filter both datasets before merging
+            # === STEP 3: Filter Datasets by Matched Profile IDs ===
             filtered_ds = {}
             for glider_name in [target, ancillary_name]:
-                profile_ids = paired_ds[f"{glider_name}_PROFILE_NUMBER"].values
+                profile_ids = paired_df[f"{glider_name}_PROFILE_NUMBER"].values
                 filtered_ds[glider_name] = filter_xarray_by_profile_ids(
                     ds=binned_ds[glider_name],
                     profile_id_var="PROFILE_NUMBER",
                     valid_ids=profile_ids,
                 )
 
-            # Step 4: Merge datasets at depth bin level
+            # === STEP 4: Merge on Depth Bins per Profile Pair ===
+            print(f"[Pipeline Manager] Merging profile pairs...")
             merged = merge_profile_pairs_on_depth_bin(
-                paired_df=paired_ds,
+                paired_df=paired_df,
                 target_ds=filtered_ds[target],
                 ancillary_ds=filtered_ds[ancillary_name],
                 target_name=target,
@@ -447,15 +439,10 @@ class PipelineManager:
             )
 
             print(f"[Pipeline Manager] Merged dataset dimensions: {merged.dims}")
-
-            # view merged variables
             print(f"Merged Variables: {list(merged.data_vars)}")
-            # view sample rows
-            print(f"Merged Sample Data:\n{merged}")
 
-            # Step 5: Compute R² per variable between target and ancillary
-            print(f"[Pipeline Manager] Computing R² for merged dataset...")
-
+            # === STEP 5: Compute R² ===
+            print(f"[Pipeline Manager] Computing R² for '{ancillary_name}'...")
             r2_ds = compute_r2_for_merged_profiles_xr(
                 ds=merged,
                 variables=alignment_vars,
@@ -463,5 +450,5 @@ class PipelineManager:
                 ancillary_name=ancillary_name,
             )
 
-            print(f"[Pipeline Manager] R² results computed:")
-            print(r2_ds)
+            self.r2_datasets[ancillary_name] = r2_ds
+            print(f"[Pipeline Manager] Stored R² results for: {ancillary_name}")
