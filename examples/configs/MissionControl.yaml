@@ -19,7 +19,6 @@ alignment:
 
 settings:
   diagnostics:
-    show_plots: true
     save_plots: false
     distance_over_time_matrix: true
     matchup_thresholds:

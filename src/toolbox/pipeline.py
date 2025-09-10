@@ -15,7 +15,8 @@ from toolbox.utils.alignment import (
     aggregate_vars,
     merge_profile_pairs_on_depth_bin,
     filter_xarray_by_profile_ids,
-    compute_r2_for_merged_profiles,
+    find_profile_pair_metadata,
+    compute_r2_for_merged_profiles_xr,
 )
 
 from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
@@ -301,54 +302,39 @@ class PipelineManager:
             .get("matchup_thresholds", {})
             .get("bin_size", 2)
         )
-        if show_plots:
-            if not distance_over_time_matrix:
-                print("[Pipeline Manager] Distance over time matrix is disabled.")
-            else:
-                print("[Pipeline Manager] Plotting distance time grid...")
-                # After generating all summaries...
-                combined_summaries = plot_distance_time_grid(
-                    summaries=self.summary_per_glider,
-                    output_path=self.settings.get("diagnostics", {}).get(
-                        "distance_plot_output", None
-                    ),
-                    show=self.settings.get("diagnostics", {}).get("show_plots", True),
-                )
 
-            if not self.matchup_thresholds:
-                print(
-                    "[Pipeline Manager] Matchup thresholds are not set. Skipping heatmap grid."
-                )
-            else:
-                print("[Pipeline Manager] Finding closest profiles across gliders...")
-                # compute time taken for caluclations
-                start_time = pd.Timestamp.now()
-                plot_glider_pair_heatmap_grid(
-                    summaries=self.summary_per_glider,
-                    time_bins=np.arange(0, max_time_threshold + 1, bin_size),
-                    dist_bins=np.arange(0, max_distance_threshold + 1, bin_size),
-                    output_path=self.settings.get("diagnostics", {}).get(
-                        "heatmap_output", None
-                    ),
-                    show=self.settings.get("diagnostics", {}).get("show_plots", True),
-                )
-                end_time = pd.Timestamp.now()
-                print(
-                    f"[Pipeline Manager] Heatmap grid plotted in {end_time - start_time}"
-                )
-
+        if not distance_over_time_matrix:
+            print("[Pipeline Manager] Distance over time matrix is disabled.")
         else:
-            print("[Pipeline Manager] Skipping plots.")
-            # Generate combined_summaries without plotting
-            combined_summaries = []
-            for i, g_id in self.summary_per_glider.items():
-                for j, g_b_id in self.summary_per_glider.items():
-                    ref_df = self.summary_per_glider[g_id]
-                    comp_df = self.summary_per_glider[g_b_id]
+            print("[Pipeline Manager] Plotting distance time grid...")
+            # After generating all summaries...
+            combined_summaries = plot_distance_time_grid(
+                summaries=self.summary_per_glider,
+                output_path=self.settings.get("diagnostics", {}).get(
+                    "distance_plot_output", None
+                ),
+                show=self.settings.get("diagnostics", {}).get("show_plots", True),
+            )
 
-                    paired_ds = find_closest_prof(ref_df, comp_df)
-                    combined_summaries.append(paired_ds)
-            combined_summaries = pd.concat(combined_summaries, ignore_index=True)
+        if not self.matchup_thresholds:
+            print(
+                "[Pipeline Manager] Matchup thresholds are not set. Skipping heatmap grid."
+            )
+        else:
+            print("[Pipeline Manager] Finding closest profiles across gliders...")
+            # compute time taken for caluclations
+            start_time = pd.Timestamp.now()
+            plot_glider_pair_heatmap_grid(
+                summaries=self.summary_per_glider,
+                time_bins=np.arange(0, max_time_threshold + 1, bin_size),
+                dist_bins=np.arange(0, max_distance_threshold + 1, bin_size),
+                output_path=self.settings.get("diagnostics", {}).get(
+                    "heatmap_output", None
+                ),
+                show=self.settings.get("diagnostics", {}).get("show_plots", True),
+            )
+            end_time = pd.Timestamp.now()
+            print(f"[Pipeline Manager] Heatmap grid plotted in {end_time - start_time}")
 
         return
 
@@ -383,7 +369,6 @@ class PipelineManager:
 
         target_summary = self.summary_per_glider[target].reset_index()
         alignment_vars = list(self.alignment_map.keys())
-        r2_results_all = []
 
         # Create mapping of all pipeline names to data/summary
         data = {
@@ -400,7 +385,18 @@ class PipelineManager:
             )
 
             # Step 1: Find matched profile pairs
-            paired_ds = find_closest_prof(target_summary, ancillary_summary)
+            paired_ds = find_profile_pair_metadata(
+                df_target=target_summary,
+                df_ancillary=ancillary_summary,
+                target_name=target,
+                ancillary_name=ancillary_name,
+                time_thresh_hr=self.settings.get("diagnostics", {})
+                .get("matchup_thresholds", {})
+                .get("max_time_threshold", 12),
+                dist_thresh_km=self.settings.get("diagnostics", {})
+                .get("matchup_thresholds", {})
+                .get("max_distance_threshold", 20),
+            )
 
             if paired_ds.empty:
                 print(
@@ -451,3 +447,21 @@ class PipelineManager:
             )
 
             print(f"[Pipeline Manager] Merged dataset dimensions: {merged.dims}")
+
+            # view merged variables
+            print(f"Merged Variables: {list(merged.data_vars)}")
+            # view sample rows
+            print(f"Merged Sample Data:\n{merged}")
+
+            # Step 5: Compute R² per variable between target and ancillary
+            print(f"[Pipeline Manager] Computing R² for merged dataset...")
+
+            r2_ds = compute_r2_for_merged_profiles_xr(
+                ds=merged,
+                variables=alignment_vars,
+                target_name=target,
+                ancillary_name=ancillary_name,
+            )
+
+            print(f"[Pipeline Manager] R² results computed:")
+            print(r2_ds)

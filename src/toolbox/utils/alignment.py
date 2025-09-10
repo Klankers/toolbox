@@ -2,7 +2,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from scipy.stats import pearsonr
-import sys
+from geopy.distance import geodesic
 
 from typing import Dict, List
 
@@ -193,6 +193,115 @@ def filter_xarray_by_profile_ids(
     return filtered
 
 
+import pandas as pd
+import numpy as np
+from geopy.distance import geodesic
+
+
+def find_profile_pair_metadata(
+    df_target: pd.DataFrame,
+    df_ancillary: pd.DataFrame,
+    target_name: str,
+    ancillary_name: str,
+    time_thresh_hr: float = 2.0,
+    dist_thresh_km: float = 5.0,
+) -> pd.DataFrame:
+    """
+    Identify profile pairs between a target and ancillary glider within time/distance thresholds.
+
+    Parameters
+    ----------
+    df_target : pd.DataFrame
+        Summary dataframe for the target glider (from `summarising_profiles()`).
+
+    df_ancillary : pd.DataFrame
+        Summary dataframe for the ancillary glider.
+
+    target_name : str
+        Name of the target glider (used in output column names).
+
+    ancillary_name : str
+        Name of the ancillary glider (used in output column names).
+
+    Returns
+    -------
+    pd.DataFrame
+        Matched profile pairs with columns:
+        - [target_name]_PROFILE_NUMBER
+        - [ancillary_name]_PROFILE_NUMBER
+        - time_diff_hr
+        - dist_km
+    """
+    if df_target.empty or df_ancillary.empty:
+        return pd.DataFrame()
+
+    df_target = df_target.copy()
+    df_ancillary = df_ancillary.copy()
+
+    # Parse datetime columns
+    df_target["median_datetime"] = pd.to_datetime(df_target["median_TIME"])
+    df_ancillary["median_datetime"] = pd.to_datetime(df_ancillary["median_TIME"])
+
+    # Cartesian join
+    df_target["_key"] = 1
+    df_ancillary["_key"] = 1
+    df_cross = pd.merge(
+        df_target, df_ancillary, on="_key", suffixes=("_target", "_ancillary")
+    ).drop("_key", axis=1)
+
+    # Compute time difference (in hours)
+    df_cross["time_diff_hr"] = (
+        np.abs(
+            df_cross["median_datetime_target"] - df_cross["median_datetime_ancillary"]
+        ).dt.total_seconds()
+        / 3600.0
+    )
+
+    df_cross = df_cross[df_cross["time_diff_hr"] <= time_thresh_hr]
+    if df_cross.empty:
+        return pd.DataFrame()
+
+    # Geodesic distance
+    def compute_dist_km(lat1, lon1, lat2, lon2):
+        if pd.isnull(lat1) or pd.isnull(lon1) or pd.isnull(lat2) or pd.isnull(lon2):
+            return np.nan
+        return geodesic((lat1, lon1), (lat2, lon2)).km
+
+    df_cross["dist_km"] = np.vectorize(compute_dist_km)(
+        df_cross["median_LATITUDE_target"],
+        df_cross["median_LONGITUDE_target"],
+        df_cross["median_LATITUDE_ancillary"],
+        df_cross["median_LONGITUDE_ancillary"],
+    )
+
+    df_cross = df_cross[df_cross["dist_km"] <= dist_thresh_km]
+    if df_cross.empty:
+        return pd.DataFrame()
+
+    # Get best match per target profile
+    best_matches = df_cross.loc[
+        df_cross.groupby("PROFILE_NUMBER_target")["dist_km"].idxmin()
+    ].copy()
+
+    # Rename columns to final format
+    best_matches.rename(
+        columns={
+            "PROFILE_NUMBER_target": f"{target_name}_PROFILE_NUMBER",
+            "PROFILE_NUMBER_ancillary": f"{ancillary_name}_PROFILE_NUMBER",
+        },
+        inplace=True,
+    )
+
+    return best_matches[
+        [
+            f"{target_name}_PROFILE_NUMBER",
+            f"{ancillary_name}_PROFILE_NUMBER",
+            "time_diff_hr",
+            "dist_km",
+        ]
+    ].reset_index(drop=True)
+
+
 def merge_profile_pairs_on_depth_bin(
     paired_df: pd.DataFrame,
     target_ds: xr.Dataset,
@@ -251,12 +360,20 @@ def merge_profile_pairs_on_depth_bin(
         pairs = pairs.head(max_pairs)
 
     for idx, row in pairs.iterrows():
-        pid_target = row[target_profile_col]
-        pid_anc = row[ancillary_profile_col]
+        # Ensure integer type to match xarray index dtype
+        pid_target = int(row[target_profile_col])
+        pid_anc = int(row[ancillary_profile_col])
         time_diff = row["time_diff_hr"]
         dist = row["dist_km"]
 
-        # Subset each dataset to just the current profile
+        if pid_target not in target_ds["PROFILE_NUMBER"].values:
+            print(f"[Skip] Target profile {pid_target} not in dataset.")
+            continue
+
+        if pid_anc not in ancillary_ds["PROFILE_NUMBER"].values:
+            print(f"[Skip] Ancillary profile {pid_anc} not in dataset.")
+            continue
+
         tgt_sel = target_ds.sel(PROFILE_NUMBER=pid_target, drop=True)
         anc_sel = ancillary_ds.sel(PROFILE_NUMBER=pid_anc, drop=True)
 
@@ -267,6 +384,15 @@ def merge_profile_pairs_on_depth_bin(
         anc_sel = anc_sel.rename(
             {v: f"{v}_{ancillary_name}" for v in anc_sel.data_vars}
         )
+
+        def drop_measurements_dim(ds: xr.Dataset) -> xr.Dataset:
+            if "N_MEASUREMENTS" in ds.dims:
+                return ds.drop_dims("N_MEASUREMENTS")
+            return ds
+
+        # Apply
+        tgt_sel = drop_measurements_dim(tgt_sel)
+        anc_sel = drop_measurements_dim(anc_sel)
 
         # Merge on DEPTH_bin
         pair_merged = xr.merge(
@@ -292,79 +418,104 @@ def merge_profile_pairs_on_depth_bin(
     return final_ds
 
 
-def major_axis_r2(x: np.ndarray, y: np.ndarray) -> float:
+def major_axis_r2_xr(x: xr.DataArray, y: xr.DataArray) -> float:
     """
-    Compute R² (coefficient of determination) for Major Axis (Type II) regression.
-    R² is simply the square of the Pearson correlation coefficient.
-    """
-    x = np.asarray(x)
-    y = np.asarray(y)
-    mask = ~np.isnan(x) & ~np.isnan(y)
-    x_clean = x[mask]
-    y_clean = y[mask]
-
-    if len(x_clean) < 2:
-        return np.nan  # Not enough points
-
-    r, _ = pearsonr(x_clean, y_clean)
-    return r**2
-
-
-def compute_r2_for_merged_profiles(
-    merged_df: pd.DataFrame,
-    variables: List[str],
-    target_name: str,
-    other_names: List[str],
-) -> pd.DataFrame:
-    """
-    Compute R² values for each variable between target and all other gliders.
+    Compute R² (coefficient of determination) for Major Axis (Type II) regression using xarray.
 
     Parameters
     ----------
-    merged_df : pd.DataFrame
-        Output of merge_depth_binned_profiles()
+    x : xr.DataArray
+        First variable (e.g., target glider).
 
-    variables : list of str
-        List of variable names to compare (e.g., ["salinity", "temperature"])
-
-    target_name : str
-        Name of the target glider (used in suffixes)
-
-    other_names : list of str
-        Other glider names to compare against
-
-    group_columns : list
-        Columns to group by (default: PROFILE_NUMBER + DEPTH_bin)
+    y : xr.DataArray
+        Second variable (e.g., ancillary glider).
 
     Returns
     -------
-    pd.DataFrame
-        One row per target_profile vs comparison_profile pair with R² values for each variable.
+    float
+        R² value, or NaN if fewer than 2 valid observations.
     """
-    results = []
+    if not isinstance(x, xr.DataArray) or not isinstance(y, xr.DataArray):
+        raise TypeError("Inputs must be xarray.DataArray.")
 
-    grouped = merged_df.groupby(
-        [f"{target_name}_PROFILE_NUMBER"]
-        + [f"{other}_PROFILE_NUMBER" for other in other_names]
-    )
+    # Apply masking
+    mask = ~xr.ufuncs.isnan(x) & ~xr.ufuncs.isnan(y)
+    x_clean = x.where(mask, drop=True)
+    y_clean = y.where(mask, drop=True)
 
-    for keys, group in grouped:
-        row = {f"{target_name}_PROFILE_NUMBER": keys[0]}
-        for i, other in enumerate(other_names):
-            row[f"{other}_PROFILE_NUMBER"] = keys[i + 1]
+    if x_clean.size < 2 or y_clean.size < 2:
+        return np.nan
 
-        for var in variables:
-            col_target = f"median_{var}_TARGET_{target_name}"
+    r, _ = pearsonr(x_clean.values, y_clean.values)
+    return r**2
 
-            for other in other_names:
-                col_other = f"median_{var}_{other}"
-                if col_target in group.columns and col_other in group.columns:
-                    x = group[col_target].to_numpy()
-                    y = group[col_other].to_numpy()
-                    row[f"r2_{var}_{other}"] = major_axis_r2(x, y)
-                else:
-                    row[f"r2_{var}_{other}"] = np.nan
 
-        results.append(row)
+def compute_r2_for_merged_profiles_xr(
+    ds: xr.Dataset,
+    variables: list[str],
+    target_name: str,
+    ancillary_name: str,
+) -> xr.Dataset:
+    """
+    Compute R² for each profile-pair in an xarray.Dataset, and append the results directly to the dataset.
 
-    return pd.DataFrame(results)
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset with one row per (PAIR_INDEX, DEPTH_bin), and aligned variables for target and ancillary gliders.
+
+    variables : list of str
+        List of variable base names (e.g., ["salinity", "temperature"]).
+
+    target_name : str
+        Name of the target glider (used in suffix suffix: _TARGET_{name}).
+
+    ancillary_name : str
+        Name of the ancillary glider (used in suffix: _{name}).
+
+    Returns
+    -------
+    xr.Dataset
+        Same dataset with new variables: r2_{var}_{ancillary_name}, one per profile pair.
+        These will be aligned with the "PAIR_INDEX" dimension only.
+    """
+
+    pair_index = ds["PAIR_INDEX"].values
+    results = {}
+
+    for var in variables:
+        target_var = f"median_{var}_TARGET_{target_name}"
+        anc_var = f"median_{var}_{ancillary_name}"
+
+        if target_var not in ds or anc_var not in ds:
+            print(f"[R²] Skipping variable '{var}' — missing data.")
+            continue
+
+        r2_values = []
+        for pid in pair_index:
+            tgt = ds[target_var].sel(PAIR_INDEX=pid)
+            anc = ds[anc_var].sel(PAIR_INDEX=pid)
+
+            x = tgt.values
+            y = anc.values
+
+            # Remove NaNs
+            mask = ~np.isnan(x) & ~np.isnan(y)
+            x_clean = x[mask]
+            y_clean = y[mask]
+
+            if len(x_clean) < 2:
+                r2 = np.nan
+            else:
+                r, _ = pearsonr(x_clean, y_clean)
+                r2 = r**2
+
+            r2_values.append(r2)
+
+        results[f"r2_{var}_{ancillary_name}"] = xr.DataArray(
+            r2_values, dims="PAIR_INDEX", coords={"PAIR_INDEX": pair_index}
+        )
+
+    # Attach R² variables to original dataset
+    ds = ds.assign(results)
+    return ds
