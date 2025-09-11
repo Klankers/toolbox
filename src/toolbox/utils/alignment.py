@@ -2,6 +2,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import warnings
+import os
 
 from scipy.stats import pearsonr
 from geopy.distance import geodesic
@@ -521,112 +522,125 @@ def compute_r2_for_merged_profiles_xr(
     return ds
 
 
-def plot_r2_grid_heatmaps(
+def plot_r2_heatmaps_per_pair(
     r2_datasets,
     variables,
+    target_name=None,  # optional, used for plot titles/files
     r2_thresholds=[0.99, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7],
-    figsize=(16, 16),
-    output_path=None,
+    time_thresh_hr=None,  # e.g. 5 to filter by time ≤ 5 hr
+    dist_thresh_km=None,  # e.g. 10 to filter by dist ≤ 10 km
+    figsize=(9, 6),
+    output_dir=None,  # directory to save one PNG per pairing
     show=True,
 ):
     """
-    Generate an NxN grid of R² quality threshold heatmaps for each glider pairing.
-
-    Parameters
-    ----------
-    r2_datasets : dict
-        Dictionary with ancillary_name as key and xarray.Dataset as value (R² data per profile pair).
-
-    variables : list of str
-        Alignment variable names (e.g., ['salinity', 'temperature']).
-
-    r2_thresholds : list of float
-        Thresholds to evaluate (defaults to 0.99 → 0.7).
-
-    figsize : tuple
-        Size of the overall figure.
-
-    output_path : str or None
-        If provided, saves the figure.
-
-    show : bool
-        Whether to display the plot.
+    Create ONE heatmap per ancillary pairing showing counts of unique ancillary profiles
+    that meet R² thresholds for each variable. Optionally filter by time/dist thresholds.
     """
-
-    ancillary_names = list(r2_datasets.keys())
-    grid_size = len(ancillary_names)
     var_labels = [v.capitalize() for v in variables]
 
-    fig, axes = plt.subplots(
-        grid_size, grid_size, figsize=figsize, sharex=True, sharey=True
-    )
-    fig.suptitle("R² Quality Threshold Coverage Across Glider Pairings", fontsize=18)
+    for ancillary_name, ds in r2_datasets.items():
+        if not isinstance(ds, xr.Dataset):
+            print(f"[Plot] Skipping '{ancillary_name}': not an xarray Dataset.")
+            continue
 
-    for i, target_name in enumerate(ancillary_names):
-        for j, ancillary_name in enumerate(ancillary_names):
-            ax = axes[i, j]
-
-            if target_name == ancillary_name:
-                ax.axis("off")
-                ax.set_title(f"{target_name} (Self)", fontsize=10)
-                continue
-
-            if ancillary_name not in r2_datasets:
-                ax.set_title("Missing", fontsize=10)
-                ax.axis("off")
-                continue
-
-            ds = r2_datasets[ancillary_name]
-            if not isinstance(ds, xr.Dataset):
-                ax.axis("off")
-                continue
-
-            df = ds.to_dataframe().reset_index()
-            heatmap = np.zeros((len(variables), len(r2_thresholds)), dtype=int)
-
-            for vi, var in enumerate(variables):
-                col = f"r2_{var}_{ancillary_name}"
-                if col not in df.columns:
-                    continue
-                for tj, threshold in enumerate(r2_thresholds):
-                    mask = df[col] >= threshold
-                    count = df.loc[mask, f"{ancillary_name}_PROFILE_NUMBER"].nunique()
-                    heatmap[vi, tj] = count
-
-            im = ax.imshow(heatmap, aspect="auto", cmap="PuBu")
-            ax.set_xticks(np.arange(len(r2_thresholds)))
-            ax.set_xticklabels(
-                [f"{t:.2f}" for t in r2_thresholds], fontsize=8, rotation=45
-            )
-            ax.set_yticks(np.arange(len(variables)))
-            if j == 0:
-                ax.set_yticklabels(var_labels, fontsize=8)
+        # Build a dataframe with the needed columns
+        r2_cols = [f"r2_{v}_{ancillary_name}" for v in variables]
+        needed = []
+        for c in r2_cols:
+            if c in ds:
+                needed.append(c)
             else:
-                ax.set_yticklabels([])
+                print(f"[Plot] Warning: missing {c} in dataset for {ancillary_name}")
 
-            ax.set_title(f"{target_name} vs {ancillary_name}", fontsize=9)
+        # We’ll also try to include the ancillary profile id + optional filters
+        anc_prof_col = f"{ancillary_name}_PROFILE_NUMBER"
+        extra = []
+        if anc_prof_col in ds:
+            extra.append(anc_prof_col)
+        else:
+            print(
+                f"[Plot] Warning: missing {anc_prof_col} in dataset for {ancillary_name}"
+            )
 
-            for vi in range(len(variables)):
-                for tj in range(len(r2_thresholds)):
-                    val = heatmap[vi, tj]
-                    color = "white" if val > heatmap.max() / 2 else "black"
-                    ax.text(
-                        tj,
-                        vi,
-                        str(val),
-                        ha="center",
-                        va="center",
-                        color=color,
-                        fontsize=7,
-                    )
+        for meta in ["time_diff_hr", "dist_km"]:
+            if meta in ds:
+                extra.append(meta)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
-    fig.subplots_adjust(hspace=0.3, wspace=0.3)
+        if not needed:
+            print(f"[Plot] No R² columns present for '{ancillary_name}'. Skipping.")
+            continue
 
-    if output_path:
-        plt.savefig(output_path, dpi=300)
-        print(f"[Diagnostics] Saved R² heatmap grid to: {output_path}")
-    elif show:
-        plt.show()
-    else:
-        plt.close()
+        df = ds[needed + extra].to_dataframe().reset_index()
+
+        # Optional filtering by time/distance (pair-level)
+        if time_thresh_hr is not None and "time_diff_hr" in df.columns:
+            df = df[df["time_diff_hr"] <= float(time_thresh_hr)]
+        if dist_thresh_km is not None and "dist_km" in df.columns:
+            df = df[df["dist_km"] <= float(dist_thresh_km)]
+
+        # Build heatmap matrix: rows = variables, cols = thresholds
+        heatmap = np.zeros((len(variables), len(r2_thresholds)), dtype=int)
+
+        for i, var in enumerate(variables):
+            col = f"r2_{var}_{ancillary_name}"
+            if col not in df.columns:
+                continue
+            for j, thr in enumerate(r2_thresholds):
+                mask = df[col] >= thr
+                if anc_prof_col in df.columns:
+                    # Count unique ancillary profiles that pass the threshold
+                    count = df.loc[mask, anc_prof_col].nunique()
+                else:
+                    # Fallback: count number of pairs
+                    count = int(mask.sum())
+                heatmap[i, j] = count
+
+        # Plot single heatmap for this pairing
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        im = ax.imshow(heatmap, aspect="auto", cmap="PuBu")
+
+        ax.set_xticks(np.arange(len(r2_thresholds)))
+        ax.set_xticklabels([f"{t:.2f}" for t in r2_thresholds], rotation=45, fontsize=9)
+        ax.set_yticks(np.arange(len(variables)))
+        ax.set_yticklabels(var_labels, fontsize=10)
+
+        title_target = target_name if target_name else "Target"
+        subtitle = []
+        if time_thresh_hr is not None:
+            subtitle.append(f"Time ≤ {time_thresh_hr}hr")
+        if dist_thresh_km is not None:
+            subtitle.append(f"Dist ≤ {dist_thresh_km}km")
+        sub = " | ".join(subtitle)
+        ax.set_title(
+            f"R² Threshold Coverage: {title_target} vs {ancillary_name}\n{sub}",
+            fontsize=12,
+        )
+
+        # Annotate cells
+        vmax = heatmap.max() if heatmap.size else 0
+        for i in range(len(variables)):
+            for j in range(len(r2_thresholds)):
+                val = int(heatmap[i, j])
+                color = "white" if vmax > 0 and val > vmax / 2 else "black"
+                ax.text(
+                    j, i, str(val), ha="center", va="center", color=color, fontsize=9
+                )
+
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label("Unique ancillary profiles", rotation=90)
+
+        plt.tight_layout()
+
+        # Save or show
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            fname = f"r2_heatmap_{title_target}_vs_{ancillary_name}.png"
+            path = os.path.join(output_dir, fname)
+            plt.savefig(path, dpi=300)
+            print(f"[Plot] Saved: {path}")
+
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)

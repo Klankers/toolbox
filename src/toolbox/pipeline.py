@@ -16,7 +16,7 @@ from toolbox.utils.alignment import (
     filter_xarray_by_profile_ids,
     find_profile_pair_metadata,
     compute_r2_for_merged_profiles_xr,
-    plot_r2_grid_heatmaps,
+    plot_r2_heatmaps_per_pair,
 )
 
 from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
@@ -461,11 +461,19 @@ class PipelineManager:
         r2_thresholds = [0.99, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
 
         # Call the plotting function
-        plot_r2_grid_heatmaps(
-            r2_datasets=self.r2_datasets,  # dictionary of merged + annotated r² datasets
-            variables=alignment_vars,  # e.g., from self.alignment_map.keys()
-            r2_thresholds=r2_thresholds,  # optional override
-            figsize=(18, 18),  # adjust as needed
-            output_path="r2_heatmap_grid.png",  # or None to skip saving
-            show=True,  # show interactively
+        # r2_datasets produced by align_to_target
+        plot_r2_heatmaps_per_pair(
+            r2_datasets=self.r2_datasets,
+            variables=list(self.alignment_map.keys()),
+            target_name=target,  # e.g. "Doombar"
+            r2_thresholds=r2_thresholds,
+            time_thresh_hr=self.settings.get("diagnostics", {})
+            .get("matchup_thresholds", {})
+            .get("max_time_threshold", 12),
+            dist_thresh_km=self.settings.get("diagnostics", {})
+            .get("matchup_thresholds", {})
+            .get("max_distance_threshold", 20),
+            figsize=(9, 6),
+            output_dir="pair_heatmaps",  # one PNG per ancillary in this folder
+            show=True,
         )
