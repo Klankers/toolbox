@@ -52,6 +52,8 @@
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">pearsonr</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -89,7 +91,6 @@
         <span class="p">)</span>
 
     <span class="c1"># Interpolate missing values per PROFILE_NUMBER</span>
-    <span class="c1"># Approach: loop over unique profile numbers using xarray vectorized selection</span>
     <span class="k">if</span> <span class="s2">&quot;DEPTH&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DEPTH not found in dataset.&quot;</span><span class="p">)</span>
 
@@ -102,13 +103,9 @@
     <span class="c1"># (-1 is surfacing behaviour)</span>
     <span class="n">mask</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
     <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">N_MEASUREMENTS</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+
     <span class="c1"># convert to int</span>
     <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
-    <span class="c1">##### DEV ONLY #####</span>
-    <span class="c1"># For debugging, limit to first 20 profiles</span>
-    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)),</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;##### DEV ONLY: Limiting to first 20 profiles for debugging #####&quot;</span><span class="p">)</span>
-    <span class="c1">###################</span>
 
     <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
@@ -153,55 +150,89 @@
 
 <div class="viewcode-block" id="aggregate_vars">
 <a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.aggregate_vars">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">aggregate_vars</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">vars_to_aggregate</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">aggregate_vars</span><span class="p">(</span>
+    <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">vars_to_aggregate</span><span class="p">,</span> <span class="n">profile_dim</span><span class="o">=</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">bin_dim</span><span class="o">=</span><span class="s2">&quot;DEPTH_bin&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin using xarray only.</span>
+<span class="sd">    Compute medians per (PROFILE_NUMBER, DEPTH_bin) and return a NEW dataset</span>
+<span class="sd">    with variables named &#39;median_{var}&#39;, each shaped (PROFILE_NUMBER, DEPTH_bin).</span>
 
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    ds : xr.Dataset</span>
-<span class="sd">        Dataset containing &#39;PROFILE_NUMBER&#39; and &#39;DEPTH_bin&#39; as coordinates or variables.</span>
-
-<span class="sd">    vars_to_aggregate : list of str</span>
-<span class="sd">        List of variable names in the dataset to aggregate.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    xr.Dataset</span>
-<span class="sd">        Dataset with median-aggregated variables named as median_{var},</span>
-<span class="sd">        indexed by PROFILE_NUMBER and DEPTH_bin.</span>
+<span class="sd">    Notes:</span>
+<span class="sd">    - This does NOT attach medians back to the raw dataset (which would broadcast</span>
+<span class="sd">      onto N_MEASUREMENTS). Use the returned dataset for downstream steps.</span>
+<span class="sd">    - Requires that both PROFILE_NUMBER and DEPTH_bin are coordinates aligned</span>
+<span class="sd">      to the measurement dimension (typically &#39;N_MEASUREMENTS&#39;).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Ensure required keys exist</span>
-    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Dataset must contain &#39;PROFILE_NUMBER&#39;.&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s2">&quot;DEPTH_bin&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Dataset must contain &#39;DEPTH_bin&#39;.&quot;</span><span class="p">)</span>
+    <span class="c1"># basic checks</span>
+    <span class="k">if</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected &#39;N_MEASUREMENTS&#39; dimension in input dataset.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">profile_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset must contain &#39;</span><span class="si">{</span><span class="n">profile_dim</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bin_dim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset must contain &#39;</span><span class="si">{</span><span class="n">bin_dim</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
-        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s2">&quot;DEPTH_bin&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
-        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">)</span>
+    <span class="c1"># ensure the two keys are *coordinates on the measurement axis*</span>
+    <span class="c1"># (i.e., both should be 1-D arrays aligned to N_MEASUREMENTS)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="n">profile_dim</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">set_coords</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="c1"># sanity: the coord should broadcast to N_MEASUREMENTS (usually same length)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">ds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">ds</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span> <span class="o">!=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Coordinate &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; must align with &#39;N_MEASUREMENTS&#39; for aggregation.&quot;</span>
+            <span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Pipeline Manager] Aggregating variables...&quot;</span><span class="p">)</span>
-
+    <span class="n">out_vars</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_to_aggregate</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Warning] Skipping missing variable: </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Warning] Available variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[aggregate_vars] Skipping missing variable: </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">continue</span>
 
-        <span class="c1"># Group by (PROFILE_NUMBER, DEPTH_bin) and take median</span>
-        <span class="n">grouped</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">])</span>
-        <span class="n">median</span> <span class="o">=</span> <span class="n">grouped</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">)</span>
+        <span class="n">da</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+        <span class="c1"># Build a MultiIndex on the measurement axis: (PROFILE_NUMBER, DEPTH_bin)</span>
+        <span class="n">da_mi</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">N_MEASUREMENTS</span><span class="o">=</span><span class="p">(</span><span class="n">profile_dim</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">))</span>
 
-        <span class="c1"># create new variable name</span>
-        <span class="n">new_var_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">ds</span><span class="p">[</span><span class="n">new_var_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">median</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Aggregated </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">new_var_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="c1"># drop rows that have any NANs in the aggregated variables</span>
-    <span class="n">agg_vars</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">vars_to_aggregate</span> <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">]</span>
-    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;any&quot;</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">agg_vars</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">ds</span></div>
+        <span class="c1"># Median within each (profile, bin) group across any duplicate measurements</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">)</span>
+            <span class="n">da_groupmed</span> <span class="o">=</span> <span class="n">da_mi</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Unstack back to a dense 2D grid -&gt; dims: (PROFILE_NUMBER, DEPTH_bin)</span>
+        <span class="n">da_2d</span> <span class="o">=</span> <span class="n">da_groupmed</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Ensure nice dim order</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">profile_dim</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">da_2d</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span> <span class="n">da_2d</span><span class="o">.</span><span class="n">dims</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]:</span>
+            <span class="n">da_2d</span> <span class="o">=</span> <span class="n">da_2d</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">profile_dim</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">)</span>
+
+        <span class="n">out_vars</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">da_2d</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">out_vars</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No variables were aggregated (none found).&quot;</span><span class="p">)</span>
+
+    <span class="n">agg</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">out_vars</span><span class="p">)</span>
+
+    <span class="c1"># (optional) keep PROFILE_NUMBER &amp; DEPTH_bin as coords on the result</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="n">profile_dim</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agg</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+            <span class="n">agg</span> <span class="o">=</span> <span class="n">agg</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span> <span class="k">else</span> <span class="n">agg</span><span class="p">[</span><span class="n">key</span><span class="p">]}</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Drop bins that are NaN for every variable</span>
+    <span class="n">all_meds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">agg</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">agg</span><span class="o">.</span><span class="n">data_vars</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="s2">&quot;__vars__&quot;</span><span class="p">)</span>
+    <span class="c1"># drop PROFILE_NUMBERs with all-NaN across all vars/bins</span>
+    <span class="n">mask_prof</span> <span class="o">=</span> <span class="n">all_meds</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;__vars__&quot;</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">mask_prof</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">agg</span> <span class="o">=</span> <span class="n">agg</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">profile_dim</span><span class="p">:</span> <span class="o">~</span><span class="n">mask_prof</span><span class="p">})</span>
+    <span class="c1"># drop DEPTH_bin with all-NaN across all vars/profiles</span>
+    <span class="n">mask_bin</span> <span class="o">=</span> <span class="n">all_meds</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;__vars__&quot;</span><span class="p">,</span> <span class="n">profile_dim</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">mask_bin</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">agg</span> <span class="o">=</span> <span class="n">agg</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">bin_dim</span><span class="p">:</span> <span class="o">~</span><span class="n">mask_bin</span><span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">agg</span></div>
 
 
 
@@ -213,41 +244,44 @@
     <span class="n">valid_ids</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">list</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Filters an xarray.Dataset to include only rows with PROFILE_NUMBER in a list of valid IDs.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    ds : xr.Dataset</span>
-<span class="sd">        The dataset to filter.</span>
-
-<span class="sd">    profile_id_var : str</span>
-<span class="sd">        The name of the variable or coordinate in ds representing the profile ID</span>
-<span class="sd">        (e.g., &#39;PROFILE_NUMBER&#39;, &#39;Doombar_PROFILE_NUMBER&#39;, etc.)</span>
-
-<span class="sd">    valid_ids : array-like</span>
-<span class="sd">        List or array of profile ID values to retain.</span>
-
-<span class="sd">    verbose : bool</span>
-<span class="sd">        If True, prints the number of rows before and after filtering.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    xr.Dataset</span>
-<span class="sd">        Filtered dataset containing only rows with matching profile IDs.</span>
+<span class="sd">    Filter an xarray.Dataset to keep only rows / entries with profile IDs in `valid_ids`.</span>
+<span class="sd">    Works for both raw (with N_MEASUREMENTS) and aggregated (PROFILE_NUMBER as a dim) datasets.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">profile_id_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">profile_id_var</span><span class="si">}</span><span class="s2">&#39; not found in dataset.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">profile_id_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span>
+        <span class="ow">and</span> <span class="n">profile_id_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span>
+        <span class="ow">and</span> <span class="n">profile_id_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">profile_id_var</span><span class="si">}</span><span class="s2">&#39; not found as a variable/coord/dim in dataset.&quot;</span>
+        <span class="p">)</span>
 
-    <span class="n">profile_ids</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">profile_id_var</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Filter] Filtering dataset by </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">valid_ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> valid IDs...&quot;</span><span class="p">)</span>
+    <span class="c1"># Normalize ids to dataset coord dtype (avoid float-&gt;int mismatches from pandas)</span>
+    <span class="k">if</span> <span class="n">profile_id_var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+        <span class="n">coord_dtype</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">profile_id_var</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="k">elif</span> <span class="n">profile_id_var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+        <span class="n">coord_dtype</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span>
+            <span class="n">profile_id_var</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">dtype</span>  <span class="c1"># xarray exposes dim coord dtype via coords of same name if present</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># fallback if it&#39;s only a data_var</span>
+        <span class="n">coord_dtype</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">profile_id_var</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
 
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">profile_ids</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">valid_ids</span><span class="p">)</span>
-    <span class="n">filtered</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">valid_ids</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">coord_dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="n">original_size</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-    <span class="n">new_size</span> <span class="o">=</span> <span class="n">filtered</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Filter] </span><span class="si">{</span><span class="n">profile_id_var</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">original_size</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">new_size</span><span class="si">}</span><span class="s2"> rows retained.&quot;</span><span class="p">)</span>
+    <span class="c1"># Keep only IDs that actually exist (prevents KeyError on .sel)</span>
+    <span class="n">present</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">profile_id_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">ids</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;[Filter] Aggregated case: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">profile_id_var</span><span class="p">])</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">present</span><span class="p">)</span><span class="si">}</span><span class="s2"> profiles retained.&quot;</span>
+    <span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">present</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Return empty along the profile dimension, preserving structure</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">profile_id_var</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)})</span>
+
+    <span class="c1"># Select profiles (order follows `present`;</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">profile_id_var</span><span class="p">:</span> <span class="n">present</span><span class="p">})</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Filter] Resulting dims: </span><span class="si">{</span><span class="n">filtered</span><span class="o">.</span><span class="n">dims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">filtered</span></div>
 
 
@@ -359,122 +393,94 @@
 
 
 
-<div class="viewcode-block" id="merge_profile_pairs_on_depth_bin">
-<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.merge_profile_pairs_on_depth_bin">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">merge_profile_pairs_on_depth_bin</span><span class="p">(</span>
-    <span class="n">paired_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-    <span class="n">target_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
-    <span class="n">ancillary_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+<div class="viewcode-block" id="merge_pairs_from_filtered_aggregates">
+<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.merge_pairs_from_filtered_aggregates">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">merge_pairs_from_filtered_aggregates</span><span class="p">(</span>
+    <span class="n">paired_df</span><span class="p">,</span>
+    <span class="n">agg_target</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">agg_anc</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
     <span class="n">target_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">ancillary_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">variables</span><span class="p">,</span>  <span class="c1"># e.g. [&quot;TEMP&quot;,&quot;CNDC&quot;,&quot;CHLA&quot;,...]</span>
     <span class="n">bin_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">,</span>
-    <span class="n">max_pairs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># for debugging</span>
+    <span class="n">pair_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Merge binned datasets for each unique (target_profile, ancillary_profile) pair on DEPTH_bin.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    paired_df : pd.DataFrame</span>
-<span class="sd">        DataFrame with columns:</span>
-<span class="sd">          - f&quot;{target_name}_PROFILE_NUMBER&quot;</span>
-<span class="sd">          - f&quot;{ancillary_name}_PROFILE_NUMBER&quot;</span>
-<span class="sd">          - &#39;time_diff_hr&#39;</span>
-<span class="sd">          - &#39;dist_km&#39;</span>
-
-<span class="sd">    target_ds : xr.Dataset</span>
-<span class="sd">        Depth-binned and filtered xarray Dataset for target glider.</span>
-
-<span class="sd">    ancillary_ds : xr.Dataset</span>
-<span class="sd">        Depth-binned and filtered xarray Dataset for ancillary glider.</span>
-
-<span class="sd">    target_name : str</span>
-<span class="sd">        Target glider name (used for suffixing and column access).</span>
-
-<span class="sd">    ancillary_name : str</span>
-<span class="sd">        Ancillary glider name (used for suffixing and column access).</span>
-
-<span class="sd">    bin_dim : str</span>
-<span class="sd">        Dimension to align on (e.g., &quot;DEPTH_bin&quot;).</span>
-
-<span class="sd">    max_pairs : int, optional</span>
-<span class="sd">        If set, limits the number of profile pairs processed (for debugging).</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    xr.Dataset</span>
-<span class="sd">        Combined dataset with one record per (profile_pair, depth_bin), including metadata.</span>
+<span class="sd">    Build a dataset with one row per (target_profile, ancillary_profile, depth_bin).</span>
+<span class="sd">    Each row has: target/ancillary profile IDs, time/distance diffs, and median_{var} for both sides.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tgt_id_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
+    <span class="n">anc_id_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
 
-    <span class="n">merged_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Make sure PROFILE_NUMBER is the dimension we select on</span>
+    <span class="k">if</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agg_target</span><span class="o">.</span><span class="n">dims</span> <span class="ow">or</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agg_anc</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected aggregated datasets with dim &#39;PROFILE_NUMBER&#39;.&quot;</span><span class="p">)</span>
 
-    <span class="n">target_profile_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
-    <span class="n">ancillary_profile_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
+    <span class="c1"># pre-cast ids for safe selection</span>
+    <span class="n">agg_target</span> <span class="o">=</span> <span class="n">agg_target</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
+        <span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">agg_target</span><span class="o">.</span><span class="n">PROFILE_NUMBER</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">agg_anc</span> <span class="o">=</span> <span class="n">agg_anc</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
+        <span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">agg_anc</span><span class="o">.</span><span class="n">PROFILE_NUMBER</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
 
-    <span class="n">pairs</span> <span class="o">=</span> <span class="n">paired_df</span><span class="p">[</span>
-        <span class="p">[</span><span class="n">target_profile_col</span><span class="p">,</span> <span class="n">ancillary_profile_col</span><span class="p">,</span> <span class="s2">&quot;time_diff_hr&quot;</span><span class="p">,</span> <span class="s2">&quot;dist_km&quot;</span><span class="p">]</span>
-    <span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="k">if</span> <span class="n">max_pairs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">pairs</span> <span class="o">=</span> <span class="n">pairs</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">max_pairs</span><span class="p">)</span>
+    <span class="c1"># restrict to just the columns we need</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="n">paired_df</span><span class="p">[[</span><span class="n">tgt_id_col</span><span class="p">,</span> <span class="n">anc_id_col</span><span class="p">,</span> <span class="s2">&quot;time_diff_hr&quot;</span><span class="p">,</span> <span class="s2">&quot;dist_km&quot;</span><span class="p">]]</span>
 
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-        <span class="c1"># Ensure integer type to match xarray index dtype</span>
-        <span class="n">pid_target</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">target_profile_col</span><span class="p">])</span>
-        <span class="n">pid_anc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">ancillary_profile_col</span><span class="p">])</span>
-        <span class="n">time_diff</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span>
-        <span class="n">dist</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">pair_idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">pid_t</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">tgt_id_col</span><span class="p">])</span>
+        <span class="n">pid_a</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">anc_id_col</span><span class="p">])</span>
 
-        <span class="k">if</span> <span class="n">pid_target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Skip] Target profile </span><span class="si">{</span><span class="n">pid_target</span><span class="si">}</span><span class="s2"> not in dataset.&quot;</span><span class="p">)</span>
+        <span class="c1"># skip if either profile missing</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">pid_t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agg_target</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="ow">or</span> <span class="n">pid_a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agg_anc</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">):</span>
             <span class="k">continue</span>
 
-        <span class="k">if</span> <span class="n">pid_anc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ancillary_ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Skip] Ancillary profile </span><span class="si">{</span><span class="n">pid_anc</span><span class="si">}</span><span class="s2"> not in dataset.&quot;</span><span class="p">)</span>
+        <span class="c1"># select per-profile slabs (dims: DEPTH_bin)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">agg_target</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">pid_t</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">agg_anc</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">pid_a</span><span class="p">)</span>
+
+        <span class="c1"># keep only requested median variables that exist</span>
+        <span class="n">t_keep</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">t</span><span class="p">]</span>
+        <span class="n">a_keep</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">a</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">t_keep</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">a_keep</span><span class="p">:</span>
             <span class="k">continue</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">t_keep</span><span class="p">]</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">a_keep</span><span class="p">]</span>
 
-        <span class="n">tgt_sel</span> <span class="o">=</span> <span class="n">target_ds</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">pid_target</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">anc_sel</span> <span class="o">=</span> <span class="n">ancillary_ds</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">pid_anc</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># align on common depth bins</span>
+        <span class="n">common_bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">bin_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="n">bin_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">common_bins</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">bin_dim</span><span class="p">:</span> <span class="n">common_bins</span><span class="p">})</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">bin_dim</span><span class="p">:</span> <span class="n">common_bins</span><span class="p">})</span>
 
-        <span class="c1"># Add suffix to avoid var name collisions</span>
-        <span class="n">tgt_sel</span> <span class="o">=</span> <span class="n">tgt_sel</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
-            <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tgt_sel</span><span class="o">.</span><span class="n">data_vars</span><span class="p">}</span>
-        <span class="p">)</span>
-        <span class="n">anc_sel</span> <span class="o">=</span> <span class="n">anc_sel</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
-            <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">anc_sel</span><span class="o">.</span><span class="n">data_vars</span><span class="p">}</span>
-        <span class="p">)</span>
+        <span class="c1"># suffix variable names</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">data_vars</span><span class="p">})</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="o">.</span><span class="n">data_vars</span><span class="p">})</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">drop_measurements_dim</span><span class="p">(</span><span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_dims</span><span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">ds</span>
-
-        <span class="c1"># Apply</span>
-        <span class="n">tgt_sel</span> <span class="o">=</span> <span class="n">drop_measurements_dim</span><span class="p">(</span><span class="n">tgt_sel</span><span class="p">)</span>
-        <span class="n">anc_sel</span> <span class="o">=</span> <span class="n">drop_measurements_dim</span><span class="p">(</span><span class="n">anc_sel</span><span class="p">)</span>
-
-        <span class="c1"># Merge on DEPTH_bin</span>
-        <span class="n">pair_merged</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">tgt_sel</span><span class="p">,</span> <span class="n">anc_sel</span><span class="p">],</span>
-            <span class="n">join</span><span class="o">=</span><span class="s2">&quot;inner&quot;</span><span class="p">,</span>
-            <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">,</span>
-            <span class="n">combine_attrs</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">,</span>
+        <span class="c1"># merge the two sides (only bin_dim left)</span>
+        <span class="n">pair</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">],</span> <span class="n">join</span><span class="o">=</span><span class="s2">&quot;exact&quot;</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">,</span> <span class="n">combine_attrs</span><span class="o">=</span><span class="s2">&quot;override&quot;</span>
         <span class="p">)</span>
 
-        <span class="c1"># Annotate with profile metadata</span>
-        <span class="n">pair_merged</span> <span class="o">=</span> <span class="n">pair_merged</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">)</span>
-        <span class="n">pair_merged</span><span class="p">[</span><span class="s2">&quot;TARGET_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pid_target</span>
-        <span class="n">pair_merged</span><span class="p">[</span><span class="s2">&quot;ANCILLARY_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pid_anc</span>
-        <span class="n">pair_merged</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_diff</span>
-        <span class="n">pair_merged</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="c1"># annotate pair metadata on a new pair dimension</span>
+        <span class="n">pair</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">({</span><span class="n">pair_dim</span><span class="p">:</span> <span class="p">[</span><span class="n">pair_idx</span><span class="p">]})</span>
+        <span class="n">pair</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pair_dim</span><span class="p">,</span> <span class="p">[</span><span class="n">pid_t</span><span class="p">])</span>
+        <span class="n">pair</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pair_dim</span><span class="p">,</span> <span class="p">[</span><span class="n">pid_a</span><span class="p">])</span>
+        <span class="n">pair</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pair_dim</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;time_diff_hr&quot;</span><span class="p">])])</span>
+        <span class="n">pair</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pair_dim</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;dist_km&quot;</span><span class="p">])])</span>
 
-        <span class="n">merged_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair_merged</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">merged_list</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid profile-pair merges produced.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">out</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid pairs produced during merge.&quot;</span><span class="p">)</span>
 
-    <span class="n">final_ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">merged_list</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">final_ds</span></div>
+    <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">pair_dim</span><span class="p">)</span></div>
 
 
 
@@ -587,69 +593,114 @@
 
 
 
-<div class="viewcode-block" id="plot_r2_quality_heatmap">
-<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.plot_r2_quality_heatmap">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">plot_r2_quality_heatmap</span><span class="p">(</span>
-    <span class="n">r2_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
-    <span class="n">ancillary_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">target_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">r2_thresholds</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
-    <span class="n">variables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;salinity&quot;</span><span class="p">,</span> <span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;chla&quot;</span><span class="p">,</span> <span class="s2">&quot;bbp&quot;</span><span class="p">,</span> <span class="s2">&quot;doxy&quot;</span><span class="p">],</span>
-    <span class="n">var_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
-    <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<div class="viewcode-block" id="plot_r2_grid_heatmaps">
+<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.plot_r2_grid_heatmaps">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_r2_grid_heatmaps</span><span class="p">(</span>
+    <span class="n">r2_datasets</span><span class="p">,</span>
+    <span class="n">variables</span><span class="p">,</span>
+    <span class="n">r2_thresholds</span><span class="o">=</span><span class="p">[</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Plot a heatmap of the number of ancillary profiles where R² exceeds thresholds for each variable.</span>
+<span class="sd">    Generate an NxN grid of R² quality threshold heatmaps for each glider pairing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r2_datasets : dict</span>
+<span class="sd">        Dictionary with ancillary_name as key and xarray.Dataset as value (R² data per profile pair).</span>
+
+<span class="sd">    variables : list of str</span>
+<span class="sd">        Alignment variable names (e.g., [&#39;salinity&#39;, &#39;temperature&#39;]).</span>
+
+<span class="sd">    r2_thresholds : list of float</span>
+<span class="sd">        Thresholds to evaluate (defaults to 0.99 → 0.7).</span>
+
+<span class="sd">    figsize : tuple</span>
+<span class="sd">        Size of the overall figure.</span>
+
+<span class="sd">    output_path : str or None</span>
+<span class="sd">        If provided, saves the figure.</span>
+
+<span class="sd">    show : bool</span>
+<span class="sd">        Whether to display the plot.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r2_ds</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">r2_ds</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected xarray.Dataset as input.&quot;</span><span class="p">)</span>
+    <span class="n">ancillary_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">r2_datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">grid_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ancillary_names</span><span class="p">)</span>
+    <span class="n">var_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">]</span>
 
-    <span class="k">if</span> <span class="n">var_labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">var_labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">]</span>
-
-    <span class="n">heatmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
-        <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;r2_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-            <span class="k">continue</span>
-        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">):</span>
-            <span class="c1"># Count unique profiles that passed the threshold</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
-            <span class="n">count</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
-            <span class="n">heatmap</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
-
-    <span class="c1"># Plotting</span>
-    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
-    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">heatmap</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;PuBu&quot;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)))</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">r2_thresholds</span><span class="p">])</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;R² Threshold&quot;</span><span class="p">)</span>
-
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">var_labels</span><span class="p">)))</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">var_labels</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Variable&quot;</span><span class="p">)</span>
-
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Ancillary Profiles with R² ≥ Threshold (</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+        <span class="n">grid_size</span><span class="p">,</span> <span class="n">grid_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;R² Quality Threshold Coverage Across Glider Pairings&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
 
-    <span class="c1"># Annotate values</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)):</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="n">heatmap</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-            <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">heatmap</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">target_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ancillary_names</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">ancillary_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ancillary_names</span><span class="p">):</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Count of Profiles&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">target_name</span> <span class="o">==</span> <span class="n">ancillary_name</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2"> (Self)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="k">continue</span>
 
-    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ancillary_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r2_datasets</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Missing&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">r2_datasets</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+            <span class="n">heatmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">vi</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">variables</span><span class="p">):</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;r2_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">tj</span><span class="p">,</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">):</span>
+                    <span class="n">mask</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">threshold</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+                    <span class="n">heatmap</span><span class="p">[</span><span class="n">vi</span><span class="p">,</span> <span class="n">tj</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+
+            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">heatmap</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;PuBu&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span>
+                <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">r2_thresholds</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">var_labels</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">vi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">tj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)):</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">heatmap</span><span class="p">[</span><span class="n">vi</span><span class="p">,</span> <span class="n">tj</span><span class="p">]</span>
+                    <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">heatmap</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+                        <span class="n">tj</span><span class="p">,</span>
+                        <span class="n">vi</span><span class="p">,</span>
+                        <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span>
+                        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                        <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                        <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Diagnostics] Saved R² heatmap grid to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">show</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>

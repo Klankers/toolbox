@@ -57,17 +57,17 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">summarising_profiles</span><span class="p">,</span>
-    <span class="n">find_closest_prof</span><span class="p">,</span>
     <span class="n">plot_distance_time_grid</span><span class="p">,</span>
     <span class="n">plot_glider_pair_heatmap_grid</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.alignment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">interpolate_DEPTH</span><span class="p">,</span>
     <span class="n">aggregate_vars</span><span class="p">,</span>
-    <span class="n">merge_profile_pairs_on_depth_bin</span><span class="p">,</span>
+    <span class="n">merge_pairs_from_filtered_aggregates</span><span class="p">,</span>
     <span class="n">filter_xarray_by_profile_ids</span><span class="p">,</span>
     <span class="n">find_profile_pair_metadata</span><span class="p">,</span>
     <span class="n">compute_r2_for_merged_profiles_xr</span><span class="p">,</span>
+    <span class="n">plot_r2_grid_heatmaps</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">STEP_DEPENDENCIES</span>
@@ -543,15 +543,18 @@
                     <span class="n">valid_ids</span><span class="o">=</span><span class="n">profile_ids</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="c1"># === STEP 4: Merge on Depth Bins per Profile Pair ===</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merging profile pairs...&quot;</span><span class="p">)</span>
-            <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_profile_pairs_on_depth_bin</span><span class="p">(</span>
+            <span class="c1"># Step 4: Build pairwise merged dataset (no N_MEASUREMENTS anywhere)</span>
+            <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_pairs_from_filtered_aggregates</span><span class="p">(</span>
                 <span class="n">paired_df</span><span class="o">=</span><span class="n">paired_df</span><span class="p">,</span>
-                <span class="n">target_ds</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">target</span><span class="p">],</span>
-                <span class="n">ancillary_ds</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">],</span>
+                <span class="n">agg_target</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">target</span><span class="p">],</span>
+                <span class="n">agg_anc</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">],</span>
                 <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
                 <span class="n">ancillary_name</span><span class="o">=</span><span class="n">ancillary_name</span><span class="p">,</span>
+                <span class="n">variables</span><span class="o">=</span><span class="n">alignment_vars</span><span class="p">,</span>  <span class="c1"># the raw names; helper will use median_{var}</span>
             <span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Align] Merged dims:&quot;</span><span class="p">,</span> <span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Align] Vars:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">data_vars</span><span class="p">))</span>
 
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merged dataset dimensions: </span><span class="si">{</span><span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merged Variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -566,7 +569,21 @@
             <span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">r2_ds</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Stored R² results for: </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Stored R² results for: </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[Pipeline Manager] Alignment complete for all datasets.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Set R² thresholds</span>
+        <span class="n">r2_thresholds</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]</span>
+
+        <span class="c1"># Call the plotting function</span>
+        <span class="n">plot_r2_grid_heatmaps</span><span class="p">(</span>
+            <span class="n">r2_datasets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="p">,</span>  <span class="c1"># dictionary of merged + annotated r² datasets</span>
+            <span class="n">variables</span><span class="o">=</span><span class="n">alignment_vars</span><span class="p">,</span>  <span class="c1"># e.g., from self.alignment_map.keys()</span>
+            <span class="n">r2_thresholds</span><span class="o">=</span><span class="n">r2_thresholds</span><span class="p">,</span>  <span class="c1"># optional override</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">18</span><span class="p">),</span>  <span class="c1"># adjust as needed</span>
+            <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;r2_heatmap_grid.png&quot;</span><span class="p">,</span>  <span class="c1"># or None to skip saving</span>
+            <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># show interactively</span>
+        <span class="p">)</span></div>
 </div>
 
 </pre></div>

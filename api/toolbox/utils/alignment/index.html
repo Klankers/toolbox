@@ -58,17 +58,17 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.interpolate_DEPTH" title="toolbox.utils.alignment.interpolate_DEPTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interpolate_DEPTH</span></code></a>(→ xarray.Dataset)</p></td>
 <td><p>Interpolate missing DEPTH values and compute 5m depth bins, all using xarray operations.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.aggregate_vars" title="toolbox.utils.alignment.aggregate_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregate_vars</span></code></a>(ds, vars_to_aggregate)</p></td>
-<td><p>Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin using xarray only.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.aggregate_vars" title="toolbox.utils.alignment.aggregate_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aggregate_vars</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Compute medians per (PROFILE_NUMBER, DEPTH_bin) and return a NEW dataset</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.filter_xarray_by_profile_ids" title="toolbox.utils.alignment.filter_xarray_by_profile_ids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_xarray_by_profile_ids</span></code></a>(→ xarray.Dataset)</p></td>
-<td><p>Filters an xarray.Dataset to include only rows with PROFILE_NUMBER in a list of valid IDs.</p></td>
+<td><p>Filter an xarray.Dataset to keep only rows / entries with profile IDs in <cite>valid_ids</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.find_profile_pair_metadata" title="toolbox.utils.alignment.find_profile_pair_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_profile_pair_metadata</span></code></a>(→ pandas.DataFrame)</p></td>
 <td><p>Identify profile pairs between a target and ancillary glider within time/distance thresholds.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.merge_profile_pairs_on_depth_bin" title="toolbox.utils.alignment.merge_profile_pairs_on_depth_bin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_profile_pairs_on_depth_bin</span></code></a>(→ xarray.Dataset)</p></td>
-<td><p>Merge binned datasets for each unique (target_profile, ancillary_profile) pair on DEPTH_bin.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.merge_pairs_from_filtered_aggregates" title="toolbox.utils.alignment.merge_pairs_from_filtered_aggregates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_pairs_from_filtered_aggregates</span></code></a>(→ xarray.Dataset)</p></td>
+<td><p>Build a dataset with one row per (target_profile, ancillary_profile, depth_bin).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.major_axis_r2_xr" title="toolbox.utils.alignment.major_axis_r2_xr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">major_axis_r2_xr</span></code></a>(→ float)</p></td>
 <td><p>Compute R² (coefficient of determination) for Major Axis (Type II) regression using xarray.</p></td>
@@ -76,8 +76,8 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.compute_r2_for_merged_profiles_xr" title="toolbox.utils.alignment.compute_r2_for_merged_profiles_xr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_r2_for_merged_profiles_xr</span></code></a>(→ xarray.Dataset)</p></td>
 <td><p>Compute R² for each profile-pair in an xarray.Dataset, and append the results directly to the dataset.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.plot_r2_quality_heatmap" title="toolbox.utils.alignment.plot_r2_quality_heatmap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_r2_quality_heatmap</span></code></a>(r2_ds, ancillary_name, target_name)</p></td>
-<td><p>Plot a heatmap of the number of ancillary profiles where R² exceeds thresholds for each variable.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.plot_r2_grid_heatmaps" title="toolbox.utils.alignment.plot_r2_grid_heatmaps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_r2_grid_heatmaps</span></code></a>(r2_datasets, variables[, ...])</p></td>
+<td><p>Generate an NxN grid of R² quality threshold heatmaps for each glider pairing.</p></td>
 </tr>
 </tbody>
 </table>
@@ -111,46 +111,25 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.utils.alignment.aggregate_vars">
-<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">aggregate_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars_to_aggregate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#aggregate_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.aggregate_vars" title="Link to this definition">¶</a></dt>
-<dd><p>Aggregate specified variables by PROFILE_NUMBER and DEPTH_bin using xarray only.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ds</strong> (<em>xr.Dataset</em>) – Dataset containing ‘PROFILE_NUMBER’ and ‘DEPTH_bin’ as coordinates or variables.</p></li>
-<li><p><strong>vars_to_aggregate</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – List of variable names in the dataset to aggregate.</p></li>
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">aggregate_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars_to_aggregate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'PROFILE_NUMBER'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DEPTH_bin'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#aggregate_vars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.aggregate_vars" title="Link to this definition">¶</a></dt>
+<dd><p>Compute medians per (PROFILE_NUMBER, DEPTH_bin) and return a NEW dataset
+with variables named ‘median_{var}’, each shaped (PROFILE_NUMBER, DEPTH_bin).</p>
+<p>Notes:
+- This does NOT attach medians back to the raw dataset (which would broadcast</p>
+<blockquote>
+<div><p>onto N_MEASUREMENTS). Use the returned dataset for downstream steps.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Requires that both PROFILE_NUMBER and DEPTH_bin are coordinates aligned
+to the measurement dimension (typically ‘N_MEASUREMENTS’).</p></li>
 </ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dataset with median-aggregated variables named as median_{var},
-indexed by PROFILE_NUMBER and DEPTH_bin.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>xr.Dataset</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.utils.alignment.filter_xarray_by_profile_ids">
 <span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">filter_xarray_by_profile_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_id_var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#filter_xarray_by_profile_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.filter_xarray_by_profile_ids" title="Link to this definition">¶</a></dt>
-<dd><p>Filters an xarray.Dataset to include only rows with PROFILE_NUMBER in a list of valid IDs.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ds</strong> (<em>xr.Dataset</em>) – The dataset to filter.</p></li>
-<li><p><strong>profile_id_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the variable or coordinate in ds representing the profile ID
-(e.g., ‘PROFILE_NUMBER’, ‘Doombar_PROFILE_NUMBER’, etc.)</p></li>
-<li><p><strong>valid_ids</strong> (<em>array-like</em>) – List or array of profile ID values to retain.</p></li>
-<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – If True, prints the number of rows before and after filtering.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Filtered dataset containing only rows with matching profile IDs.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>xr.Dataset</p>
-</dd>
-</dl>
+<dd><p>Filter an xarray.Dataset to keep only rows / entries with profile IDs in <cite>valid_ids</cite>.
+Works for both raw (with N_MEASUREMENTS) and aggregated (PROFILE_NUMBER as a dim) datasets.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -180,37 +159,10 @@ indexed by PROFILE_NUMBER and DEPTH_bin.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="toolbox.utils.alignment.merge_profile_pairs_on_depth_bin">
-<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">merge_profile_pairs_on_depth_bin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DEPTH_bin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#merge_profile_pairs_on_depth_bin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.merge_profile_pairs_on_depth_bin" title="Link to this definition">¶</a></dt>
-<dd><p>Merge binned datasets for each unique (target_profile, ancillary_profile) pair on DEPTH_bin.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>paired_df</strong> (<em>pd.DataFrame</em>) – <dl class="simple">
-<dt>DataFrame with columns:</dt><dd><ul>
-<li><p>f”{target_name}_PROFILE_NUMBER”</p></li>
-<li><p>f”{ancillary_name}_PROFILE_NUMBER”</p></li>
-<li><p>’time_diff_hr’</p></li>
-<li><p>’dist_km’</p></li>
-</ul>
-</dd>
-</dl>
-</p></li>
-<li><p><strong>target_ds</strong> (<em>xr.Dataset</em>) – Depth-binned and filtered xarray Dataset for target glider.</p></li>
-<li><p><strong>ancillary_ds</strong> (<em>xr.Dataset</em>) – Depth-binned and filtered xarray Dataset for ancillary glider.</p></li>
-<li><p><strong>target_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Target glider name (used for suffixing and column access).</p></li>
-<li><p><strong>ancillary_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Ancillary glider name (used for suffixing and column access).</p></li>
-<li><p><strong>bin_dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Dimension to align on (e.g., “DEPTH_bin”).</p></li>
-<li><p><strong>max_pairs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – If set, limits the number of profile pairs processed (for debugging).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Combined dataset with one record per (profile_pair, depth_bin), including metadata.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>xr.Dataset</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="toolbox.utils.alignment.merge_pairs_from_filtered_aggregates">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">merge_pairs_from_filtered_aggregates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg_target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg_anc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'DEPTH_bin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pair_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PAIR_INDEX'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.Dataset</span></span></span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#merge_pairs_from_filtered_aggregates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.merge_pairs_from_filtered_aggregates" title="Link to this definition">¶</a></dt>
+<dd><p>Build a dataset with one row per (target_profile, ancillary_profile, depth_bin).
+Each row has: target/ancillary profile IDs, time/distance diffs, and median_{var} for both sides.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -257,9 +209,21 @@ These will be aligned with the “PAIR_INDEX” dimension only.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="toolbox.utils.alignment.plot_r2_quality_heatmap">
-<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">plot_r2_quality_heatmap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">r2_thresholds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[0.99,</span> <span class="pre">0.95,</span> <span class="pre">0.9,</span> <span class="pre">0.85,</span> <span class="pre">0.8,</span> <span class="pre">0.75,</span> <span class="pre">0.7]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['salinity',</span> <span class="pre">'temperature',</span> <span class="pre">'chla',</span> <span class="pre">'bbp',</span> <span class="pre">'doxy']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">6)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#plot_r2_quality_heatmap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.plot_r2_quality_heatmap" title="Link to this definition">¶</a></dt>
-<dd><p>Plot a heatmap of the number of ancillary profiles where R² exceeds thresholds for each variable.</p>
+<dt class="sig sig-object py" id="toolbox.utils.alignment.plot_r2_grid_heatmaps">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">plot_r2_grid_heatmaps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2_datasets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r2_thresholds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.99,</span> <span class="pre">0.95,</span> <span class="pre">0.9,</span> <span class="pre">0.85,</span> <span class="pre">0.8,</span> <span class="pre">0.75,</span> <span class="pre">0.7]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(16,</span> <span class="pre">16)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#plot_r2_grid_heatmaps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.plot_r2_grid_heatmaps" title="Link to this definition">¶</a></dt>
+<dd><p>Generate an NxN grid of R² quality threshold heatmaps for each glider pairing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r2_datasets</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – Dictionary with ancillary_name as key and xarray.Dataset as value (R² data per profile pair).</p></li>
+<li><p><strong>variables</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Alignment variable names (e.g., [‘salinity’, ‘temperature’]).</p></li>
+<li><p><strong>r2_thresholds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Thresholds to evaluate (defaults to 0.99 → 0.7).</p></li>
+<li><p><strong>figsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><em>tuple</em></a>) – Size of the overall figure.</p></li>
+<li><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><em>None</em>) – If provided, saves the figure.</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – Whether to display the plot.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
