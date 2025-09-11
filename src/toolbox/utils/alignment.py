@@ -537,7 +537,7 @@ def plot_r2_heatmaps_per_pair(
     Create ONE heatmap per ancillary pairing showing counts of unique ancillary profiles
     that meet R² thresholds for each variable. Optionally filter by time/dist thresholds.
     """
-    var_labels = [v.capitalize() for v in variables]
+    var_labels = variables
 
     for ancillary_name, ds in r2_datasets.items():
         if not isinstance(ds, xr.Dataset):
