@@ -79,6 +79,21 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.plot_r2_heatmaps_per_pair" title="toolbox.utils.alignment.plot_r2_heatmaps_per_pair"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_r2_heatmaps_per_pair</span></code></a>(r2_datasets, variables[, ...])</p></td>
 <td><p>Create ONE heatmap per ancillary pairing showing counts of unique ancillary profiles</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.collect_xy_from_r2_ds" title="toolbox.utils.alignment.collect_xy_from_r2_ds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">collect_xy_from_r2_ds</span></code></a>(r2_ds, var, target_name, ...[, ...])</p></td>
+<td><p>From an R² dataset (one ancillary), collect all (x=ancillary, y=target) binned points</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.fit_linear_map" title="toolbox.utils.alignment.fit_linear_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_linear_map</span></code></a>(x, y)</p></td>
+<td><p>Fit y = slope * x + intercept using sklearn LinearRegression.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.plot_pair_scatter_grid" title="toolbox.utils.alignment.plot_pair_scatter_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_pair_scatter_grid</span></code></a>(r2_datasets, variables, target_name)</p></td>
+<td><p>Grid of scatter plots: rows = ancillary, cols = variables.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.apply_linear_map_to_da" title="toolbox.utils.alignment.apply_linear_map_to_da"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_linear_map_to_da</span></code></a>(da, slope, intercept[, out_name])</p></td>
+<td><p>Apply y = slope * da + intercept to an xarray.DataArray.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.fit_and_save_to_target" title="toolbox.utils.alignment.fit_and_save_to_target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_and_save_to_target</span></code></a>(self, target, out_dir[, ...])</p></td>
+<td><p>For each ancillary source:</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -213,6 +228,51 @@ These will be aligned with the “PAIR_INDEX” dimension only.</p>
 <span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">plot_r2_heatmaps_per_pair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2_datasets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r2_thresholds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.99,</span> <span class="pre">0.95,</span> <span class="pre">0.9,</span> <span class="pre">0.85,</span> <span class="pre">0.8,</span> <span class="pre">0.75,</span> <span class="pre">0.7]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_thresh_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_thresh_km</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(9,</span> <span class="pre">6)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_plots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#plot_r2_heatmaps_per_pair"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.plot_r2_heatmaps_per_pair" title="Link to this definition">¶</a></dt>
 <dd><p>Create ONE heatmap per ancillary pairing showing counts of unique ancillary profiles
 that meet R² thresholds for each variable. Optionally filter by time/dist thresholds.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.collect_xy_from_r2_ds">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">collect_xy_from_r2_ds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2_ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillary_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r2_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#collect_xy_from_r2_ds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.collect_xy_from_r2_ds" title="Link to this definition">¶</a></dt>
+<dd><p>From an R² dataset (one ancillary), collect all (x=ancillary, y=target) binned points
+for a given variable across selected profile pairs, flattening PAIR_INDEX×DEPTH_bin.</p>
+<p>Returns: x, y (1D np.ndarrays)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.fit_linear_map">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">fit_linear_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#fit_linear_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.fit_linear_map" title="Link to this definition">¶</a></dt>
+<dd><p>Fit y = slope * x + intercept using sklearn LinearRegression.
+Returns dict with slope, intercept, R² (model score), and n.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.plot_pair_scatter_grid">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">plot_pair_scatter_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2_datasets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_r2_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_time_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dist_km</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillaries_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">point_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">point_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equal_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#plot_pair_scatter_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.plot_pair_scatter_grid" title="Link to this definition">¶</a></dt>
+<dd><p>Grid of scatter plots: rows = ancillary, cols = variables.
+Each panel: ancillary median_{var} vs target median_{var}, all depth bins from
+pairs that pass R²/time/distance filters. Plots 1:1 and fitted line.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.apply_linear_map_to_da">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">apply_linear_map_to_da</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slope</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#apply_linear_map_to_da"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.apply_linear_map_to_da" title="Link to this definition">¶</a></dt>
+<dd><p>Apply y = slope * da + intercept to an xarray.DataArray.
+Returns a new DataArray (optionally renamed).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.alignment.fit_and_save_to_target">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">fit_and_save_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_r2_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_time_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dist_km</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#fit_and_save_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.fit_and_save_to_target" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>For each ancillary source:</dt><dd><ul class="simple">
+<li><p>Collect all (ancillary, target) depth-binned points passing thresholds from self.r2_datasets[anc]</p></li>
+<li><p>Fit linear maps (y = slope*x + intercept) for each alignment var</p></li>
+<li><p>Apply those maps to the <em>full</em> ancillary dataset variables</p></li>
+<li><p>Save aligned ancillary dataset to NetCDF.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Produces variables named <cite>{var}_ALIGNED_TO_{target}</cite> in the saved files.</p>
 </dd></dl>
 
 </section>
