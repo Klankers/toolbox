@@ -451,9 +451,9 @@
         <span class="k">return</span></div>
 
 
-<div class="viewcode-block" id="PipelineManager.align_to_target">
-<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.align_to_target">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">align_to_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="PipelineManager.preview_alignment">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.preview_alignment">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preview_alignment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Align all datasets to a target dataset and compute R² against ancillary sources.</span>
 
@@ -573,7 +573,9 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[Pipeline Manager] Alignment complete for all datasets.&quot;</span><span class="p">)</span>
 
         <span class="c1"># Set R² thresholds</span>
-        <span class="n">r2_thresholds</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]</span>
+        <span class="n">r2_thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;r2_thresholds&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]</span>
+        <span class="p">)</span>
 
         <span class="c1"># Call the plotting function</span>
         <span class="c1"># r2_datasets produced by align_to_target</span>
@@ -589,8 +591,11 @@
             <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;matchup_thresholds&quot;</span><span class="p">,</span> <span class="p">{})</span>
             <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_distance_threshold&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
             <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
-            <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;pair_heatmaps&quot;</span><span class="p">,</span>  <span class="c1"># one PNG per ancillary in this folder</span>
-            <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">save_plots</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_plots&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;plot_output_path&quot;</span><span class="p">,</span> <span class="s2">&quot;r2_heatmap_grid.png&quot;</span>
+            <span class="p">),</span>
+            <span class="n">show_plots</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;show_plots&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span></div>
 </div>
 
