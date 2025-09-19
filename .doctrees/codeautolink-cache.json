@@ -18,5 +18,6 @@
   "api/toolbox/utils/diagnostics/index": [],
   "api/toolbox/utils/index": [],
   "api/toolbox/utils/time/index": [],
+  "api/toolbox/utils/validation/index": [],
   "index": []
 }

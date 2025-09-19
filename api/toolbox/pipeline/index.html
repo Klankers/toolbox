@@ -211,6 +211,73 @@ This includes:</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.fit_to_target">
+<span class="sig-name descname"><span class="pre">fit_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.fit_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.fit_to_target" title="Link to this definition">¶</a></dt>
+<dd><p>Align all datasets to a target dataset, compute R² against ancillary sources,
+and (optionally) fit ancillary data to the target and save outputs based on config.</p>
+<p>Reads options from self.settings:
+settings:</p>
+<blockquote>
+<div><p>diagnostics:
+matchup_thresholds:</p>
+<blockquote>
+<div><p>max_time_threshold: &lt;float&gt;
+max_distance_threshold: &lt;float&gt;</p>
+</div></blockquote>
+<p>alignment:
+variable_r2_criteria: {VAR: R2_MIN, …}
+show_plots: &lt;bool&gt;
+save_plots: &lt;bool&gt;
+plot_output_path: &lt;str&gt;
+apply_and_save: &lt;bool&gt;
+output_path: &lt;str or “”&gt;  # dir to save aligned files; if empty, a timestamped dir is created</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.validate_with_device">
+<span class="sig-name descname"><span class="pre">validate_with_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">overrides</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.validate_with_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.validate_with_device" title="Link to this definition">¶</a></dt>
+<dd><p>Run the validation workflow using settings[‘validation’].
+Optionally pass keyword overrides (e.g., show_plots=False) for this call only.</p>
+<p class="rubric">Examples</p>
+<p>mngr.validate_with_device(“Doombar”)
+mngr.validate_with_device(“Doombar”, show_plots=False, apply_and_save=True)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.fit_to_device">
+<span class="sig-name descname"><span class="pre">fit_to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.fit_to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.fit_to_device" title="Link to this definition">¶</a></dt>
+<dd><p>Fit TARGET variables to a validation device using profile-pair medians and per-variable R² criteria.
+The mapping is fit as: device = slope * target + intercept, then applied to the FULL target dataset
+to create new variables <cite>{VAR}_ALIGNED_TO_{DEVICE}</cite>.</p>
+<p>Reads options from self.settings[‘validation’]:
+validation:</p>
+<blockquote>
+<div><p>device_name: “&lt;device label&gt;”
+variable_names: [“CNDC”,”TEMP”, …]        # optional; defaults to alignment_map keys
+variable_r2_criteria: {CNDC: 0.95, TEMP: 0.9, …}
+max_time_threshold: &lt;float&gt;
+max_distance_threshold: &lt;float&gt;
+save_plots: &lt;bool&gt;
+show_plots: &lt;bool&gt;
+plot_output_path: “&lt;file or dir&gt;”
+apply_and_save: &lt;bool&gt;
+output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>dict with</em></p></li>
+<li><p><strong>- “path”</strong> (<em>output NetCDF (if saved)</em>)</p></li>
+<li><p><strong>- “fits”</strong> (<em>{var: {slope, intercept, r2, n}, …}</em>)</p></li>
+<li><p><strong>- “device_name”</strong> (<em>device label used</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>

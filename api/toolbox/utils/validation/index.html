@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2D2D2D" />
+  
+  <title>Toolbox :: toolbox.utils.validation</title>
+  
+
+  <link rel="icon" type="image/png" sizes="32x32" href="../../../../_static/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../../../_static/img/favicon-16x16.png">
+  <link rel="index" title="Index" href="../../../../genindex.html"/>
+
+  <link rel="stylesheet" href="../../../../_static/css/insegel.css"/>
+  <link rel="stylesheet" href="../../../../_static/css/custom.css"/>
+
+  <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../../../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../../../_static/sphinx_highlight.js"></script>
+      <script type="text/javascript" src="../../../../_static/clipboard.min.js"></script>
+      <script type="text/javascript" src="../../../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="../../../../_static/design-tabs.js"></script>
+      <script type="text/javascript" src="../../../../https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+  
+
+  <script src="https://email.tl.fortawesome.com/c/eJxNjUEOgyAQAF8jR7Kw6wIHDh7sP1Cw2mgxgmn6-3JsMqc5zEQfE8dkxOY1KKMUOI3ACFKRJpSW2AAp7ontYIaxI6i7XPJVwyeVfCQ550Os3jLrGSNOLgbdAy6s0PBk2TFNjEbsfq31LB0OnX407pJa5v2faRadwSW63mn5KuLyR9j2tgx3zecanl-55R_-jjPs"></script> 
+</head>
+
+<body>
+  <div id="insegel-container">
+    <header>
+      <div id="logo-container">
+          
+          <h1>Toolbox</h1>
+          
+      </div>
+      <div id="project-container">
+        
+        <h1>Documentation</h1>
+        
+      </div>
+    </header>
+
+    <div id="content-container">
+
+      <div id="main-content-container">
+        <div id="main-content" role="main">
+          
+  <section id="module-toolbox.utils.validation">
+<span id="toolbox-utils-validation"></span><h1>toolbox.utils.validation<a class="headerlink" href="#module-toolbox.utils.validation" title="Link to this heading">¶</a></h1>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.validation.load_device_folder_to_xarray" title="toolbox.utils.validation.load_device_folder_to_xarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_device_folder_to_xarray</span></code></a>(path_or_glob[, ...])</p></td>
+<td><p>Read many device NetCDF files and combine into one xarray.Dataset with:</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.validation.validate" title="toolbox.utils.validation.validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate</span></code></a>(pmanager[, target])</p></td>
+<td><p>End-to-end validation using settings.validation:</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.validation.load_device_folder_to_xarray">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.validation.</span></span><span class="sig-name descname"><span class="pre">load_device_folder_to_xarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_or_glob</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alias_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_candidates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('DEPTH',</span> <span class="pre">'depth')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_candidates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('TIME',</span> <span class="pre">'time',</span> <span class="pre">'DateTime',</span> <span class="pre">'datetime')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat_candidates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('LATITUDE',</span> <span class="pre">'latitude',</span> <span class="pre">'lat')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_candidates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('LONGITUDE',</span> <span class="pre">'longitude',</span> <span class="pre">'lon')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_start_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/validation.html#load_device_folder_to_xarray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.validation.load_device_folder_to_xarray" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Read many device NetCDF files and combine into one xarray.Dataset with:</dt><dd><ul class="simple">
+<li><p>dim: N_MEASUREMENTS</p></li>
+<li><p>vars/coords: PROFILE_NUMBER (int), DEPTH, TIME, LATITUDE, LONGITUDE, + data cols</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.utils.validation.validate">
+<span class="sig-prename descclassname"><span class="pre">toolbox.utils.validation.</span></span><span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pmanager</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/validation.html#validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.validation.validate" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>End-to-end validation using settings.validation:</dt><dd><ul class="simple">
+<li><p>load device NetCDFs</p></li>
+<li><p>summarise &amp; pair profiles</p></li>
+<li><p>interpolate, bin, aggregate (2-D medians)</p></li>
+<li><p>merge per-pair on depth bins (current helper)</p></li>
+<li><p>compute per-pair R²</p></li>
+<li><p>plot &amp; (optionally) apply+save calibrated target variables</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+        </div>
+      </div>
+
+      <div id="side-menu-container">
+
+        <div id="search" role="search">
+        <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+            <input type="text" name="q" placeholder="Search..." />
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+        </form>
+</div>
+
+        <div id="side-menu" role="navigation">
+
+          
+  
+    
+  
+  
+    <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">toolbox</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../index.html#attributes">Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../index.html#package-contents">Package Contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  
+
+
+        </div>
+
+        
+
+      </div>
+
+    </div>
+
+<footer>
+    <div id="footer-info">
+        <ul id="build-details">
+            
+                <li class="footer-element">
+                    
+                </li>
+            
+
+            
+
+            
+        </ul>
+
+        
+            <div id="copyright">
+                &copy; 2025, Adam Ward, National Oceanography Centre
+            </div>
+        
+
+        <div id="credit">
+            created with <a href="http://sphinx-doc.org/">Sphinx</a> and <a href="https://github.com/Autophagy/insegel">Insegel</a>
+
+        </div>
+    </div>
+
+    <a id="menu-toggle" class="fa fa-bars" aria-hidden="true"></a>
+
+    <script type="text/javascript">
+      $("#menu-toggle").click(function() {
+        $("#menu-toggle").toggleClass("toggled");
+        $("#side-menu-container").slideToggle(300);
+      });
+    </script>
+
+</footer> 
+
+</div>
+
+</body>
+</html>
