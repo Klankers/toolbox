@@ -4,6 +4,9 @@ import yaml
 import pandas as pd
 import numpy as np
 import xarray as xr
+import os
+import datetime as _dt
+
 from toolbox.utils.diagnostics import (
     summarising_profiles,
     plot_distance_time_grid,
@@ -17,7 +20,13 @@ from toolbox.utils.alignment import (
     find_profile_pair_metadata,
     compute_r2_for_merged_profiles_xr,
     plot_r2_heatmaps_per_pair,
+    plot_pair_scatter_grid,
+    fit_and_save_to_target,
+    collect_xy_from_r2_ds,
+    fit_linear_map,
 )
+
+from toolbox.utils.validation import validate
 
 from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
 from graphviz import Digraph
@@ -454,7 +463,7 @@ class PipelineManager:
             )
 
             self.r2_datasets[ancillary_name] = r2_ds
-            print(f"[Pipeline Manager] Stored R² results for: {ancillary_name}")
+
         print("\n[Pipeline Manager] Alignment complete for all datasets.")
 
         # Set R² thresholds
@@ -482,3 +491,325 @@ class PipelineManager:
             ),
             show_plots=self.settings.get("alignment", {}).get("show_plots", True),
         )
+
+    def fit_to_target(self, target="None"):
+        """
+        Align all datasets to a target dataset, compute R² against ancillary sources,
+        and (optionally) fit ancillary data to the target and save outputs based on config.
+
+        Reads options from self.settings:
+        settings:
+            diagnostics:
+            matchup_thresholds:
+                max_time_threshold: <float>
+                max_distance_threshold: <float>
+            alignment:
+            variable_r2_criteria: {VAR: R2_MIN, ...}
+            show_plots: <bool>
+            save_plots: <bool>
+            plot_output_path: <str>
+            apply_and_save: <bool>
+            output_path: <str or "">  # dir to save aligned files; if empty, a timestamped dir is created
+        """
+
+        # --- Preconditions ---
+        if not getattr(self, "r2_datasets", None):
+            raise RuntimeError(
+                "Run preview_alignment() before fit_to_target() — r2_datasets is empty."
+            )
+        if target not in self.pipelines:
+            raise ValueError(f"Target pipeline '{target}' not found.")
+        if target not in self._contexts:
+            raise ValueError(f"Target pipeline '{target}' has no context data.")
+
+        # --- Config ---
+        alignment_vars = list(self.alignment_map.keys())
+
+        align_cfg = self.settings.get("alignment", {}) or {}
+        diag_cfg = self.settings.get("diagnostics", {}) or {}
+        mt_cfg = diag_cfg.get("matchup_thresholds", {}) or {}
+
+        variable_r2_criteria = align_cfg.get("variable_r2_criteria", {}) or {}
+        show_plots = bool(align_cfg.get("show_plots", True))
+        save_plots = bool(align_cfg.get("save_plots", False))
+        plot_output_path = align_cfg.get("plot_output_path", "r2_fit_scatter_grid.png")
+
+        apply_and_save = bool(align_cfg.get("apply_and_save", False))
+        out_dir = align_cfg.get("output_path", "") or ""
+        if not out_dir:
+            out_dir = os.path.join(
+                os.getcwd(),
+                f"aligned_outputs_{_dt.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+            )
+
+        max_time_hr = mt_cfg.get("max_time_threshold", None)
+        max_dist_km = mt_cfg.get("max_distance_threshold", None)
+
+        # Validate thresholds for all alignment vars
+        missing = [v for v in alignment_vars if v not in variable_r2_criteria]
+        if missing:
+            raise ValueError(f"R² threshold missing for variables: {missing}")
+        print(f"[Fit] Using R² thresholds: {variable_r2_criteria}")
+
+        # Ancillaries to process = all sources except target
+        ancillaries = [n for n in self._contexts.keys() if n != target]
+        print(f"[Fit] Target: {target} | Ancillaries: {ancillaries}")
+
+        # --- Plots (optional) ---
+        if show_plots or save_plots:
+            try:
+                fig, _ = plot_pair_scatter_grid(
+                    r2_datasets=self.r2_datasets,
+                    variables=alignment_vars,
+                    target_name=target,
+                    variable_r2_criteria=variable_r2_criteria,
+                    max_time_hr=max_time_hr,
+                    max_dist_km=max_dist_km,
+                    ancillaries_order=ancillaries,
+                )
+                if save_plots:
+                    os.makedirs(os.path.dirname(plot_output_path) or ".", exist_ok=True)
+                    fig.savefig(plot_output_path, dpi=300)
+                    print(f"[Fit] Saved scatter grid to: {plot_output_path}")
+                if not show_plots:
+                    import matplotlib.pyplot as plt
+
+                    plt.close(fig)
+            except Exception as e:
+                print(f"[Fit] Plotting skipped due to error: {e}")
+
+        # --- Apply + Save ---
+        results = None
+        if apply_and_save:
+            print(f"[Fit] Applying fits and saving outputs to: {out_dir}")
+            os.makedirs(out_dir, exist_ok=True)
+            results = fit_and_save_to_target(
+                self=self,
+                target=target,
+                out_dir=out_dir,
+                variable_r2_criteria=variable_r2_criteria,
+                max_time_hr=max_time_hr,
+                max_dist_km=max_dist_km,
+                ancillaries=ancillaries,
+                overwrite=True,
+                show_plots=False,
+            )
+            if results:
+                print("[Fit] Saved files:", results.get("paths", {}))
+        else:
+            print("[Fit] apply_and_save=False — skipping writing aligned datasets.")
+
+        return results
+
+    def validate_with_device(self, target="None", **overrides):
+        """
+        Run the validation workflow using settings['validation'].
+        Optionally pass keyword overrides (e.g., show_plots=False) for this call only.
+
+        Examples:
+            mngr.validate_with_device("Doombar")
+            mngr.validate_with_device("Doombar", show_plots=False, apply_and_save=True)
+        """
+        # Fast path: no overrides → just call through
+        if not overrides:
+            validate(self, target=target)
+
+        # One-shot overrides: temporarily update settings['validation']
+        vcfg_orig = dict(self.settings.get("validation", {}))  # shallow copy
+        try:
+            vcfg = self.settings.setdefault("validation", {})
+            vcfg.update(overrides)
+            validate(self, target=target)
+        finally:
+            # restore original validation config
+            self.settings["validation"] = vcfg_orig
+
+    def fit_to_device(self, target="None"):
+        """
+        Fit TARGET variables to a validation device using profile-pair medians and per-variable R² criteria.
+        The mapping is fit as: device = slope * target + intercept, then applied to the FULL target dataset
+        to create new variables `{VAR}_ALIGNED_TO_{DEVICE}`.
+
+        Reads options from self.settings['validation']:
+        validation:
+            device_name: "<device label>"
+            variable_names: ["CNDC","TEMP", ...]        # optional; defaults to alignment_map keys
+            variable_r2_criteria: {CNDC: 0.95, TEMP: 0.9, ...}
+            max_time_threshold: <float>
+            max_distance_threshold: <float>
+            save_plots: <bool>
+            show_plots: <bool>
+            plot_output_path: "<file or dir>"
+            apply_and_save: <bool>
+            output_path: "<dir or empty for timestamped dir>"
+
+        Returns
+        -------
+        dict with:
+        - "path": output NetCDF (if saved)
+        - "fits": {var: {slope, intercept, r2, n}, ...}
+        - "device_name": device label used
+        """
+        # --- Preconditions ---
+        if target not in self.pipelines:
+            raise ValueError(f"Target pipeline '{target}' not found.")
+        if target not in self._contexts:
+            raise ValueError(f"Target pipeline '{target}' has no context data.")
+
+        # --- Validation config ---
+        vcfg = self.settings.get("validation", {}) or {}
+        device_name = vcfg.get("device_name", "DEVICE")
+        variables = vcfg.get("variable_names", list(self.alignment_map.keys()))
+        var_r2_criteria = vcfg.get("variable_r2_criteria", {}) or {}
+        max_time_hr = vcfg.get("max_time_threshold", None)
+        max_dist_km = vcfg.get("max_distance_threshold", None)
+        show_plots = bool(vcfg.get("show_plots", True))
+        save_plots = bool(vcfg.get("save_plots", False))
+        plot_output_path = vcfg.get("plot_output_path", "device_fit_scatter_grid.png")
+        apply_and_save = bool(vcfg.get("apply_and_save", False))
+        out_dir = vcfg.get("output_path", "") or ""
+
+        # Validate thresholds exist for all requested variables
+        missing = [v for v in variables if v not in var_r2_criteria]
+        if missing:
+            raise ValueError(
+                f"[Fit→Device] R² threshold missing for variables: {missing}"
+            )
+        print(f"[Fit→Device] Using device='{device_name}', variables={variables}")
+        print(f"[Fit→Device] R² thresholds: {var_r2_criteria}")
+
+        # --- Ensure we have the R² dataset for TARGET vs DEVICE ---
+        # This will run the whole validation pipeline (load device, pair, aggregate, merge, compute R²)
+        from .utils.validation import validate  # adjust import if your layout differs
+
+        val_res = validate(self, target=target)
+        r2_ds = val_res.get("r2_ds", None)
+        if r2_ds is None or not isinstance(r2_ds, xr.Dataset):
+            raise RuntimeError(
+                "[Fit→Device] No R² dataset available from validation()."
+            )
+
+        # --- QA scatter grid (X=device, Y=target) before fitting ---
+        if show_plots or save_plots:
+            try:
+                # plot_pair_scatter_grid expects a dict of {ancillary_name: ds}
+                ds_map = {device_name: r2_ds}
+                fig, _ = plot_pair_scatter_grid(
+                    r2_datasets=ds_map,
+                    variables=variables,
+                    target_name=target,
+                    variable_r2_criteria=var_r2_criteria,
+                    max_time_hr=max_time_hr,
+                    max_dist_km=max_dist_km,
+                    ancillaries_order=[device_name],
+                )
+                if save_plots:
+                    # If path looks like a directory, drop a default filename into it
+                    out_is_dir = (plot_output_path.endswith(os.sep)) or (
+                        os.path.isdir(plot_output_path)
+                    )
+                    if out_is_dir:
+                        os.makedirs(plot_output_path, exist_ok=True)
+                        fout = os.path.join(
+                            plot_output_path, f"{target}_vs_{device_name}_fit_grid.png"
+                        )
+                    else:
+                        os.makedirs(
+                            os.path.dirname(plot_output_path) or ".", exist_ok=True
+                        )
+                        fout = plot_output_path
+                    fig.savefig(fout, dpi=300)
+                    print(f"[Fit→Device] Saved scatter grid to: {fout}")
+                if not show_plots:
+                    import matplotlib.pyplot as plt
+
+                    plt.close(fig)
+            except Exception as e:
+                print(f"[Fit→Device] (Plot) Skipped grid due to: {e}")
+
+        # --- Compute fits to map TARGET → DEVICE for each variable ---
+        # collect_xy_from_r2_ds returns (X=device, Y=target). For TARGET→DEVICE we invert to (x=target, y=device).
+        fits = {}
+        for var in variables:
+            X_dev, Y_tgt = collect_xy_from_r2_ds(
+                r2_ds,
+                var=var,
+                target_name=target,
+                ancillary_name=device_name,
+                r2_min=var_r2_criteria.get(var),
+                time_max=max_time_hr,
+                dist_max=max_dist_km,
+            )
+            # invert orientation for target->device mapping
+            x = Y_tgt  # target
+            y = X_dev  # device
+            info = fit_linear_map(x, y)  # fits y_device = a * x_target + b
+            fits[var] = info
+            print(
+                f"[Fit→Device] {var}: device ≈ {info['slope']:.4g}·target + {info['intercept']:.4g} "
+                f"(R²={info['r2']:.3f}, N={info['n']})"
+            )
+
+        # --- Apply mapping to the FULL target dataset (create {var}_ALIGNED_TO_{device}) ---
+        # Rename target variables to standard names based on alignment_map aliases
+        target_ds_raw = self._contexts[target]["data"]
+        rename_map = {
+            alias: std
+            for std, alias_map in self.alignment_map.items()
+            if (alias := alias_map.get(target)) and alias in target_ds_raw
+        }
+        target_ds_std = (
+            target_ds_raw.rename(rename_map) if rename_map else target_ds_raw
+        )
+
+        ds_out = target_ds_std.copy()
+        created = []
+        for var, info in fits.items():
+            if var not in ds_out:
+                print(f"[Fit→Device] Target missing variable '{var}' — skipping.")
+                continue
+            slope, intercept, npts = info["slope"], info["intercept"], info["n"]
+            out_name = f"{var}_ALIGNED_TO_{device_name}"
+            aligned = (slope * ds_out[var] + intercept).astype(
+                ds_out[var].dtype, copy=False
+            )
+            aligned.name = out_name
+            aligned.attrs.update(
+                {
+                    "long_name": f"{var} aligned to {device_name}",
+                    "alignment_target": target,
+                    "alignment_reference_device": device_name,
+                    "alignment_direction": "target_to_device",
+                    "alignment_slope": float(slope),
+                    "alignment_intercept": float(intercept),
+                    "alignment_fit_points": int(npts),
+                }
+            )
+            ds_out[out_name] = aligned
+            created.append(out_name)
+
+        if not created:
+            print("[Fit→Device] No aligned variables were created — nothing to save.")
+            return {"path": None, "fits": fits, "device_name": device_name}
+
+        # --- Save (optional) ---
+        out_path = None
+        if apply_and_save:
+            if not out_dir:
+                out_dir = os.path.join(
+                    os.getcwd(),
+                    f"device_aligned_{target}_{device_name}_{_dt.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+                )
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, f"{target}_aligned_to_{device_name}.nc")
+            encoding = {name: {"zlib": True, "complevel": 2} for name in created}
+            try:
+                ds_out.to_netcdf(out_path, encoding=encoding)
+                print(f"[Fit→Device] Saved: {out_path}")
+            except Exception as e:
+                print(f"[Fit→Device] Failed to save '{out_path}': {e}")
+                out_path = None
+        else:
+            print("[Fit→Device] apply_and_save=False — not writing dataset to disk.")
+
+        return {"path": out_path, "fits": fits, "device_name": device_name}

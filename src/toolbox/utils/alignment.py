@@ -11,22 +11,50 @@ from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
 
-def interpolate_DEPTH(ds: xr.Dataset) -> xr.Dataset:
+def interpolate_DEPTH(
+    ds: xr.Dataset,
+    bin_size: int = 5,
+    depth_positive: str = "down",  # "down" => positive depth; "up" => negative depth
+    plot: bool = False,
+    plot_kind: str = "hist",  # "hist" or "heatmap"
+    max_profiles_heatmap: int = 50,
+    figsize=(9, 4),
+    save_path: str | None = None,
+    show: bool = True,
+) -> xr.Dataset:
     """
-    Interpolate missing DEPTH values and compute 5m depth bins, all using xarray operations.
+    Interpolate missing DEPTH values per PROFILE_NUMBER, normalize depth sign,
+    build regular depth bins, and (optionally) visualize the bin coverage.
 
     Parameters
     ----------
     ds : xr.Dataset
-        Input Dataset with variables 'DEPTH', 'TIME', and 'PROFILE_NUMBER'.
+        Must contain 'DEPTH', 'TIME', 'PROFILE_NUMBER' on the 'N_MEASUREMENTS' axis.
+    bin_size : int
+        Depth bin size in the same units as DEPTH (e.g., meters).
+    depth_positive : {"down","up"}
+        Normalize depth sign before binning. "down" => positive increasing with depth.
+    plot : bool
+        If True, draw a quick visualization of the resulting depth bins.
+    plot_kind : {"hist","heatmap"}
+        - "hist": overall histogram of measurement counts per bin (barh).
+        - "heatmap": per-profile vs bin coverage (first `max_profiles_heatmap` profiles).
+    max_profiles_heatmap : int
+        Max number of profiles to include in the heatmap (to avoid huge plots).
+    figsize : tuple
+        Matplotlib figure size for the plot.
+    save_path : str or None
+        If provided, save the plot to this path.
+    show : bool
+        If True, plt.show() the figure; otherwise close it.
 
     Returns
     -------
     xr.Dataset
-        Same dataset with new data variables:
-            - DEPTH_interpolated
-            - DEPTH_bin (floored to nearest 5 m)
-            - DEPTH_range (string label like "50–55m")
+        With:
+          - DEPTH_interpolated (float64, N_MEASUREMENTS)
+          - DEPTH_bin (float32, N_MEASUREMENTS)
+          - DEPTH_range (str, N_MEASUREMENTS) e.g. "50–55"
     """
     # Validate required variables
     required_vars = ["DEPTH", "TIME", "PROFILE_NUMBER"]
@@ -34,35 +62,25 @@ def interpolate_DEPTH(ds: xr.Dataset) -> xr.Dataset:
         if var not in ds:
             raise ValueError(f"Dataset must contain variable: {var}")
 
-    # Get dimensions
     if "N_MEASUREMENTS" not in ds.dims:
         raise ValueError(
-            "Dataset must have a profile-wise measurement dimension (e.g., 'N_MEASUREMENTS')."
+            "Dataset must have a profile-wise measurement dimension 'N_MEASUREMENTS'."
         )
-
-    # Interpolate missing values per PROFILE_NUMBER
-    if "DEPTH" not in ds:
-        raise ValueError("DEPTH not found in dataset.")
-
     if "PROFILE_NUMBER" not in ds:
-        raise ValueError(
-            "PROFILE_NUMBER must be present for per-profile interpolation."
-        )
+        raise ValueError("Dataset must contain 'PROFILE_NUMBER'.")
 
-    # filter PROFILE_NUMBER > 0
-    # (-1 is surfacing behaviour)
+    # Filter out surfacing/invalid profiles (PROFILE_NUMBER > 0)
     mask = ds["PROFILE_NUMBER"] > 0
     ds = ds.sel(N_MEASUREMENTS=mask)
 
-    # convert to int
+    # Ensure int dtype and set as coord
     ds["PROFILE_NUMBER"] = ds["PROFILE_NUMBER"].astype(np.int32)
-
     if "PROFILE_NUMBER" not in ds.coords:
         ds = ds.set_coords("PROFILE_NUMBER")
 
     print("[Pipeline Manager] Interpolating missing DEPTH values by PROFILE_NUMBER...")
 
-    # Use xarray groupby to interpolate within each profile
+    # Interpolate DEPTH within each profile along N_MEASUREMENTS
     DEPTH_interp = (
         ds["DEPTH"]
         .groupby("PROFILE_NUMBER")
@@ -72,19 +90,26 @@ def interpolate_DEPTH(ds: xr.Dataset) -> xr.Dataset:
             ).reindex_like(g)
         )
     )
+    ds = ds.assign({"DEPTH_interpolated": DEPTH_interp.astype("float64")})
 
-    ds = ds.assign({"DEPTH_interpolated": DEPTH_interp})
+    # --- Normalize depth sign BEFORE binning ---
+    dep = ds["DEPTH_interpolated"]
+    med = np.nanmedian(dep.values)
+    if depth_positive == "down" and med < 0:
+        dep = -dep
+    elif depth_positive == "up" and med > 0:
+        dep = -dep
+    ds["DEPTH_interpolated"] = dep
 
-    # Compute 5 m bins
-    bin_size = 5
-    DEPTH_bin = (ds["DEPTH_interpolated"] // bin_size) * bin_size
+    # --- Compute regular bins with the configured bin_size ---
+    DEPTH_bin = (dep // bin_size) * bin_size
     ds["DEPTH_bin"] = DEPTH_bin.astype(np.float32)
 
-    # Add range label (as a string)
+    # Add a friendly range label per measurement (e.g., "50–55")
     ds["DEPTH_range"] = xr.apply_ufunc(
         lambda start, end: (
             f"{int(start)}–{int(end)}"
-            if not np.isnan(start) and not np.isnan(end)
+            if np.isfinite(start) and np.isfinite(end)
             else ""
         ),
         ds["DEPTH_bin"],
@@ -93,6 +118,98 @@ def interpolate_DEPTH(ds: xr.Dataset) -> xr.Dataset:
         dask="parallelized" if ds.chunks else False,
         output_dtypes=[str],
     )
+
+    # --- Optional visualization of depth bins ---
+    if plot:
+        import matplotlib.pyplot as plt  # local import to avoid hard dep for non-plot flows
+
+        if plot_kind == "hist":
+            # Overall measurement counts per bin
+            bins_vals = ds["DEPTH_bin"].values
+            bins_vals = bins_vals[np.isfinite(bins_vals)]
+            if bins_vals.size:
+                unique_bins, counts = np.unique(bins_vals, return_counts=True)
+                fig, ax = plt.subplots(figsize=figsize)
+                ax.barh(unique_bins.astype(float), counts, height=bin_size * 0.8)
+                ax.set_xlabel("Measurement count")
+                ax.set_ylabel("Depth bin")
+                # Deeper at bottom if positive-down
+                if depth_positive == "down":
+                    ax.invert_yaxis()
+                ax.set_title(f"Depth-bin coverage (bin={bin_size})")
+                fig.tight_layout()
+                if save_path:
+                    plt.savefig(save_path, dpi=300)
+                    print(f"[Diagnostics] Saved depth-bin histogram to: {save_path}")
+                if show:
+                    plt.show()
+                else:
+                    plt.close(fig)
+            else:
+                print("[Diagnostics] No finite DEPTH_bin values to plot (hist).")
+
+        elif plot_kind == "heatmap":
+            # Per-profile × depth-bin coverage (counts), limited to first N profiles
+            profs = np.unique(ds["PROFILE_NUMBER"].values)
+            if profs.size == 0:
+                print("[Diagnostics] No profiles available for heatmap.")
+            else:
+                profs = profs[:max_profiles_heatmap]
+                # Build a small 2D grid of counts
+                df = (
+                    xr.Dataset(
+                        {
+                            "PROFILE_NUMBER": (
+                                "N_MEASUREMENTS",
+                                ds["PROFILE_NUMBER"].values,
+                            ),
+                            "DEPTH_bin": ("N_MEASUREMENTS", ds["DEPTH_bin"].values),
+                        }
+                    )
+                    .to_dataframe()
+                    .dropna()
+                )
+                df = df[df["PROFILE_NUMBER"].isin(profs)]
+                if df.empty:
+                    print("[Diagnostics] No data to plot in heatmap (after filter).")
+                else:
+                    # pivot: rows=profile, cols=depth_bin, values=count
+                    pivot = (
+                        df.assign(count=1)
+                        .groupby(["PROFILE_NUMBER", "DEPTH_bin"])["count"]
+                        .sum()
+                        .unstack(fill_value=0)
+                    )
+                    # Ensure numeric order of bins
+                    pivot = pivot.reindex(sorted(pivot.columns), axis=1)
+                    fig, ax = plt.subplots(figsize=figsize)
+                    im = ax.imshow(
+                        pivot.values,
+                        aspect="auto",
+                        interpolation="nearest",
+                        cmap="PuBu",
+                    )
+                    ax.set_yticks(range(len(pivot.index)))
+                    ax.set_yticklabels(pivot.index.astype(int))
+                    ax.set_xticks(range(len(pivot.columns)))
+                    ax.set_xticklabels(pivot.columns.astype(int), rotation=90)
+                    ax.set_xlabel("Depth bin")
+                    ax.set_ylabel("Profile #")
+                    ax.set_title(
+                        f"Per-profile depth-bin coverage (first {len(pivot.index)} profiles)"
+                    )
+                    cbar = plt.colorbar(im, ax=ax)
+                    cbar.set_label("Count")
+                    fig.tight_layout()
+                    if save_path:
+                        plt.savefig(save_path, dpi=300)
+                        print(f"[Diagnostics] Saved depth-bin heatmap to: {save_path}")
+                    if show:
+                        plt.show()
+                    else:
+                        plt.close(fig)
+        else:
+            print(f"[Diagnostics] Unknown plot_kind='{plot_kind}'. Skipping plot.")
 
     return ds
 
