@@ -345,10 +345,11 @@ class PipelineManager:
         """
         Align all datasets to a target dataset and compute R² against ancillary sources.
 
-        Parameters
-        ----------
-        target : str
-            The name of the target pipeline to align others to.
+        This version:
+        - Renames each pipeline's variables to the standard names (from alignment_map)
+        - Runs interpolate + aggregate ONCE per pipeline and caches the results
+        - Uses the cached medians for pairing/merging/R²
+        - Populates exportable handles for raw/processed/lite data
         """
 
         # === PRECONDITIONS ===
@@ -362,31 +363,75 @@ class PipelineManager:
         alignment_vars = list(self.alignment_map.keys())
         self.r2_datasets = {}  # Reset R² result container
 
-        target_data = self._contexts[target]["data"]
+        # ---- Helper: alias -> std renamer for a given pipeline name ----
+        def _rename_to_standard(name: str, ds):
+            rename_map = {
+                alias: std
+                for std, alias_map in self.alignment_map.items()
+                if (alias := alias_map.get(name)) and alias in ds
+            }
+            return ds.rename(rename_map) if rename_map else ds, rename_map
+
+        if not hasattr(self, "processed_per_glider"):
+            self.processed_per_glider = {}
+
+        # export registry the rest of your workflow can use later to write files
+        if not hasattr(self, "_exportables"):
+            self._exportables = {"raw": {}, "processed": {}, "lite": {}}
+
+        # === COLLECT: standardised & processed datasets for ALL pipelines (target + ancillaries) ===
+        for name, ctx in self._contexts.items():
+            raw_ds = ctx["data"]
+
+            # Keep a pointer to raw data for export (no copy)
+            self._exportables["raw"][name] = raw_ds
+
+            # If we already processed this pipeline, skip recomputation
+            if (
+                name in self.processed_per_glider
+                and "agg" in self.processed_per_glider[name]
+            ):
+                continue
+
+            # 1) rename variables to standard names
+            ds_std, used_map = _rename_to_standard(name, raw_ds)
+
+            # 2) interpolate depth
+            print(f"[Pipeline Manager] Interpolating DEPTH for '{name}'...")
+            ds_interp = interpolate_DEPTH(ds_std)
+
+            # 3) aggregate medians (2-D by PROFILE_NUMBER × DEPTH_bin)
+            print(f"[Pipeline Manager] Aggregating medians for '{name}'...")
+            ds_agg = aggregate_vars(ds_interp, alignment_vars)
+
+            # store in cache
+            self.processed_per_glider[name] = {
+                "renamed": ds_std,
+                "interp": ds_interp,
+                "agg": ds_agg,
+            }
+
+            # make processed export handle available
+            self._exportables["processed"][name] = ds_agg
+            if "lite" not in self._exportables:
+                self._exportables["lite"] = {}
+
+        # Prepare target objects
         target_summary = self.summary_per_glider[target].reset_index()
+        target_agg = self.processed_per_glider[target]["agg"]
 
-        # Rename using alias map
-        renamed_vars = {
-            alias: std
-            for std, alias_map in self.alignment_map.items()
-            if (alias := alias_map.get(target)) and alias in target_data
-        }
-        print(f"[Pipeline Manager] Renaming variables: {renamed_vars}")
-        target_data = target_data.rename(renamed_vars)
-
-        # Collect data and summaries
-        data = {
-            name: (ctx["data"], self.summary_per_glider[name])
-            for name, ctx in self._contexts.items()
-        }
-
-        for ancillary_name, (ancillary_data, ancillary_summary) in data.items():
+        # === LOOP: align each ancillary to target using the cached medians ===
+        for ancillary_name, ctx in self._contexts.items():
             if ancillary_name == target:
                 continue
 
             print(
                 f"\n[Pipeline Manager] Aligning '{ancillary_name}' to target '{target}'..."
             )
+
+            ancillary_summary = self.summary_per_glider[ancillary_name]
+            if ancillary_summary.index.names[0] is not None:
+                ancillary_summary = ancillary_summary.reset_index()
 
             # === STEP 1: Find Matched Profile Pairs ===
             paired_df = find_profile_pair_metadata(
@@ -410,28 +455,26 @@ class PipelineManager:
 
             print(f"[Pipeline Manager] Found {len(paired_df)} matched profile pairs.")
 
-            # === STEP 2: Interpolate + Aggregate ===
-            binned_ds = {}
-            for glider_name, raw_data in [
-                (target, target_data),
-                (ancillary_name, ancillary_data),
-            ]:
-                print(f"[Pipeline Manager] Binning data for '{glider_name}'...")
-                ds_interp = interpolate_DEPTH(raw_data)
-                ds_binned = aggregate_vars(ds_interp, alignment_vars)
-                binned_ds[glider_name] = ds_binned
+            # === STEP 2: Use CACHED aggregated medians ===
+            binned_ds = {
+                target: target_agg,
+                ancillary_name: self.processed_per_glider[ancillary_name]["agg"],
+            }
 
             # === STEP 3: Filter Datasets by Matched Profile IDs ===
             filtered_ds = {}
-            for glider_name in [target, ancillary_name]:
+            for glider_name, agg_ds in [
+                (target, binned_ds[target]),
+                (ancillary_name, binned_ds[ancillary_name]),
+            ]:
                 profile_ids = paired_df[f"{glider_name}_PROFILE_NUMBER"].values
                 filtered_ds[glider_name] = filter_xarray_by_profile_ids(
-                    ds=binned_ds[glider_name],
+                    ds=agg_ds,
                     profile_id_var="PROFILE_NUMBER",
                     valid_ids=profile_ids,
                 )
 
-            # Step 4: Build pairwise merged dataset (no N_MEASUREMENTS anywhere)
+            # === STEP 4: Build pairwise merged dataset ===
             merged = merge_pairs_from_filtered_aggregates(
                 paired_df=paired_df,
                 agg_target=filtered_ds[target],
@@ -443,9 +486,6 @@ class PipelineManager:
 
             print("[Align] Merged dims:", merged.dims)
             print("[Align] Vars:", list(merged.data_vars))
-
-            print(f"[Pipeline Manager] Merged dataset dimensions: {merged.dims}")
-            print(f"Merged Variables: {list(merged.data_vars)}")
 
             # === STEP 5: Compute R² ===
             print(f"[Pipeline Manager] Computing R² for '{ancillary_name}'...")
@@ -607,6 +647,7 @@ class PipelineManager:
         # Fast path: no overrides → just call through
         if not overrides:
             validate(self, target=target)
+            return
 
         # One-shot overrides: temporarily update settings['validation']
         vcfg_orig = dict(self.settings.get("validation", {}))  # shallow copy

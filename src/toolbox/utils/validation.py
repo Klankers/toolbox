@@ -131,10 +131,11 @@ def validate(pmanager, target="None"):
     End-to-end validation using settings.validation:
       - load device NetCDFs
       - summarise & pair profiles
-      - interpolate, bin, aggregate (2-D medians)
-      - merge per-pair on depth bins (current helper)
+      - (re)use cached target medians if available; otherwise interpolate+aggregate once
+      - interpolate, bin, aggregate device (2-D medians)
+      - merge per-pair on depth bins
       - compute per-pair R²
-      - plot & (optionally) apply+save calibrated target variables
+      - plot heatmaps per variable using plot_r2_heatmaps_per_pair
     """
     # --- config ---
     if target not in pmanager.pipelines or target not in pmanager._contexts:
@@ -153,31 +154,56 @@ def validate(pmanager, target="None"):
     apply_and_save = bool(vcfg.get("apply_and_save", False))
     out_path = vcfg.get("output_path", "")
 
-    # rename target variables to standard names via alignment_map
+    # ---- Target: prefer cached aggregated medians from preview_alignment() ----
     target_ds_raw = pmanager._contexts[target]["data"]
+
+    # Build alias->std map for this target
     rename_map = {
         alias: std
         for std, alias_map in pmanager.alignment_map.items()
         if (alias := alias_map.get(target)) and alias in target_ds_raw
     }
-    if rename_map:
-        target_ds_raw = target_ds_raw.rename(rename_map)
 
-    # load device
-    device_alias = vcfg.get("aliases", None)
-    # device_name : standard_name format
+    # Create caches if not present
+    if not hasattr(pmanager, "processed_per_glider"):
+        pmanager.processed_per_glider = {}
+    if not hasattr(pmanager, "_exportables"):
+        pmanager._exportables = {"raw": {}, "processed": {}, "lite": {}}
+
+    # Use cached medians if available, else compute once and cache
+    if (
+        target in pmanager.processed_per_glider
+        and "agg" in pmanager.processed_per_glider[target]
+    ):
+        t_med = pmanager.processed_per_glider[target]["agg"]
+    else:
+        # standardize names → interpolate → aggregate → cache + export handle
+        target_std = target_ds_raw.rename(rename_map) if rename_map else target_ds_raw
+        t_interp = interpolate_DEPTH(target_std)
+        t_med = aggregate_vars(t_interp, variables)  # dims: PROFILE_NUMBER, DEPTH_bin
+        pmanager.processed_per_glider[target] = {
+            "renamed": target_std,
+            "interp": t_interp,
+            "agg": t_med,
+        }
+        pmanager._exportables["raw"][target] = target_ds_raw
+        pmanager._exportables["processed"][target] = t_med
+
+    # ---- Device: load & aggregate (external; not part of pipelines) ----
+    device_alias = vcfg.get("aliases", None)  # {STD: device_col}
+    # Convert to {device_col: STD} for loader renaming
     dev_to_std = (
         {dev: std for std, dev in device_alias.items() if dev} if device_alias else None
     )
     device_ds_raw = load_device_folder_to_xarray(folder_path, alias_map=dev_to_std)
 
-    # summaries (for pairing)
+    # Summaries (for pairing)
     target_summary = summarising_profiles(target_ds_raw, target).reset_index(drop=True)
     device_summary = summarising_profiles(device_ds_raw, device_name).reset_index(
         drop=True
     )
 
-    # pairs
+    # Pairs
     paired_df = find_profile_pair_metadata(
         df_target=target_summary,
         df_ancillary=device_summary,
@@ -192,21 +218,19 @@ def validate(pmanager, target="None"):
 
     print(f"[Validation] Matched {len(paired_df)} pairs with {device_name}.")
 
-    # interpolate + aggregate (2-D medians)
-    t_med = aggregate_vars(
-        interpolate_DEPTH(target_ds_raw), variables
-    )  # dims: PROFILE_NUMBER, DEPTH_bin
-    d_med = aggregate_vars(interpolate_DEPTH(device_ds_raw), variables)
+    # Device medians (computed here)
+    d_interp = interpolate_DEPTH(device_ds_raw)
+    d_med = aggregate_vars(d_interp, variables)  # dims: PROFILE_NUMBER, DEPTH_bin
 
     # IDs from the pairs
     t_ids = paired_df[f"{target}_PROFILE_NUMBER"].values
     d_ids = paired_df[f"{device_name}_PROFILE_NUMBER"].values
 
-    # filter to just those profiles
+    # filter to just those profiles (works on aggregated 2-D medians)
     t_med = filter_xarray_by_profile_ids(t_med, "PROFILE_NUMBER", t_ids)
     d_med = filter_xarray_by_profile_ids(d_med, "PROFILE_NUMBER", d_ids)
 
-    # Now trim pairs to those actually present in the aggregated sets
+    # Trim pairs to those actually present in the aggregated sets
     t_present = set(t_med["PROFILE_NUMBER"].values.tolist())
     d_present = set(d_med["PROFILE_NUMBER"].values.tolist())
 
@@ -215,19 +239,19 @@ def validate(pmanager, target="None"):
     ].isin(d_present)
     paired_df = paired_df.loc[mask_pairs].reset_index(drop=True)
 
-    # log what was dropped
+    # Log what was dropped
     dropped_t = set(t_ids) - t_present
     dropped_d = set(d_ids) - d_present
     if dropped_t:
         print(
-            f"[Validate] Dropped {len(dropped_t)} target profiles with no aggregated data."
+            f"[Validation] Dropped {len(dropped_t)} target profiles with no aggregated data."
         )
     if dropped_d:
         print(
-            f"[Validate] Dropped {len(dropped_d)} device profiles with no aggregated data."
+            f"[Validation] Dropped {len(dropped_d)} device profiles with no aggregated data."
         )
 
-    # merge pairs  → dims: PAIR_INDEX, DEPTH_bin
+    # Merge pairs → dims: PAIR_INDEX, DEPTH_bin
     merged = merge_pairs_from_filtered_aggregates(
         paired_df=paired_df,
         agg_target=t_med,
@@ -241,19 +265,18 @@ def validate(pmanager, target="None"):
 
     print(f"[Validation] Merged data has {merged.sizes['PAIR_INDEX']} pairs.")
 
-    # R2 per pair
+    # R² per pair
     r2_ds = compute_r2_for_merged_profiles_xr(
         merged, variables=variables, target_name=target, ancillary_name=device_name
     )
 
+    # Plot heatmaps with the shared helper
     align_cfg = pmanager.settings.get("alignment", {}) or {}
     r2_thresholds = align_cfg.get(
         "r2_thresholds", [0.99, 0.95, 0.90, 0.85, 0.80, 0.75, 0.70]
     )
 
-    # wrap the device R² dataset in dict keyed by device_name
     r2_datasets_for_plot = {device_name: r2_ds}
-
     plot_r2_heatmaps_per_pair(
         r2_datasets=r2_datasets_for_plot,
         variables=variables,
