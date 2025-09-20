@@ -198,11 +198,11 @@ This includes:</p>
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.preview_alignment">
 <span class="sig-name descname"><span class="pre">preview_alignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.preview_alignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.preview_alignment" title="Link to this definition">¶</a></dt>
 <dd><p>Align all datasets to a target dataset and compute R² against ancillary sources.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>target</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The name of the target pipeline to align others to.</p>
-</dd>
-</dl>
+<p>This version:
+- Renames each pipeline’s variables to the standard names (from alignment_map)
+- Runs interpolate + aggregate ONCE per pipeline and caches the results
+- Uses the cached medians for pairing/merging/R²
+- Populates exportable handles for raw/processed/lite data</p>
 </dd></dl>
 
 <dl class="py method">

@@ -85,10 +85,11 @@
 <dt>End-to-end validation using settings.validation:</dt><dd><ul class="simple">
 <li><p>load device NetCDFs</p></li>
 <li><p>summarise &amp; pair profiles</p></li>
-<li><p>interpolate, bin, aggregate (2-D medians)</p></li>
-<li><p>merge per-pair on depth bins (current helper)</p></li>
+<li><p>(re)use cached target medians if available; otherwise interpolate+aggregate once</p></li>
+<li><p>interpolate, bin, aggregate device (2-D medians)</p></li>
+<li><p>merge per-pair on depth bins</p></li>
 <li><p>compute per-pair R²</p></li>
-<li><p>plot &amp; (optionally) apply+save calibrated target variables</p></li>
+<li><p>plot heatmaps per variable using plot_r2_heatmaps_per_pair</p></li>
 </ul>
 </dd>
 </dl>

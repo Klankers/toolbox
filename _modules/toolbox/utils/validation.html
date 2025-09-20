@@ -187,10 +187,11 @@
 <span class="sd">    End-to-end validation using settings.validation:</span>
 <span class="sd">      - load device NetCDFs</span>
 <span class="sd">      - summarise &amp; pair profiles</span>
-<span class="sd">      - interpolate, bin, aggregate (2-D medians)</span>
-<span class="sd">      - merge per-pair on depth bins (current helper)</span>
+<span class="sd">      - (re)use cached target medians if available; otherwise interpolate+aggregate once</span>
+<span class="sd">      - interpolate, bin, aggregate device (2-D medians)</span>
+<span class="sd">      - merge per-pair on depth bins</span>
 <span class="sd">      - compute per-pair R²</span>
-<span class="sd">      - plot &amp; (optionally) apply+save calibrated target variables</span>
+<span class="sd">      - plot heatmaps per variable using plot_r2_heatmaps_per_pair</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># --- config ---</span>
     <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">pipelines</span> <span class="ow">or</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">_contexts</span><span class="p">:</span>
@@ -209,31 +210,56 @@
     <span class="n">apply_and_save</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">vcfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;apply_and_save&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
     <span class="n">out_path</span> <span class="o">=</span> <span class="n">vcfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-    <span class="c1"># rename target variables to standard names via alignment_map</span>
+    <span class="c1"># ---- Target: prefer cached aggregated medians from preview_alignment() ----</span>
     <span class="n">target_ds_raw</span> <span class="o">=</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Build alias-&gt;std map for this target</span>
     <span class="n">rename_map</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">alias</span><span class="p">:</span> <span class="n">std</span>
         <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">alias_map</span> <span class="ow">in</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">alias</span> <span class="o">:=</span> <span class="n">alias_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target</span><span class="p">))</span> <span class="ow">and</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">target_ds_raw</span>
     <span class="p">}</span>
-    <span class="k">if</span> <span class="n">rename_map</span><span class="p">:</span>
-        <span class="n">target_ds_raw</span> <span class="o">=</span> <span class="n">target_ds_raw</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span>
 
-    <span class="c1"># load device</span>
-    <span class="n">device_alias</span> <span class="o">=</span> <span class="n">vcfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;aliases&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="c1"># device_name : standard_name format</span>
+    <span class="c1"># Create caches if not present</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pmanager</span><span class="p">,</span> <span class="s2">&quot;processed_per_glider&quot;</span><span class="p">):</span>
+        <span class="n">pmanager</span><span class="o">.</span><span class="n">processed_per_glider</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">pmanager</span><span class="p">,</span> <span class="s2">&quot;_exportables&quot;</span><span class="p">):</span>
+        <span class="n">pmanager</span><span class="o">.</span><span class="n">_exportables</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;processed&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;lite&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+
+    <span class="c1"># Use cached medians if available, else compute once and cache</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">target</span> <span class="ow">in</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">processed_per_glider</span>
+        <span class="ow">and</span> <span class="s2">&quot;agg&quot;</span> <span class="ow">in</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="n">t_med</span> <span class="o">=</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># standardize names → interpolate → aggregate → cache + export handle</span>
+        <span class="n">target_std</span> <span class="o">=</span> <span class="n">target_ds_raw</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span> <span class="k">if</span> <span class="n">rename_map</span> <span class="k">else</span> <span class="n">target_ds_raw</span>
+        <span class="n">t_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">target_std</span><span class="p">)</span>
+        <span class="n">t_med</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">t_interp</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>  <span class="c1"># dims: PROFILE_NUMBER, DEPTH_bin</span>
+        <span class="n">pmanager</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;renamed&quot;</span><span class="p">:</span> <span class="n">target_std</span><span class="p">,</span>
+            <span class="s2">&quot;interp&quot;</span><span class="p">:</span> <span class="n">t_interp</span><span class="p">,</span>
+            <span class="s2">&quot;agg&quot;</span><span class="p">:</span> <span class="n">t_med</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">pmanager</span><span class="o">.</span><span class="n">_exportables</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">][</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_ds_raw</span>
+        <span class="n">pmanager</span><span class="o">.</span><span class="n">_exportables</span><span class="p">[</span><span class="s2">&quot;processed&quot;</span><span class="p">][</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_med</span>
+
+    <span class="c1"># ---- Device: load &amp; aggregate (external; not part of pipelines) ----</span>
+    <span class="n">device_alias</span> <span class="o">=</span> <span class="n">vcfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;aliases&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># {STD: device_col}</span>
+    <span class="c1"># Convert to {device_col: STD} for loader renaming</span>
     <span class="n">dev_to_std</span> <span class="o">=</span> <span class="p">(</span>
         <span class="p">{</span><span class="n">dev</span><span class="p">:</span> <span class="n">std</span> <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">dev</span> <span class="ow">in</span> <span class="n">device_alias</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">dev</span><span class="p">}</span> <span class="k">if</span> <span class="n">device_alias</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="p">)</span>
     <span class="n">device_ds_raw</span> <span class="o">=</span> <span class="n">load_device_folder_to_xarray</span><span class="p">(</span><span class="n">folder_path</span><span class="p">,</span> <span class="n">alias_map</span><span class="o">=</span><span class="n">dev_to_std</span><span class="p">)</span>
 
-    <span class="c1"># summaries (for pairing)</span>
+    <span class="c1"># Summaries (for pairing)</span>
     <span class="n">target_summary</span> <span class="o">=</span> <span class="n">summarising_profiles</span><span class="p">(</span><span class="n">target_ds_raw</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">device_summary</span> <span class="o">=</span> <span class="n">summarising_profiles</span><span class="p">(</span><span class="n">device_ds_raw</span><span class="p">,</span> <span class="n">device_name</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span>
         <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 
-    <span class="c1"># pairs</span>
+    <span class="c1"># Pairs</span>
     <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_profile_pair_metadata</span><span class="p">(</span>
         <span class="n">df_target</span><span class="o">=</span><span class="n">target_summary</span><span class="p">,</span>
         <span class="n">df_ancillary</span><span class="o">=</span><span class="n">device_summary</span><span class="p">,</span>
@@ -248,21 +274,19 @@
 
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Validation] Matched </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> pairs with </span><span class="si">{</span><span class="n">device_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
-    <span class="c1"># interpolate + aggregate (2-D medians)</span>
-    <span class="n">t_med</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span>
-        <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">target_ds_raw</span><span class="p">),</span> <span class="n">variables</span>
-    <span class="p">)</span>  <span class="c1"># dims: PROFILE_NUMBER, DEPTH_bin</span>
-    <span class="n">d_med</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">device_ds_raw</span><span class="p">),</span> <span class="n">variables</span><span class="p">)</span>
+    <span class="c1"># Device medians (computed here)</span>
+    <span class="n">d_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">device_ds_raw</span><span class="p">)</span>
+    <span class="n">d_med</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">d_interp</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>  <span class="c1"># dims: PROFILE_NUMBER, DEPTH_bin</span>
 
     <span class="c1"># IDs from the pairs</span>
     <span class="n">t_ids</span> <span class="o">=</span> <span class="n">paired_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
     <span class="n">d_ids</span> <span class="o">=</span> <span class="n">paired_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">device_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
-    <span class="c1"># filter to just those profiles</span>
+    <span class="c1"># filter to just those profiles (works on aggregated 2-D medians)</span>
     <span class="n">t_med</span> <span class="o">=</span> <span class="n">filter_xarray_by_profile_ids</span><span class="p">(</span><span class="n">t_med</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">t_ids</span><span class="p">)</span>
     <span class="n">d_med</span> <span class="o">=</span> <span class="n">filter_xarray_by_profile_ids</span><span class="p">(</span><span class="n">d_med</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">d_ids</span><span class="p">)</span>
 
-    <span class="c1"># Now trim pairs to those actually present in the aggregated sets</span>
+    <span class="c1"># Trim pairs to those actually present in the aggregated sets</span>
     <span class="n">t_present</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t_med</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
     <span class="n">d_present</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">d_med</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
 
@@ -271,19 +295,19 @@
     <span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">d_present</span><span class="p">)</span>
     <span class="n">paired_df</span> <span class="o">=</span> <span class="n">paired_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_pairs</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="c1"># log what was dropped</span>
+    <span class="c1"># Log what was dropped</span>
     <span class="n">dropped_t</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t_ids</span><span class="p">)</span> <span class="o">-</span> <span class="n">t_present</span>
     <span class="n">dropped_d</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">d_ids</span><span class="p">)</span> <span class="o">-</span> <span class="n">d_present</span>
     <span class="k">if</span> <span class="n">dropped_t</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[Validate] Dropped </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dropped_t</span><span class="p">)</span><span class="si">}</span><span class="s2"> target profiles with no aggregated data.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;[Validation] Dropped </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dropped_t</span><span class="p">)</span><span class="si">}</span><span class="s2"> target profiles with no aggregated data.&quot;</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">dropped_d</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[Validate] Dropped </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dropped_d</span><span class="p">)</span><span class="si">}</span><span class="s2"> device profiles with no aggregated data.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;[Validation] Dropped </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dropped_d</span><span class="p">)</span><span class="si">}</span><span class="s2"> device profiles with no aggregated data.&quot;</span>
         <span class="p">)</span>
 
-    <span class="c1"># merge pairs  → dims: PAIR_INDEX, DEPTH_bin</span>
+    <span class="c1"># Merge pairs → dims: PAIR_INDEX, DEPTH_bin</span>
     <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_pairs_from_filtered_aggregates</span><span class="p">(</span>
         <span class="n">paired_df</span><span class="o">=</span><span class="n">paired_df</span><span class="p">,</span>
         <span class="n">agg_target</span><span class="o">=</span><span class="n">t_med</span><span class="p">,</span>
@@ -297,19 +321,18 @@
 
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Validation] Merged data has </span><span class="si">{</span><span class="n">merged</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="s1">&#39;PAIR_INDEX&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> pairs.&quot;</span><span class="p">)</span>
 
-    <span class="c1"># R2 per pair</span>
+    <span class="c1"># R² per pair</span>
     <span class="n">r2_ds</span> <span class="o">=</span> <span class="n">compute_r2_for_merged_profiles_xr</span><span class="p">(</span>
         <span class="n">merged</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span> <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">ancillary_name</span><span class="o">=</span><span class="n">device_name</span>
     <span class="p">)</span>
 
+    <span class="c1"># Plot heatmaps with the shared helper</span>
     <span class="n">align_cfg</span> <span class="o">=</span> <span class="n">pmanager</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="n">r2_thresholds</span> <span class="o">=</span> <span class="n">align_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
         <span class="s2">&quot;r2_thresholds&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.99</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.70</span><span class="p">]</span>
     <span class="p">)</span>
 
-    <span class="c1"># wrap the device R² dataset in dict keyed by device_name</span>
     <span class="n">r2_datasets_for_plot</span> <span class="o">=</span> <span class="p">{</span><span class="n">device_name</span><span class="p">:</span> <span class="n">r2_ds</span><span class="p">}</span>
-
     <span class="n">plot_r2_heatmaps_per_pair</span><span class="p">(</span>
         <span class="n">r2_datasets</span><span class="o">=</span><span class="n">r2_datasets_for_plot</span><span class="p">,</span>
         <span class="n">variables</span><span class="o">=</span><span class="n">variables</span><span class="p">,</span>

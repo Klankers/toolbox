@@ -457,10 +457,11 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Align all datasets to a target dataset and compute R² against ancillary sources.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        target : str</span>
-<span class="sd">            The name of the target pipeline to align others to.</span>
+<span class="sd">        This version:</span>
+<span class="sd">        - Renames each pipeline&#39;s variables to the standard names (from alignment_map)</span>
+<span class="sd">        - Runs interpolate + aggregate ONCE per pipeline and caches the results</span>
+<span class="sd">        - Uses the cached medians for pairing/merging/R²</span>
+<span class="sd">        - Populates exportable handles for raw/processed/lite data</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># === PRECONDITIONS ===</span>
@@ -474,31 +475,75 @@
         <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Reset R² result container</span>
 
-        <span class="n">target_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="c1"># ---- Helper: alias -&gt; std renamer for a given pipeline name ----</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_rename_to_standard</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ds</span><span class="p">):</span>
+            <span class="n">rename_map</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">alias</span><span class="p">:</span> <span class="n">std</span>
+                <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">alias_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">alias</span> <span class="o">:=</span> <span class="n">alias_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="ow">and</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">ds</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span> <span class="k">if</span> <span class="n">rename_map</span> <span class="k">else</span> <span class="n">ds</span><span class="p">,</span> <span class="n">rename_map</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;processed_per_glider&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># export registry the rest of your workflow can use later to write files</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_exportables&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;processed&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;lite&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+
+        <span class="c1"># === COLLECT: standardised &amp; processed datasets for ALL pipelines (target + ancillaries) ===</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">raw_ds</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Keep a pointer to raw data for export (no copy)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw_ds</span>
+
+            <span class="c1"># If we already processed this pipeline, skip recomputation</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span>
+                <span class="ow">and</span> <span class="s2">&quot;agg&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># 1) rename variables to standard names</span>
+            <span class="n">ds_std</span><span class="p">,</span> <span class="n">used_map</span> <span class="o">=</span> <span class="n">_rename_to_standard</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">raw_ds</span><span class="p">)</span>
+
+            <span class="c1"># 2) interpolate depth</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Interpolating DEPTH for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
+            <span class="n">ds_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">ds_std</span><span class="p">)</span>
+
+            <span class="c1"># 3) aggregate medians (2-D by PROFILE_NUMBER × DEPTH_bin)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Aggregating medians for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
+            <span class="n">ds_agg</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">ds_interp</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
+
+            <span class="c1"># store in cache</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;renamed&quot;</span><span class="p">:</span> <span class="n">ds_std</span><span class="p">,</span>
+                <span class="s2">&quot;interp&quot;</span><span class="p">:</span> <span class="n">ds_interp</span><span class="p">,</span>
+                <span class="s2">&quot;agg&quot;</span><span class="p">:</span> <span class="n">ds_agg</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="c1"># make processed export handle available</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="p">[</span><span class="s2">&quot;processed&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_agg</span>
+            <span class="k">if</span> <span class="s2">&quot;lite&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="p">[</span><span class="s2">&quot;lite&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Prepare target objects</span>
         <span class="n">target_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">target_agg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">]</span>
 
-        <span class="c1"># Rename using alias map</span>
-        <span class="n">renamed_vars</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">alias</span><span class="p">:</span> <span class="n">std</span>
-            <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">alias_map</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">alias</span> <span class="o">:=</span> <span class="n">alias_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target</span><span class="p">))</span> <span class="ow">and</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">target_data</span>
-        <span class="p">}</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Renaming variables: </span><span class="si">{</span><span class="n">renamed_vars</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">target_data</span> <span class="o">=</span> <span class="n">target_data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">renamed_vars</span><span class="p">)</span>
-
-        <span class="c1"># Collect data and summaries</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="p">}</span>
-
-        <span class="k">for</span> <span class="n">ancillary_name</span><span class="p">,</span> <span class="p">(</span><span class="n">ancillary_data</span><span class="p">,</span> <span class="n">ancillary_summary</span><span class="p">)</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># === LOOP: align each ancillary to target using the cached medians ===</span>
+        <span class="k">for</span> <span class="n">ancillary_name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">ancillary_name</span> <span class="o">==</span> <span class="n">target</span><span class="p">:</span>
                 <span class="k">continue</span>
 
             <span class="nb">print</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[Pipeline Manager] Aligning &#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&#39; to target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;...&quot;</span>
             <span class="p">)</span>
+
+            <span class="n">ancillary_summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">ancillary_summary</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ancillary_summary</span> <span class="o">=</span> <span class="n">ancillary_summary</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 
             <span class="c1"># === STEP 1: Find Matched Profile Pairs ===</span>
             <span class="n">paired_df</span> <span class="o">=</span> <span class="n">find_profile_pair_metadata</span><span class="p">(</span>
@@ -522,28 +567,26 @@
 
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paired_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> matched profile pairs.&quot;</span><span class="p">)</span>
 
-            <span class="c1"># === STEP 2: Interpolate + Aggregate ===</span>
-            <span class="n">binned_ds</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">glider_name</span><span class="p">,</span> <span class="n">raw_data</span> <span class="ow">in</span> <span class="p">[</span>
-                <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">target_data</span><span class="p">),</span>
-                <span class="p">(</span><span class="n">ancillary_name</span><span class="p">,</span> <span class="n">ancillary_data</span><span class="p">),</span>
-            <span class="p">]:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Binning data for &#39;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
-                <span class="n">ds_interp</span> <span class="o">=</span> <span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
-                <span class="n">ds_binned</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">ds_interp</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
-                <span class="n">binned_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_binned</span>
+            <span class="c1"># === STEP 2: Use CACHED aggregated medians ===</span>
+            <span class="n">binned_ds</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">target</span><span class="p">:</span> <span class="n">target_agg</span><span class="p">,</span>
+                <span class="n">ancillary_name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">],</span>
+            <span class="p">}</span>
 
             <span class="c1"># === STEP 3: Filter Datasets by Matched Profile IDs ===</span>
             <span class="n">filtered_ds</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">glider_name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">target</span><span class="p">,</span> <span class="n">ancillary_name</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">glider_name</span><span class="p">,</span> <span class="n">agg_ds</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">binned_ds</span><span class="p">[</span><span class="n">target</span><span class="p">]),</span>
+                <span class="p">(</span><span class="n">ancillary_name</span><span class="p">,</span> <span class="n">binned_ds</span><span class="p">[</span><span class="n">ancillary_name</span><span class="p">]),</span>
+            <span class="p">]:</span>
                 <span class="n">profile_ids</span> <span class="o">=</span> <span class="n">paired_df</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">glider_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
                 <span class="n">filtered_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_xarray_by_profile_ids</span><span class="p">(</span>
-                    <span class="n">ds</span><span class="o">=</span><span class="n">binned_ds</span><span class="p">[</span><span class="n">glider_name</span><span class="p">],</span>
+                    <span class="n">ds</span><span class="o">=</span><span class="n">agg_ds</span><span class="p">,</span>
                     <span class="n">profile_id_var</span><span class="o">=</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
                     <span class="n">valid_ids</span><span class="o">=</span><span class="n">profile_ids</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="c1"># Step 4: Build pairwise merged dataset (no N_MEASUREMENTS anywhere)</span>
+            <span class="c1"># === STEP 4: Build pairwise merged dataset ===</span>
             <span class="n">merged</span> <span class="o">=</span> <span class="n">merge_pairs_from_filtered_aggregates</span><span class="p">(</span>
                 <span class="n">paired_df</span><span class="o">=</span><span class="n">paired_df</span><span class="p">,</span>
                 <span class="n">agg_target</span><span class="o">=</span><span class="n">filtered_ds</span><span class="p">[</span><span class="n">target</span><span class="p">],</span>
@@ -555,9 +598,6 @@
 
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Align] Merged dims:&quot;</span><span class="p">,</span> <span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Align] Vars:&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">data_vars</span><span class="p">))</span>
-
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Merged dataset dimensions: </span><span class="si">{</span><span class="n">merged</span><span class="o">.</span><span class="n">dims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merged Variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="c1"># === STEP 5: Compute R² ===</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Computing R² for &#39;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">&#39;...&quot;</span><span class="p">)</span>
@@ -725,6 +765,7 @@
         <span class="c1"># Fast path: no overrides → just call through</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">overrides</span><span class="p">:</span>
             <span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+            <span class="k">return</span>
 
         <span class="c1"># One-shot overrides: temporarily update settings[&#39;validation&#39;]</span>
         <span class="n">vcfg_orig</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;validation&quot;</span><span class="p">,</span> <span class="p">{}))</span>  <span class="c1"># shallow copy</span>
