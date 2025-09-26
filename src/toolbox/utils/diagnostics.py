@@ -309,9 +309,6 @@ def plot_distance_time_grid(
     return pd.concat(combined_summaries, ignore_index=True)
 
 
-#### HEATMAPS ####
-
-
 def find_candidate_glider_pairs(
     df_a: pd.DataFrame,
     df_b: pd.DataFrame,

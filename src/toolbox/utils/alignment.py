@@ -736,13 +736,20 @@ def plot_r2_heatmaps_per_pair(
         )
 
         # Annotate cells
-        vmax = heatmap.max() if heatmap.size else 0
         for i in range(len(variables)):
             for j in range(len(r2_thresholds)):
                 val = int(heatmap[i, j])
-                color = "white" if vmax > 0 and val > vmax / 2 else "black"
+                value_midpoint = (heatmap.max() - heatmap.min()) / 2.0 + heatmap.min()
+                color = "white" if val > value_midpoint else "black"
+
                 ax.text(
-                    j, i, str(val), ha="center", va="center", color=color, fontsize=9
+                    j,
+                    i,
+                    str(val),
+                    ha="center",
+                    va="center",
+                    color=color,
+                    fontsize=9,
                 )
 
         cbar = plt.colorbar(im, ax=ax)
