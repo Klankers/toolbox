@@ -810,13 +810,20 @@
         <span class="p">)</span>
 
         <span class="c1"># Annotate cells</span>
-        <span class="n">vmax</span> <span class="o">=</span> <span class="n">heatmap</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="k">if</span> <span class="n">heatmap</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)):</span>
             <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r2_thresholds</span><span class="p">)):</span>
                 <span class="n">val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">heatmap</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
-                <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">vmax</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">vmax</span> <span class="o">/</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+                <span class="n">value_midpoint</span> <span class="o">=</span> <span class="p">(</span><span class="n">heatmap</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">heatmap</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">heatmap</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">value_midpoint</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+
                 <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-                    <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span>
+                    <span class="n">j</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span>
+                    <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                    <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                    <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="n">cbar</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
