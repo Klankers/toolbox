@@ -632,6 +632,15 @@ class PipelineManager:
                 print("[Fit] Saved files:", results.get("paths", {}))
         else:
             print("[Fit] apply_and_save=False — skipping writing aligned datasets.")
+        # store fits for potential later use in the appropriate self.processed_per_glider
+        for anc, fit_info in results.get("fits", {}).items():
+            if anc in self.processed_per_glider:
+                self.processed_per_glider[anc][
+                    f"last_fit_to_target_{target}"
+                ] = fit_info
+                self.processed_per_glider[target][
+                    f"last_fit_from_anicillary_{anc}"
+                ] = fit_info
 
         return results
 
