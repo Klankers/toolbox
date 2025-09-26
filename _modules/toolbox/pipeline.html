@@ -747,6 +747,15 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Fit] Saved files:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;paths&quot;</span><span class="p">,</span> <span class="p">{}))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Fit] apply_and_save=False — skipping writing aligned datasets.&quot;</span><span class="p">)</span>
+        <span class="c1"># store fits for potential later use in the appropriate self.processed_per_glider</span>
+        <span class="k">for</span> <span class="n">anc</span><span class="p">,</span> <span class="n">fit_info</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fits&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">anc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">anc</span><span class="p">][</span>
+                    <span class="sa">f</span><span class="s2">&quot;last_fit_to_target_</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">fit_info</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span>
+                    <span class="sa">f</span><span class="s2">&quot;last_fit_from_anicillary_</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">fit_info</span>
 
         <span class="k">return</span> <span class="n">results</span></div>
 
