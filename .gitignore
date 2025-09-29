@@ -173,3 +173,6 @@ cython_debug/
 # Data Files
 *.nc
 main.py
+
+# Data Folders
+/test_data
