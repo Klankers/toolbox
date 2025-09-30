@@ -16,6 +16,7 @@ def find_profiles(
     filter_win_sizes=["20s", "10s"],
     time_col="TIME",
     depth_col="DEPTH",
+    cust_col=None,
 ):
     """
     Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.
@@ -27,7 +28,8 @@ def find_profiles(
     Parameters
     ----------
     df : polars.DataFrame
-        Input dataframe containing time and depth measurements
+        Input dataframe containing time and depth measurements.
+        Time column must be in epoch seconds.
     gradient_thresholds : list
         Two-element list [positive_threshold, negative_threshold] defining the vertical velocity
         range (in meters/second) that is NOT considered part of a profile. typical values are around [0.02, -0.02]
@@ -38,6 +40,9 @@ def find_profiles(
         Name of the column containing timestamp data
     depth_col : str, default='DEPTH'
         Name of the column containing depth measurements
+    cust_col : str, default=None
+        Name of a data column in the input dataframe, with matching time and depth measurements, to be displayed
+        alongside profiling plots, e.g. pitch
 
     Returns
     -------
@@ -65,10 +70,13 @@ def find_profiles(
 
     # Interpolate missing depth values using time as reference
     # Also removes infinite and NaN values before interpolation
+    cols = [pl.col(time_col), pl.col(depth_col)]
+    if cust_col and cust_col in df.columns:
+        cols.append(pl.col(cust_col))
+
     df = (
         df.select(
-            pl.col(time_col),
-            pl.col(depth_col),
+            *cols,
             pl.col(depth_col)
             .replace([np.inf, -np.inf, np.nan], None)
             .interpolate_by(time_col)
@@ -144,6 +152,7 @@ class FindProfilesStep(BaseStep):
         self.thresholds = self.parameters["gradient_thresholds"]
         self.win_sizes = self.parameters["filter_window_sizes"]
         self.depth_col = self.parameters["depth_column"]
+        self.cust_col = self.parameters.get("custom_column", None)  # <<< NEW
 
         if self.diagnostics:
             self.log("Generating diagnostics")
@@ -155,7 +164,7 @@ class FindProfilesStep(BaseStep):
             self.data[["TIME", self.depth_col]].to_dataframe(), nan_to_null=False
         )
         self.profile_outputs = find_profiles(
-            self._df, self.thresholds, self.win_sizes, depth_col=self.depth_col
+            self._df, self.thresholds, self.win_sizes, depth_col=self.depth_col, cust_col=self.cust_col
         )
         profile_numbers = self.profile_outputs["profile_num"].to_numpy()
 
@@ -195,20 +204,25 @@ class FindProfilesStep(BaseStep):
             )
 
             fig, axs = plt.subplots(
-                3, 1, figsize=(18, 8), height_ratios=[3, 3, 1], sharex=True
+                4, 1, figsize=(18, 10), height_ratios=[3, 3, 1, 2], sharex=True  # <<< CHANGED
             )
             axs[0].set(
-                xlabel="Time",
+                xlabel="Time", 
                 ylabel="Interpolated Depth",
             )
             axs[1].set(
-                xlabel="Time",
+                xlabel="Time", 
                 ylabel="Vertical Velocity",
             )
             axs[2].set(
-                xlabel="Time",
+                xlabel="Time", 
                 ylabel="Profile Number",
             )
+            axs[3].set(
+                xlabel="Time", 
+                ylabel=f"{self.cust_col}" if self.cust_col else "Custom",
+            )   # <<< NEW
+
             fig.tight_layout()
 
             # Plot depth vs time, highlighting profile and non-profile points
@@ -258,6 +272,18 @@ class FindProfilesStep(BaseStep):
                 ax.legend(loc="upper right")
             plt.show(block=True)
 
+            if self.cust_col and self.cust_col in self.profile_outputs.columns:   # <<< use self.cust_col
+                axs[3].plot(
+                    self.profile_outputs["TIME"],
+                    self.profile_outputs[self.cust_col],   # <<< dynamic
+                    c="purple",
+                    marker=".",
+                    markersize=1,
+                    ls="",
+                    label=self.cust_col
+                )
+                axs[3].legend(loc="upper right")
+
         root = tk.Tk()
         root.title("Parameter Adjustment")
         root.geometry(f"380x{50*len(self.parameters)}")
@@ -305,7 +331,7 @@ class FindProfilesStep(BaseStep):
             # Update parameter attributes
             self.thresholds = [float(entries["+ve"].get()), float(entries["-ve"].get())]
             self.win_sizes = [
-                entries["Mean Filter"].get(),
+                entries["Median Filter"].get(),
                 entries["Mean Filter"].get(),
             ]
             self.depth_col = entries["depth_column"].get()
