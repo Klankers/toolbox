@@ -17,6 +17,7 @@ def find_profiles(
     time_col="TIME",
     depth_col="DEPTH",
     cust_col=None,
+    cust_gradient_thresholds=None 
 ):
     """
     Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.
@@ -43,6 +44,9 @@ def find_profiles(
     cust_col : str, default=None
         Name of a data column in the input dataframe, with matching time and depth measurements, to be displayed
         alongside profiling plots, e.g. pitch
+    cust_filter_win_sizes : list, default=None
+        Two-element list [positive_threshold, negative_threshold] defining the
+        range of your custom variable that is NOT considered part of a profile.
 
     Returns
     -------
@@ -77,13 +81,13 @@ def find_profiles(
     df = (
         df.select(
             *cols,
-            pl.col(depth_col)
+            pl.col(depth_col,cust_col)
             .replace([np.inf, -np.inf, np.nan], None)
             .interpolate_by(time_col)
             .name.prefix(f"INTERP_"),
         )
         .with_row_index()
-        .drop_nulls(subset=f"INTERP_{depth_col}")
+        .drop_nulls(subset=[f"INTERP_{depth_col}",f"INTERP_{cust_col}"])
     )
 
     # Calculate time differences (dt) and depth differences (dz) between consecutive measurements
@@ -92,6 +96,7 @@ def find_profiles(
             "dt"
         ),  # Convert nanoseconds to seconds
         pl.col(f"INTERP_{depth_col}").diff().alias("dz"),
+        pl.col(f"INTERP_{cust_col}").diff().alias("dC")
     )
 
     # Calculate vertical velocity (gradient) as depth change divided by time change
@@ -99,11 +104,15 @@ def find_profiles(
         (pl.col("dz") / pl.col("dt")).alias("grad"),
     ).drop_nulls(subset="grad")
 
+    df = df.with_columns(
+        (pl.col("dC") / pl.col("dt")).alias("dC/dt"),
+    ).drop_nulls(subset="dC/dt")
+
     # Apply a compound filter to smooth the gradient values (rolling median
     # supresses spikes, rolling mean smooths noise)
     # TODO: this window size should be checked against the maximum sample period (dt)
     df = df.with_columns(
-        pl.col("grad")
+        pl.col("grad", f"INTERP_{cust_col}", "dC/dt")
         .rolling_median_by(time_col, window_size=filter_win_sizes[0])
         .rolling_mean_by(time_col, window_size=filter_win_sizes[1])
         .name.prefix("smooth_"),
@@ -112,9 +121,23 @@ def find_profiles(
     # Determine which points are part of profiles based on gradient thresholds
     # A point is considered part of a profile when its gradient is outside the threshold range
     pos_grad, neg_grad = gradient_thresholds
+
     df = df.with_columns(
         pl.col("smooth_grad").is_between(neg_grad, pos_grad).not_().alias("is_profile")
     )
+
+    # Determine which points are part of profiles based on pitch angle and vertical velocity
+    # The two should contrusctively interfere and reduce signal to noise.
+    if cust_col == 'pitch': 
+        if cust_gradient_thresholds:
+            pos_grad, neg_grad = cust_gradient_thresholds
+
+        # Combined metric
+        combined_metric = -pl.col(f"smooth_INTERP_{cust_col}") * pl.col("smooth_grad")
+        
+        df = df.with_columns(
+            (combined_metric > pos_grad).alias("is_profile")
+        )
 
     # Assign unique profile numbers to consecutive points identified as profiles
     # This converts the boolean 'is_profile' column into numbered profile segments
