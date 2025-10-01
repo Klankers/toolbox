@@ -4,11 +4,11 @@
 from toolbox.steps.base_step import BaseStep, register_step
 import toolbox.utils.diagnostics as diag
 import polars as pl
+import polars.selectors as cs
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import tkinter as tk
 import numpy as np
-
 
 def find_profiles(
     df,
@@ -17,7 +17,11 @@ def find_profiles(
     time_col="TIME",
     depth_col="DEPTH",
     cust_col=None,
-    cust_gradient_thresholds=None 
+    cust_gradient_thresholds=None,
+    transect_duration='10m',
+    transect_depth_range=10.0,
+    profile_duration='2m',
+    strict_profiles=False,
 ):
     """
     Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.
@@ -118,25 +122,35 @@ def find_profiles(
         .name.prefix("smooth_"),
     )
 
-    # Determine which points are part of profiles based on gradient thresholds
-    # A point is considered part of a profile when its gradient is outside the threshold range
+       # Determine which points are part of profiles based on gradient thresholds
     pos_grad, neg_grad = gradient_thresholds
-
     df = df.with_columns(
-        pl.col("smooth_grad").is_between(neg_grad, pos_grad).not_().alias("is_profile")
+        pl.col("smooth_grad").is_between(neg_grad, pos_grad).not_().alias("grad_profile")
     )
 
     # Determine which points are part of profiles based on pitch angle and vertical velocity
-    # The two should contrusctively interfere and reduce signal to noise.
-    if cust_col == 'pitch': 
+    if cust_col == 'pitch':
         if cust_gradient_thresholds:
             pos_grad, neg_grad = cust_gradient_thresholds
 
-        # Combined metric
         combined_metric = -pl.col(f"smooth_INTERP_{cust_col}") * pl.col("smooth_grad")
-        
+
         df = df.with_columns(
-            (combined_metric > pos_grad).alias("is_profile")
+            (combined_metric.is_between(neg_grad, pos_grad).not_()).alias("pitch_profile")
+        )
+    else:
+        df = df.with_columns(
+            pl.lit(False).alias("pitch_profile")
+        )
+
+    # Apply strict toggle: require BOTH grad-based and pitch-based criteria if enabled
+    if strict_profiles:
+        df = df.with_columns(
+            (pl.col("grad_profile") & pl.col("pitch_profile")).alias("is_profile")
+        )
+    else:
+        df = df.with_columns(
+            (pl.col("grad_profile") | pl.col("pitch_profile")).alias("is_profile")
         )
 
     # Assign unique profile numbers to consecutive points identified as profiles
@@ -147,6 +161,145 @@ def find_profiles(
             * pl.col("is_profile")
             - 1
         ).alias("profile_num")
+    )
+
+    # Enforce minimum profile duration
+    # Compute elapsed time for each profile segment
+    profile_durations = (
+        df.filter(pl.col("profile_num") >= 0)
+          .group_by("profile_num")
+          .agg((pl.col(time_col).max() - pl.col(time_col).min()).alias("elapsed"))
+    )
+
+    # Join back and mask out short profiles
+    df = df.join(profile_durations, on="profile_num", how="left")
+
+    # Parse profile_duration string into pl.duration kwargs
+    # TODO Done below with transect_duration, needs to be merged into a single function.
+    import re
+    m = re.fullmatch(r"(\d+)([smhd])", profile_duration)
+    if not m:
+        raise ValueError(f"Unsupported duration format: {profile_duration}")
+    val, unit = m.groups()
+    val = int(val)
+    if unit == "s":
+        kwargs = dict(seconds=val)
+    elif unit == "m":
+        kwargs = dict(minutes=val)
+    elif unit == "h":
+        kwargs = dict(hours=val)
+    elif unit == "d":
+        kwargs = dict(days=val)
+
+    df = df.with_columns(
+        pl.when(pl.col("elapsed") >= pl.duration(**kwargs))
+          .then(pl.col("is_profile"))
+          .otherwise(False)
+          .alias("is_profile")
+    ).drop("elapsed")
+
+    # Re-number profiles after filtering
+    df = df.with_columns(
+        (
+            pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+            * pl.col("is_profile")
+            - 1
+        ).alias("profile_num")
+    )
+
+    # Rolling min and max of depth over the transect window duration
+    df = df.with_columns([
+        pl.col(f"INTERP_{depth_col}")
+        .rolling_min_by(time_col, window_size=transect_duration)
+        .alias("roll_min_depth"),
+        pl.col(f"INTERP_{depth_col}")
+        .rolling_max_by(time_col, window_size=transect_duration)
+        .alias("roll_max_depth"),
+    ])
+
+    # Check that depth stays within user defined transect depth window
+    df = df.with_columns(
+        ((pl.col("roll_max_depth") - pl.col("roll_min_depth")) <= transect_depth_range)
+        .alias("depth_stable")
+    )
+
+    # Check that the pitch*vertical velocity product is low
+    df = df.with_columns(
+        (combined_metric < pos_grad).alias("pitch_flat")
+    )
+
+    # Transect defined as stable depth, 'flat' pitch, and NOT a profile
+    df = df.with_columns(
+        ((pl.col("depth_stable")) & (pl.col("pitch_flat")) & (pl.col("is_profile") == False))
+        .alias("is_transect")
+    )
+
+    # Numbering transects
+    df = df.with_columns(
+        (
+            pl.col("is_transect").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+            * pl.col("is_transect")
+            - 1
+        ).alias("transect_num")
+    )
+
+    # Backward filling to include leading edge
+    df = df.with_columns(
+        pl.when(pl.col("is_transect"))
+          .then(pl.col("transect_num").backward_fill())
+          .otherwise(-1)
+          .alias("transect_num")
+    )
+
+    # Enforce minimum transect duration
+    transect_durations = (
+        df.filter(pl.col("transect_num") >= 0)
+          .group_by("transect_num")
+          .agg((pl.col(time_col).max() - pl.col(time_col).min()).alias("elapsed"))
+    )
+
+    # Enforce maximum transect depth range
+    transect_depths = (
+        df.filter(pl.col("transect_num") >= 0)
+          .group_by("transect_num")
+          .agg((pl.col(f"INTERP_{depth_col}").max() - pl.col(f"INTERP_{depth_col}").min()).alias("depth_span"))
+    )
+
+        # Join both checks back
+    df = df.join(transect_durations, on="transect_num", how="left")
+    df = df.join(transect_depths, on="transect_num", how="left")
+
+    # Parse transect_duration string into pl.duration kwargs
+    # TODO Done above with profile_duration, needs to be merged into a single function.
+    m = re.fullmatch(r"(\d+)([smhd])", transect_duration)
+    if not m:
+        raise ValueError(f"Unsupported duration format: {transect_duration}")
+    val, unit = m.groups()
+    val = int(val)
+    if unit == "s":
+        kwargs = dict(seconds=val)
+    elif unit == "m":
+        kwargs = dict(minutes=val)
+    elif unit == "h":
+        kwargs = dict(hours=val)
+    elif unit == "d":
+        kwargs = dict(days=val)
+
+    # Apply filters, must satisfy both min duration AND max depth span
+    df = df.with_columns(
+        pl.when((pl.col("elapsed") >= pl.duration(**kwargs)) & (pl.col("depth_span") <= transect_depth_range))
+          .then(pl.col("is_transect"))
+          .otherwise(False)
+          .alias("is_transect")
+    ).drop(["elapsed", "depth_span"])
+
+    # Re-number transects after filtering
+    df = df.with_columns(
+        (
+            pl.col("is_transect").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+            * pl.col("is_transect")
+            - 1
+        ).alias("transect_num")
     )
 
     # Reforming the full length dataframe (This executes faster than polars join or merge methods)
