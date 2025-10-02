@@ -174,7 +174,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.summarise_all_profiles">
-<span class="sig-name descname"><span class="pre">summarise_all_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.2)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.summarise_all_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.summarise_all_profiles" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">summarise_all_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.3.3)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.summarise_all_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.summarise_all_profiles" title="Link to this definition">¶</a></dt>
 <dd><p>For all pipelines, summarise profiles and plot glider-to-glider distance time series.
 This includes:</p>
 <blockquote>
@@ -270,6 +270,39 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 </p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_exportables">
+<span class="sig-name descname"><span class="pre">save_exportables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_exportables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_exportables" title="Link to this definition">¶</a></dt>
+<dd><p>Save exportable datasets (raw, processed, lite) to NetCDF files.
+The datasets are stored in self._exportables as:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>{</dt><dd><p>“raw”: {pipeline_name: xr.Dataset, …},
+“processed”: {pipeline_name: xr.Dataset, …},
+“lite”: {pipeline_name: xr.Dataset, …}</p>
+</dd>
+</dl>
+<p>}</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Raw data exists if any pipeline has been run.</p></li>
+<li><dl class="simple">
+<dt>Processed Data exists any Pipeline Manager method has been run that creates it (e.g. align_to_target).</dt><dd><ul>
+<li><p>It can be combined into a single data set on export if desired.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Lite data is optionally generated during save_exportables</p></li>
+</ul>
+<p>The output directory and filename patterns are read from self.settings[‘export’]:
+export:</p>
+<blockquote>
+<div><p>output_path: “&lt;dir or empty for timestamped dir&gt;”
+filename_pattern: “{pipeline}_{type}.nc”  # {pipeline} and {type} are placeholders</p>
+</div></blockquote>
 </dd></dl>
 
 </dd></dl>
