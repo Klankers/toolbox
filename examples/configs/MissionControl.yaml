@@ -40,8 +40,6 @@ settings:
     variable_r2_criteria:
       CNDC: 0.95
       TEMP: 0.9
-    apply_and_save: True
-    output_path: ""
 
   validation:
     device_name: "CTD DY180"
@@ -59,7 +57,5 @@ settings:
     save_plots: false
     plot_output_path: "/validation_plots"
     show_plots: true
-    apply_and_save: true
-    output_path: ""
 
     

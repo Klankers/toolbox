@@ -498,6 +498,12 @@ class PipelineManager:
 
             self.r2_datasets[ancillary_name] = r2_ds
 
+            # add to cache
+            self._exportables["processed"][f"{target}_vs_{ancillary_name}"] = r2_ds
+            print(
+                f"[Pipeline Manager] R² dataset stored for '{target}' vs '{ancillary_name}'."
+            )
+
         print("\n[Pipeline Manager] Alignment complete for all datasets.")
 
         # Set R² thresholds
@@ -836,24 +842,89 @@ class PipelineManager:
             print("[Fit→Device] No aligned variables were created — nothing to save.")
             return {"path": None, "fits": fits, "device_name": device_name}
 
-        # --- Save (optional) ---
-        out_path = None
-        if apply_and_save:
-            if not out_dir:
-                out_dir = os.path.join(
-                    os.getcwd(),
-                    f"device_aligned_{target}_{device_name}_{_dt.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
-                )
-            os.makedirs(out_dir, exist_ok=True)
-            out_path = os.path.join(out_dir, f"{target}_aligned_to_{device_name}.nc")
-            encoding = {name: {"zlib": True, "complevel": 2} for name in created}
-            try:
-                ds_out.to_netcdf(out_path, encoding=encoding)
-                print(f"[Fit→Device] Saved: {out_path}")
-            except Exception as e:
-                print(f"[Fit→Device] Failed to save '{out_path}': {e}")
-                out_path = None
-        else:
-            print("[Fit→Device] apply_and_save=False — not writing dataset to disk.")
+        # update processed_per_glider for potential later use
+        if target not in self.processed_per_glider:
+            self.processed_per_glider[target] = {}
+        self.processed_per_glider[target][f"last_fit_to_device_{device_name}"] = fits
 
-        return {"path": out_path, "fits": fits, "device_name": device_name}
+        return {"fits": fits, "device_name": device_name}
+
+    def save_exportables(self):
+        """
+        Save exportable datasets (raw, processed, lite) to NetCDF files.
+        The datasets are stored in self._exportables as:
+            {
+                "raw": {pipeline_name: xr.Dataset, ...},
+                "processed": {pipeline_name: xr.Dataset, ...},
+                "lite": {pipeline_name: xr.Dataset, ...}
+            }
+        - Raw data exists if any pipeline has been run.
+        - Processed Data exists any Pipeline Manager method has been run that creates it (e.g. align_to_target).
+            - It can be combined into a single data set on export if desired.
+        - Lite data is optionally generated during save_exportables
+
+        The output directory and filename patterns are read from self.settings['export']:
+        export:
+            output_path: "<dir or empty for timestamped dir>"
+            filename_pattern: "{pipeline}_{type}.nc"  # {pipeline} and {type} are placeholders
+        """
+
+        def combine_datasets(datasets):
+            """Combine multiple xarray Datasets into one, handling conflicts."""
+            combined = xr.merge(datasets, compat="override", combine_attrs="override")
+            return combined
+
+        if not hasattr(self, "_exportables") or not self._exportables:
+            raise RuntimeError("No exportable datasets available to save.")
+
+        export_cfg = self.settings.get("export", {}) or {}
+        out_dir = export_cfg.get("output_path", "") or ""
+        if not out_dir:
+            out_dir = os.path.join(
+                os.getcwd(),
+                f"exported_datasets_{_dt.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+            )
+        os.makedirs(out_dir, exist_ok=True)
+        pattern = export_cfg.get("filename_pattern", "{pipeline}_{type}.nc")
+        print(f"[Export] Saving datasets to directory: {out_dir}")
+        print(f"[Export] Using filename pattern: {pattern}")
+        saved_paths = {"raw": {}, "processed": {}, "lite": {}}
+
+        for dtype, datasets in self._exportables.items():
+            if not datasets:
+                print(f"[Export] No datasets to save for type '{dtype}'.")
+                continue
+
+            if dtype == "processed" and export_cfg.get("combine_processed", False):
+                # Combine all processed datasets into one file
+                combined_ds = combine_datasets(list(datasets.values()))
+                filename = pattern.format(pipeline="ALL_PROCESSED", type=dtype)
+                out_path = os.path.join(out_dir, filename)
+                combined_ds.to_netcdf(out_path)
+                saved_paths[dtype]["ALL_PROCESSED"] = out_path
+                print(f"[Export] Saved combined processed dataset to: {out_path}")
+            else:
+                # Save each dataset individually
+                for name, ds in datasets.items():
+                    filename = pattern.format(pipeline=name, type=dtype)
+                    out_path = os.path.join(out_dir, filename)
+                    ds.to_netcdf(out_path)
+                    saved_paths[dtype][name] = out_path
+                    print(f"[Export] Saved {dtype} dataset for '{name}' to: {out_path}")
+
+            # Optionally create and save lite versions (e.g.key variables only)
+            if dtype != "lite" and export_cfg.get("generate_lite", False):
+                lite_datasets = {}
+                for name, ds in datasets.items():
+                    lite_ds = ds.drop_vars(
+                        [v for v in ds.data_vars if v not in self.alignment_map.keys()],
+                        errors="ignore",
+                    )
+                    lite_datasets[name] = lite_ds
+                # Save lite datasets
+                for name, ds in lite_datasets.items():
+                    filename = pattern.format(pipeline=name, type="lite")
+                    out_path = os.path.join(out_dir, filename)
+                    ds.to_netcdf(out_path)
+                    saved_paths["lite"][name] = out_path
+                    print(f"[Export] Saved lite dataset for '{name}' to: {out_path}")
