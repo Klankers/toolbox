@@ -20,6 +20,72 @@
   "api/toolbox/utils/index": [],
   "api/toolbox/utils/time/index": [],
   "api/toolbox/utils/validation/index": [],
-  "developer_guide": [],
+  "developer_guide": [
+    {
+      "source": " from toolbox.steps.base import BaseStep\n class MyNewStep(BaseStep):\n     ...\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-step",
+        "headings": [
+          "Developer Guide",
+          "How to add a new step"
+        ]
+      },
+      "doc_lineno": 18
+    },
+    {
+      "source": " class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     ...\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-step",
+        "headings": [
+          "Developer Guide",
+          "How to add a new step"
+        ]
+      },
+      "doc_lineno": 24
+    },
+    {
+      "source": " from toolbox.steps import register_step\n @register_step\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     ...\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-step",
+        "headings": [
+          "Developer Guide",
+          "How to add a new step"
+        ]
+      },
+      "doc_lineno": 30
+    },
+    {
+      "source": " class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context        \n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-step",
+        "headings": [
+          "Developer Guide",
+          "How to add a new step"
+        ]
+      },
+      "doc_lineno": 39
+    },
+    {
+      "source": " class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context\n     \n     def generate_diagnostics(self):\n         # Your diagnostics logic here\n         pass\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-step",
+        "headings": [
+          "Developer Guide",
+          "How to add a new step"
+        ]
+      },
+      "doc_lineno": 48
+    }
+  ],
   "index": []
 }
