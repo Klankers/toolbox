@@ -22,13 +22,14 @@ Steps are not limited to one per file - in fact, a single file can contain multi
     ```
 3. Define the step_name attribute, which is the name that will be used in the Pipelines Config file to refer to this step.
    ```python
+   from toolbox.steps.base import BaseStep
     class MyNewStep(BaseStep):
         step_name = "My New Step"
         ...
     ```
 4. Register the step using the `@register_step` decorator.
    ```python
-    from toolbox.steps import register_step
+    from toolbox.steps import BaseStep, register_step
     @register_step
     class MyNewStep(BaseStep):
         step_name = "My New Step"
@@ -37,6 +38,7 @@ Steps are not limited to one per file - in fact, a single file can contain multi
     This ensures that the step is discoverable by the Pipeline Manager, as well as allowing you do define other classes in the same file without registering them.
 5. Implement the `run` method, which contains the logic for your step. This method should take no arguments other than `self`, and should return a `self.context` object.
    ```python
+   from toolbox.steps.base import BaseStep, register_step
    @register_step
     class MyNewStep(BaseStep):
         step_name = "My New Step"
@@ -47,6 +49,7 @@ Steps are not limited to one per file - in fact, a single file can contain multi
     ```
 6. Optionally, implement the `generate_diagnostics` method if your step produces any diagnostic plots or outputs.
    ```python
+   from toolbox.steps.base import BaseStep, register_step
    @register_step
     class MyNewStep(BaseStep):
         step_name = "My New Step"
