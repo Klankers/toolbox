@@ -60,7 +60,7 @@ processing stage, validation routine, or export).</p>
 <section id="how-to-add-a-new-step">
 <h2>How to add a new step<a class="headerlink" href="#how-to-add-a-new-step" title="Link to this heading">¶</a></h2>
 <ol class="arabic">
-<li><p>Create a new Python file in the appropriate directory under <code class="docutils literal notranslate"><span class="pre">src/toolbox/steps/custom/</span></code>.
+<li><p>Create a new Python file in the appropriate directory under <code class="docutils literal notranslate"><span class="pre">src/toolbox/steps/custom/</span></code>.<br/>
 <strong>NOTE</strong>: if you are creating a step for specific vairables - such as a salinity QC step - then it should go in the <code class="docutils literal notranslate"><span class="pre">variables</span></code> subdirectory.</p></li>
 <li><p>Define a new class for your step, inheriting from <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> (or another appropriate base class, such as <code class="docutils literal notranslate"><span class="pre">VariableStep</span></code> or <code class="docutils literal notranslate"><span class="pre">DataStep</span></code>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
@@ -130,7 +130,7 @@ processing stage, validation routine, or export).</p>
 </pre></div>
 </div>
 </li>
-<li><p>Any parameters defined in the <code class="docutils literal notranslate"><span class="pre">parameters</span></code> section of the config file will be passed to your step as attributes. You can access them in your <code class="docutils literal notranslate"><span class="pre">run</span></code> method using <code class="docutils literal notranslate"><span class="pre">self.param1</span></code>, <code class="docutils literal notranslate"><span class="pre">self.param2</span></code>, etc.
+<li><p>Any parameters defined in the <code class="docutils literal notranslate"><span class="pre">parameters</span></code> section of the config file will be passed to your step as attributes. You can access them in your <code class="docutils literal notranslate"><span class="pre">run</span></code> method using <code class="docutils literal notranslate"><span class="pre">self.param1</span></code>, <code class="docutils literal notranslate"><span class="pre">self.param2</span></code>, etc. <br/>
 <strong>NOTE</strong> This is handled automatically by the <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> class. More information can be found in the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/_modules/toolbox/steps.html">BaseStep documentation</a>.</p></li>
 </ol>
 </section>
