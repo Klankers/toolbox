@@ -74,4 +74,4 @@ Steps are not limited to one per file - in fact, a single file can contain multi
    ```
 
 8. Any parameters defined in the `parameters` section of the config file will be passed to your step as attributes. You can access them in your `run` method using `self.param1`, `self.param2`, etc.
-   **NOTE** This is handled automatically by the `BaseStep` class. More information can be found in the [BaseStep documentation](https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/base_step/index.html).  
+   **NOTE** This is handled automatically by the `BaseStep` class. More information can be found in the [BaseStep documentation](https://noc-obg-autonomy.github.io/toolbox/_modules/toolbox/steps.html).  
