@@ -1,3 +1,9 @@
+"""
+toolbox.steps
+~~~~~~~~~~~~~~~~~~
+This module contains the logic to dynamically discover and register step implementations.
+"""
+
 import os
 import importlib
 import pathlib
