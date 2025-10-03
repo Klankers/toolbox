@@ -26,6 +26,18 @@ from toolbox.utils.alignment import (
     fit_linear_map,
 )
 
+from toolbox.utils.export import (
+    _ensure_dirs,
+    _timestamped_dir,
+    _alias_map_for,
+    _inject_aligned_into_target_grid,
+    _append_history,
+    _enrich_combined_attrs,
+    _enrich_processed_attrs,
+    _copy_coord_attrs,
+    _copy_global_attrs,
+)
+
 from toolbox.utils.validation import validate
 
 from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
@@ -619,25 +631,22 @@ class PipelineManager:
                 print(f"[Fit] Plotting skipped due to error: {e}")
 
         # --- Apply + Save ---
-        results = None
-        if apply_and_save:
-            print(f"[Fit] Applying fits and saving outputs to: {out_dir}")
-            os.makedirs(out_dir, exist_ok=True)
-            results = fit_and_save_to_target(
-                self=self,
-                target=target,
-                out_dir=out_dir,
-                variable_r2_criteria=variable_r2_criteria,
-                max_time_hr=max_time_hr,
-                max_dist_km=max_dist_km,
-                ancillaries=ancillaries,
-                overwrite=True,
-                show_plots=False,
-            )
-            if results:
-                print("[Fit] Saved files:", results.get("paths", {}))
-        else:
-            print("[Fit] apply_and_save=False — skipping writing aligned datasets.")
+
+        print(f"[Fit] Applying fits and saving outputs to: {out_dir}")
+        os.makedirs(out_dir, exist_ok=True)
+        results = fit_and_save_to_target(
+            self=self,
+            target=target,
+            out_dir=out_dir,
+            variable_r2_criteria=variable_r2_criteria,
+            max_time_hr=max_time_hr,
+            max_dist_km=max_dist_km,
+            ancillaries=ancillaries,
+            overwrite=True,
+            show_plots=False,
+        )
+
+        print("[Fit] Saved files:", results.get("paths", {}))
         # store fits for potential later use in the appropriate self.processed_per_glider
         for anc, fit_info in results.get("fits", {}).items():
             if anc in self.processed_per_glider:
@@ -849,82 +858,423 @@ class PipelineManager:
 
         return {"fits": fits, "device_name": device_name}
 
-    def save_exportables(self):
-        """
-        Save exportable datasets (raw, processed, lite) to NetCDF files.
-        The datasets are stored in self._exportables as:
-            {
-                "raw": {pipeline_name: xr.Dataset, ...},
-                "processed": {pipeline_name: xr.Dataset, ...},
-                "lite": {pipeline_name: xr.Dataset, ...}
-            }
-        - Raw data exists if any pipeline has been run.
-        - Processed Data exists any Pipeline Manager method has been run that creates it (e.g. align_to_target).
-            - It can be combined into a single data set on export if desired.
-        - Lite data is optionally generated during save_exportables
+        def save_outputs(self, target="None"):
+            """
+            Save datasets based on config flags in settings.saving (optional):
+            settings:
+                saving:
+                save_raw: true
+                save_processed: true
+                save_combined_target: true
+                save_lite: true
+                output_dir: ""       # optional; if missing/empty, a timestamped folder is used
 
-        The output directory and filename patterns are read from self.settings['export']:
-        export:
-            output_path: "<dir or empty for timestamped dir>"
-            filename_pattern: "{pipeline}_{type}.nc"  # {pipeline} and {type} are placeholders
-        """
+            What gets written:
+            1) {pipeline}_raw.nc
+            2) {pipeline}_processed_agg.nc              (PROFILE_NUMBER × DEPTH_bin medians)
+            3) {target}_combined_agg.nc                 (target medians + aligned ancillary/device)
+            4) {target}_combined_agg_lite.nc            (PROFILE_NUMBER, DEPTH_bin, LAT, LON, processed vars)
 
-        def combine_datasets(datasets):
-            """Combine multiple xarray Datasets into one, handling conflicts."""
-            combined = xr.merge(datasets, compat="override", combine_attrs="override")
-            return combined
+            Requires:
+            - preview_alignment() has run (so processed medians are cached)
+            - self.r2_datasets[*] exist for ancillaries if you want aligned variables included
+            - (optional) self._last_validation with keys: device_name, r2_ds, variables
+            """
+            # --- sanity ---
+            if target not in self.pipelines or target not in self._contexts:
+                raise ValueError(f"Target '{target}' not available.")
 
-        if not hasattr(self, "_exportables") or not self._exportables:
-            raise RuntimeError("No exportable datasets available to save.")
-
-        export_cfg = self.settings.get("export", {}) or {}
-        out_dir = export_cfg.get("output_path", "") or ""
-        if not out_dir:
-            out_dir = os.path.join(
-                os.getcwd(),
-                f"exported_datasets_{_dt.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+            # --- config ---
+            saving_cfg = self.settings.get("saving", {}) or {}
+            save_raw = bool(saving_cfg.get("save_raw", True))
+            save_processed = bool(saving_cfg.get("save_processed", True))
+            save_combined = bool(saving_cfg.get("save_combined_target", True))
+            save_lite = bool(saving_cfg.get("save_lite", True))
+            out_dir = saving_cfg.get("output_dir", "") or _timestamped_dir(
+                prefix="exports"
             )
-        os.makedirs(out_dir, exist_ok=True)
-        pattern = export_cfg.get("filename_pattern", "{pipeline}_{type}.nc")
-        print(f"[Export] Saving datasets to directory: {out_dir}")
-        print(f"[Export] Using filename pattern: {pattern}")
-        saved_paths = {"raw": {}, "processed": {}, "lite": {}}
 
-        for dtype, datasets in self._exportables.items():
-            if not datasets:
-                print(f"[Export] No datasets to save for type '{dtype}'.")
-                continue
+            _ensure_dirs(out_dir)
+            print(f"[Save] Output directory: {out_dir}")
 
-            if dtype == "processed" and export_cfg.get("combine_processed", False):
-                # Combine all processed datasets into one file
-                combined_ds = combine_datasets(list(datasets.values()))
-                filename = pattern.format(pipeline="ALL_PROCESSED", type=dtype)
-                out_path = os.path.join(out_dir, filename)
-                combined_ds.to_netcdf(out_path)
-                saved_paths[dtype]["ALL_PROCESSED"] = out_path
-                print(f"[Export] Saved combined processed dataset to: {out_path}")
-            else:
-                # Save each dataset individually
-                for name, ds in datasets.items():
-                    filename = pattern.format(pipeline=name, type=dtype)
-                    out_path = os.path.join(out_dir, filename)
-                    ds.to_netcdf(out_path)
-                    saved_paths[dtype][name] = out_path
-                    print(f"[Export] Saved {dtype} dataset for '{name}' to: {out_path}")
+            # alignment variables (std names)
+            alignment_vars = list(self.alignment_map.keys())
 
-            # Optionally create and save lite versions (e.g.key variables only)
-            if dtype != "lite" and export_cfg.get("generate_lite", False):
-                lite_datasets = {}
-                for name, ds in datasets.items():
-                    lite_ds = ds.drop_vars(
-                        [v for v in ds.data_vars if v not in self.alignment_map.keys()],
-                        errors="ignore",
+            # --- ensure caches exist from preview_alignment() ---
+            if not hasattr(self, "processed_per_glider"):
+                self.processed_per_glider = {}
+            if not hasattr(self, "_exportables"):
+                self._exportables = {"raw": {}, "processed": {}, "lite": {}}
+
+            # ===== 1) RAW per pipeline =====
+            if save_raw:
+                for name, ctx in self._contexts.items():
+                    ds_raw = self._exportables["raw"].get(name, ctx["data"])
+                    # standardize names for this save (so downstream reads are consistent)
+                    rename_map = _alias_map_for(self, name)
+                    ds_raw_std = ds_raw.rename(rename_map) if rename_map else ds_raw
+                    path = os.path.join(out_dir, f"{name}_raw.nc")
+                    try:
+                        ds_raw_std.to_netcdf(path, encoding={})
+                        print(f"[Save] Raw: {path}")
+                    except Exception as e:
+                        print(f"[Save] Failed RAW for '{name}': {e}")
+
+            # ===== 2) PROCESSED per pipeline =====
+            if save_processed:
+                for name, ctx in self._contexts.items():
+                    if (
+                        name in self.processed_per_glider
+                        and "agg" in self.processed_per_glider[name]
+                    ):
+                        agg = self.processed_per_glider[name]["agg"]
+                    else:
+                        # compute once if not cached
+                        rename_map = _alias_map_for(self, name)
+                        ds_std = (
+                            ctx["data"].rename(rename_map)
+                            if rename_map
+                            else ctx["data"]
+                        )
+                        agg = aggregate_vars(interpolate_DEPTH(ds_std), alignment_vars)
+                        # cache
+                        self.processed_per_glider[name] = {
+                            "renamed": ds_std,
+                            "interp": None,  # optional to store
+                            "agg": agg,
+                        }
+                    path = os.path.join(out_dir, f"{name}_processed_agg.nc")
+                    try:
+                        agg.to_netcdf(path, encoding={})
+                        print(f"[Save] Processed: {path}")
+                    except Exception as e:
+                        print(f"[Save] Failed PROCESSED for '{name}': {e}")
+
+            # ===== 3) COMBINED TARGET (aggregated) =====
+            combined_ds = None
+            if save_combined or save_lite:
+                # base = target aggregated grid and variables
+                if (
+                    target not in self.processed_per_glider
+                    or "agg" not in self.processed_per_glider[target]
+                ):
+                    # compute if missing
+                    rename_map = _alias_map_for(self, target)
+                    ds_std = (
+                        self._contexts[target]["data"].rename(rename_map)
+                        if rename_map
+                        else self._contexts[target]["data"]
                     )
-                    lite_datasets[name] = lite_ds
-                # Save lite datasets
-                for name, ds in lite_datasets.items():
-                    filename = pattern.format(pipeline=name, type="lite")
-                    out_path = os.path.join(out_dir, filename)
-                    ds.to_netcdf(out_path)
-                    saved_paths["lite"][name] = out_path
-                    print(f"[Export] Saved lite dataset for '{name}' to: {out_path}")
+                    t_agg = aggregate_vars(interpolate_DEPTH(ds_std), alignment_vars)
+                    self.processed_per_glider[target] = {
+                        "renamed": ds_std,
+                        "interp": None,
+                        "agg": t_agg,
+                    }
+                else:
+                    t_agg = self.processed_per_glider[target]["agg"]
+
+                combined_vars = {}
+                # include target own medians
+                for var in alignment_vars:
+                    med = f"median_{var}"
+                    if med in t_agg:
+                        combined_vars[med] = t_agg[med]
+
+                # add aligned variables from each ancillary r2_ds if available
+                if hasattr(self, "r2_datasets") and isinstance(self.r2_datasets, dict):
+                    for anc, r2_ds in self.r2_datasets.items():
+                        if not isinstance(r2_ds, xr.Dataset) or anc == target:
+                            continue
+                        for var in alignment_vars:
+                            name_src = f"median_{var}_{anc}"
+                            name_tgt = f"median_{var}_TARGET_{target}"
+                            if (
+                                (name_src in r2_ds)
+                                and (name_tgt in r2_ds)
+                                and (f"median_{var}" in t_agg)
+                            ):
+                                aligned_da = _inject_aligned_into_target_grid(
+                                    t_agg, r2_ds, target, anc, var
+                                )
+                                combined_vars[aligned_da.name] = aligned_da
+
+                # optional: include device validation aligned variables if you cached them
+                if hasattr(self, "_last_validation") and isinstance(
+                    self._last_validation, dict
+                ):
+                    dev_name = self._last_validation.get("device_name")
+                    r2_dev = self._last_validation.get("r2_ds")
+                    dev_vars = self._last_validation.get("variables", alignment_vars)
+                    if dev_name and isinstance(r2_dev, xr.Dataset):
+                        for var in dev_vars:
+                            name_src = f"median_{var}_{dev_name}"
+                            name_tgt = f"median_{var}_TARGET_{target}"
+                            if (
+                                (name_src in r2_dev)
+                                and (name_tgt in r2_dev)
+                                and (f"median_{var}" in t_agg)
+                            ):
+                                aligned_da = _inject_aligned_into_target_grid(
+                                    t_agg, r2_dev, target, dev_name, var
+                                )
+                                combined_vars[aligned_da.name] = aligned_da
+
+                combined_ds = xr.Dataset(combined_vars, coords=t_agg.coords)
+
+                if save_combined:
+                    path = os.path.join(out_dir, f"{target}_combined_agg.nc")
+                    try:
+                        combined_ds.to_netcdf(path, encoding={})
+                        print(f"[Save] Combined target: {path}")
+                    except Exception as e:
+                        print(f"[Save] Failed COMBINED for '{target}': {e}")
+
+            # ===== 4) LITE combined =====
+            if save_lite:
+                if combined_ds is None:
+                    # ensure we have it
+                    print("[Save] Lite requested — building combined target first.")
+                    # recurse minimal path
+                    # (call ourselves with save_combined=False to avoid duplicate write)
+                    save_combined_before = save_combined
+                    try:
+                        # temporarily force just combined build in-memory
+                        pass
+                    finally:
+                        save_combined = save_combined_before
+
+                # we need LAT/LON per profile; use existing summary if available
+                if (
+                    hasattr(self, "summary_per_glider")
+                    and target in self.summary_per_glider
+                ):
+                    s = self.summary_per_glider[target].reset_index()
+                    # Expect columns: PROFILE_NUMBER, median_LATITUDE, median_LONGITUDE
+                    if all(
+                        k in s.columns
+                        for k in [
+                            "PROFILE_NUMBER",
+                            "median_LATITUDE",
+                            "median_LONGITUDE",
+                        ]
+                    ):
+                        lat = xr.DataArray(
+                            s.set_index("PROFILE_NUMBER")["median_LATITUDE"].to_numpy(),
+                            dims=("PROFILE_NUMBER",),
+                            coords={"PROFILE_NUMBER": s["PROFILE_NUMBER"].to_numpy()},
+                            name="LATITUDE",
+                        )
+                        lon = xr.DataArray(
+                            s.set_index("PROFILE_NUMBER")[
+                                "median_LONGITUDE"
+                            ].to_numpy(),
+                            dims=("PROFILE_NUMBER",),
+                            coords={"PROFILE_NUMBER": s["PROFILE_NUMBER"].to_numpy()},
+                            name="LONGITUDE",
+                        )
+                        # reindex to target grid profiles
+                        if (
+                            combined_ds is not None
+                            and "PROFILE_NUMBER" in combined_ds.dims
+                        ):
+                            lat = lat.sel(PROFILE_NUMBER=combined_ds["PROFILE_NUMBER"])
+                            lon = lon.sel(PROFILE_NUMBER=combined_ds["PROFILE_NUMBER"])
+                    else:
+                        lat = xr.DataArray(
+                            np.nan, dims=("PROFILE_NUMBER",), name="LATITUDE"
+                        )
+                        lon = xr.DataArray(
+                            np.nan, dims=("PROFILE_NUMBER",), name="LONGITUDE"
+                        )
+                else:
+                    lat = xr.DataArray(
+                        np.nan, dims=("PROFILE_NUMBER",), name="LATITUDE"
+                    )
+                    lon = xr.DataArray(
+                        np.nan, dims=("PROFILE_NUMBER",), name="LONGITUDE"
+                    )
+
+                # Build lite: keep coords + processed variables only
+                keep_vars = {}
+                if combined_ds is not None:
+                    for v in combined_ds.data_vars:
+                        if v.startswith("median_"):
+                            keep_vars[v] = combined_ds[v]
+
+                    lite = xr.Dataset(keep_vars, coords=combined_ds.coords)
+                else:
+                    # fallback to target aggregated only
+                    t_agg = self.processed_per_glider[target]["agg"]
+                    keep_vars = {
+                        v: t_agg[v] for v in t_agg.data_vars if v.startswith("median_")
+                    }
+                    lite = xr.Dataset(keep_vars, coords=t_agg.coords)
+
+                # attach per-profile lat/lon (1D) as coords
+                lite = lite.assign_coords({"LATITUDE": lat, "LONGITUDE": lon})
+
+                path = os.path.join(out_dir, f"{target}_combined_agg_lite.nc")
+                try:
+                    lite.to_netcdf(path, encoding={})
+                    print(f"[Save] Lite combined: {path}")
+                except Exception as e:
+                    print(f"[Save] Failed LITE for '{target}': {e}")
+
+            print("[Save] Done.")
+
+    def save_outputs(self, target: str):
+        """
+        Save:
+          - Raw datasets (as they arrived from each pipeline)
+          - Processed datasets per pipeline (aggregated medians in self.processed_per_glider[name]['agg'])
+          - Combined target dataset (target medians + any *_ALIGNED_TO_{target} vars found in memory)
+          - Lite version of the combined dataset (coords/profile ids + processed vars only)
+
+        Flags in settings.saving:
+          save_raw: true/false
+          save_processed: true/false
+          save_combined_target: true/false
+          save_lite: true/false
+          output_dir: "<dir>" (optional; default timestamped dir)
+        """
+
+        # ----- config
+        saving_cfg = self.settings.get("saving", {}) or {}
+        save_raw = bool(saving_cfg.get("save_raw", True))
+        save_processed = bool(saving_cfg.get("save_processed", True))
+        save_combined = bool(saving_cfg.get("save_combined_target", True))
+        save_lite = bool(saving_cfg.get("save_lite", True))
+
+        out_dir = saving_cfg.get("output_dir", "") or os.path.join(
+            os.getcwd(), f"exports_{_dt.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}"
+        )
+        os.makedirs(out_dir, exist_ok=True)
+
+        alignment_vars = list(self.alignment_map.keys())
+
+        # ----- 1) Raw
+        if save_raw:
+            for name, ctx in self._contexts.items():
+                ds_raw = ctx["data"]
+                ds_to_save = ds_raw.copy(deep=False)
+                ds_to_save.attrs = _append_history(
+                    ds_to_save.attrs, f"Raw dataset exported for pipeline '{name}'."
+                )
+                path = os.path.join(out_dir, f"{name}_raw.nc")
+                try:
+                    ds_to_save.to_netcdf(path)
+                    print(f"[Save] Raw → {path}")
+                except Exception as e:
+                    print(f"[Save] Raw FAILED for {name}: {e}")
+
+        # Must have processed_per_glider populated
+        if not hasattr(self, "processed_per_glider") or not isinstance(
+            self.processed_per_glider, dict
+        ):
+            raise RuntimeError(
+                "No cached processed data found. Run preview_alignment() first (it populates self.processed_per_glider)."
+            )
+
+        # ----- 2) Processed (aggregated medians)
+        if save_processed:
+            for name, parts in self.processed_per_glider.items():
+                ds_agg = parts.get("agg", None)
+                if ds_agg is None or not isinstance(ds_agg, xr.Dataset):
+                    print(f"[Save] Skipping processed export for '{name}' (no 'agg').")
+                    continue
+                ds_proc = ds_agg.copy()
+                ds_proc = _enrich_processed_attrs(
+                    self, name, ds_proc, alignment_vars, bin_dim="DEPTH_bin"
+                )
+                ds_proc.attrs = _append_history(
+                    ds_proc.attrs, f"Processed medians exported for pipeline '{name}'."
+                )
+                path = os.path.join(out_dir, f"{name}_processed_agg.nc")
+                try:
+                    ds_proc.to_netcdf(path)
+                    print(f"[Save] Processed → {path}")
+                except Exception as e:
+                    print(f"[Save] Processed FAILED for {name}: {e}")
+
+        # ----- 3) Combined target dataset
+        if save_combined:
+            if target not in self.processed_per_glider:
+                raise ValueError(
+                    f"Target '{target}' not found in processed_per_glider."
+                )
+            ds_target_agg = self.processed_per_glider[target]["agg"]
+            if not isinstance(ds_target_agg, xr.Dataset):
+                raise ValueError(
+                    f"Target '{target}' has no aggregated dataset in cache."
+                )
+
+            ds_comb = ds_target_agg.copy()
+
+            # Bring in any *_ALIGNED_TO_{target} variables present in memory
+            suffix = f"_ALIGNED_TO_{target}"
+            for name, ctx in self._contexts.items():
+                if name == target:
+                    # also include any aligned vars already attached to the target dataset (e.g., target aligned to a device)
+                    for v in ctx["data"].data_vars:
+                        if v.endswith(suffix) and (v not in ds_comb):
+                            ds_comb[v] = ctx["data"][v]
+                    continue
+                for v in ctx["data"].data_vars:
+                    if v.endswith(suffix) and (v not in ds_comb):
+                        ds_comb[v] = ctx["data"][v]
+
+            # Enrich attrs
+            ds_comb = _enrich_combined_attrs(self, target, ds_comb, alignment_vars)
+            ds_comb.attrs = _append_history(
+                ds_comb.attrs, f"Combined dataset exported for target '{target}'."
+            )
+
+            path = os.path.join(out_dir, f"{target}_combined_agg.nc")
+            try:
+                ds_comb.to_netcdf(path)
+                print(f"[Save] Combined target → {path}")
+            except Exception as e:
+                print(f"[Save] Combined target FAILED: {e}")
+
+            # ----- 4) Lite
+            if save_lite:
+                keep_vars = []
+                keep_vars.extend(
+                    [v for v in ds_comb.data_vars if v.startswith("median_")]
+                )
+                keep_vars.extend([v for v in ds_comb.data_vars if v.endswith(suffix)])
+
+                ds_lite = ds_comb[keep_vars].copy()
+
+                # reattach common coords if present
+                keep_coords = [
+                    c
+                    for c in [
+                        "PROFILE_NUMBER",
+                        "DEPTH_bin",
+                        "LATITUDE",
+                        "LONGITUDE",
+                        "TIME",
+                    ]
+                    if (c in ds_comb.coords or c in ds_comb)
+                ]
+                for c in keep_coords:
+                    if c in ds_comb.coords:
+                        ds_lite = ds_lite.assign_coords({c: ds_comb.coords[c]})
+                    elif c in ds_comb:
+                        ds_lite = ds_lite.assign_coords({c: ds_comb[c]})
+
+                _copy_global_attrs(
+                    ds_lite,
+                    ds_comb,
+                    history_line="Lite view (subset of variables) exported.",
+                )
+                _copy_coord_attrs(ds_lite, ds_comb, coord_names=keep_coords)
+
+                path_lite = os.path.join(out_dir, f"{target}_combined_agg_lite.nc")
+                try:
+                    ds_lite.to_netcdf(path_lite)
+                    print(f"[Save] Lite → {path_lite}")
+                except Exception as e:
+                    print(f"[Save] Lite FAILED: {e}")

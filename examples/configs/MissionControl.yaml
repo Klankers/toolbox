@@ -24,6 +24,13 @@ alignment:
         Cabot: TEMP
 
 settings:
+  saving:
+    save_raw: true               # write {pipeline}_raw.nc
+    save_processed: true         # write {pipeline}_processed_agg.nc
+    save_combined_target: true   # write {target}_combined_agg.nc
+    save_lite: true              # write {target}_combined_agg_lite.nc
+    output_dir: ""               # optional; if empty/missing, a timestamped folder is created
+  
   diagnostics:
     save_plots: false
     distance_over_time_matrix: true
