@@ -22,6 +22,9 @@ def find_profiles(
     transect_depth_range=10.0,
     profile_duration='2m',
     strict_profiles=False,
+    back_fill_mod=0.5,
+    use_only_pit_vel=False,   # NEW toggle
+    backfill_segments=False,  # NEW toggle
 ):
     """
     Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.
@@ -143,15 +146,19 @@ def find_profiles(
             pl.lit(False).alias("pitch_profile")
         )
 
-    # Apply strict toggle: require BOTH grad-based and pitch-based criteria if enabled
-    if strict_profiles:
-        df = df.with_columns(
-            (pl.col("grad_profile") & pl.col("pitch_profile")).alias("is_profile")
-        )
+    if use_only_pit_vel:
+        # Ignore gradient thresholding, just use pitch product
+        df = df.with_columns(pl.col("pitch_profile").alias("is_profile"))
     else:
-        df = df.with_columns(
-            (pl.col("grad_profile") | pl.col("pitch_profile")).alias("is_profile")
-        )
+        if strict_profiles:
+            df = df.with_columns(
+                (pl.col("grad_profile") & pl.col("pitch_profile")).alias("is_profile")
+            )
+        else:
+            df = df.with_columns(
+                (pl.col("grad_profile") | pl.col("pitch_profile")).alias("is_profile")
+            )
+
 
     # Assign unique profile numbers to consecutive points identified as profiles
     # This converts the boolean 'is_profile' column into numbered profile segments
@@ -198,7 +205,7 @@ def find_profiles(
           .alias("is_profile")
     ).drop("elapsed")
 
-    # Re-number profiles after filtering
+    # Re-number profiles after duration filter (so IDs match valid segments)
     df = df.with_columns(
         (
             pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
@@ -206,6 +213,60 @@ def find_profiles(
             - 1
         ).alias("profile_num")
     )
+
+    # --------------------------------------------------
+    # Parse both filter windows to seconds
+    m0 = re.fullmatch(r"(\d+)([smhd])", filter_win_sizes[0])
+    m1 = re.fullmatch(r"(\d+)([smhd])", filter_win_sizes[1])
+    if not (m0 and m1):
+        raise ValueError("Unsupported duration format in filter_win_sizes")
+
+    v0, u0 = int(m0.group(1)), m0.group(2)
+    v1, u1 = int(m1.group(1)), m1.group(2)
+    mult = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+
+    w0 = v0 * mult[u0]
+    w1 = v1 * mult[u1]
+
+    # Approximate group delay of median+mean (causal): half each window
+    backfill_seconds = back_fill_mod * (w0/2 + w1/2)
+
+    if backfill_segments:
+        # Build extended intervals for each profile
+        profile_bounds = (
+            df.filter(pl.col("is_profile"))
+            .group_by("profile_num")
+            .agg(pl.col(time_col).min().alias("start"),
+                pl.col(time_col).max().alias("end"))
+            .with_columns((pl.col("start") - pl.duration(seconds=backfill_seconds)).alias("start_ext"))
+        )
+
+        # Create a mask by checking if each row falls into ANY extended interval
+        # This avoids needing to join on profile_num
+        mask = None
+        for row in profile_bounds.iter_rows(named=True):
+            cond = (
+                (pl.col(time_col) >= row["start_ext"]) &
+                (pl.col(time_col) <= row["end"])
+            )
+            mask = cond if mask is None else (mask | cond)
+
+        if mask is not None:
+            df = df.with_columns(
+                pl.when(mask)
+                .then(True)
+                .otherwise(pl.col("is_profile"))
+                .alias("is_profile")
+            )
+
+            # Re-number profiles after back-extension
+            df = df.with_columns(
+                (
+                    pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+                    * pl.col("is_profile")
+                    - 1
+                ).alias("profile_num")
+            )
 
     # Rolling min and max of depth over the transect window duration
     df = df.with_columns([
@@ -241,14 +302,6 @@ def find_profiles(
             * pl.col("is_transect")
             - 1
         ).alias("transect_num")
-    )
-
-    # Backward filling to include leading edge
-    df = df.with_columns(
-        pl.when(pl.col("is_transect"))
-          .then(pl.col("transect_num").backward_fill())
-          .otherwise(-1)
-          .alias("transect_num")
     )
 
     # Enforce minimum transect duration
@@ -293,7 +346,7 @@ def find_profiles(
           .alias("is_transect")
     ).drop(["elapsed", "depth_span"])
 
-    # Re-number transects after filtering
+        # Re-number transects after filtering (so IDs match valid segments)
     df = df.with_columns(
         (
             pl.col("is_transect").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
@@ -301,6 +354,42 @@ def find_profiles(
             - 1
         ).alias("transect_num")
     )
+
+    if backfill_segments:
+
+        # --------------------------------------------------
+        # Force back-extension of transects by filter_win_sizes[0] * back_fill_mod
+        transect_bounds = (
+            df.filter(pl.col("is_transect"))
+            .group_by("transect_num")
+            .agg(pl.col(time_col).min().alias("start"),
+                pl.col(time_col).max().alias("end"))
+            .with_columns((pl.col("start") - pl.duration(seconds=backfill_seconds)).alias("start_ext"))
+            .select(["transect_num", "start_ext", "end"])
+        )
+        df = df.join(transect_bounds, on="transect_num", how="left")
+
+        df = df.with_columns(
+            pl.when(
+                (pl.col("start_ext").is_not_null()) &
+                (pl.col(time_col) >= pl.col("start_ext")) &
+                (pl.col(time_col) <= pl.col("end")) &
+                (~pl.col("is_profile"))  # <- keep transects out of profiles
+            )
+            .then(True)
+            .otherwise(pl.col("is_transect"))   # <- preserve existing mask, only extend
+            .alias("is_transect")
+        ).drop(["start_ext", "end"])
+
+        # Re-number transects after back-extension
+        df = df.with_columns(
+            (
+                pl.col("is_transect").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+                * pl.col("is_transect")
+                - 1
+            ).alias("transect_num")
+        )
+        # --------------------------------------------------
 
     # Reforming the full length dataframe (This executes faster than polars join or merge methods)
     front_pad = np.full((df["index"].min(), len(df.columns)), np.nan)
