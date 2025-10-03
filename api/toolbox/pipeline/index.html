@@ -273,36 +273,23 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_exportables">
-<span class="sig-name descname"><span class="pre">save_exportables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_exportables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_exportables" title="Link to this definition">¶</a></dt>
-<dd><p>Save exportable datasets (raw, processed, lite) to NetCDF files.
-The datasets are stored in self._exportables as:</p>
-<blockquote>
-<div><dl class="simple">
-<dt>{</dt><dd><p>“raw”: {pipeline_name: xr.Dataset, …},
-“processed”: {pipeline_name: xr.Dataset, …},
-“lite”: {pipeline_name: xr.Dataset, …}</p>
-</dd>
-</dl>
-<p>}</p>
-</div></blockquote>
-<ul class="simple">
-<li><p>Raw data exists if any pipeline has been run.</p></li>
-<li><dl class="simple">
-<dt>Processed Data exists any Pipeline Manager method has been run that creates it (e.g. align_to_target).</dt><dd><ul>
-<li><p>It can be combined into a single data set on export if desired.</p></li>
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_outputs">
+<span class="sig-name descname"><span class="pre">save_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_outputs" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Save:</dt><dd><ul class="simple">
+<li><p>Raw datasets (as they arrived from each pipeline)</p></li>
+<li><p>Processed datasets per pipeline (aggregated medians in self.processed_per_glider[name][‘agg’])</p></li>
+<li><p>Combined target dataset (target medians + any <a href="#id1"><span class="problematic" id="id2">*</span></a>_ALIGNED_TO_{target} vars found in memory)</p></li>
+<li><p>Lite version of the combined dataset (coords/profile ids + processed vars only)</p></li>
 </ul>
 </dd>
+<dt>Flags in settings.saving:</dt><dd><p>save_raw: true/false
+save_processed: true/false
+save_combined_target: true/false
+save_lite: true/false
+output_dir: “&lt;dir&gt;” (optional; default timestamped dir)</p>
+</dd>
 </dl>
-</li>
-<li><p>Lite data is optionally generated during save_exportables</p></li>
-</ul>
-<p>The output directory and filename patterns are read from self.settings[‘export’]:
-export:</p>
-<blockquote>
-<div><p>output_path: “&lt;dir or empty for timestamped dir&gt;”
-filename_pattern: “{pipeline}_{type}.nc”  # {pipeline} and {type} are placeholders</p>
-</div></blockquote>
 </dd></dl>
 
 </dd></dl>

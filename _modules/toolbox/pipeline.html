@@ -77,6 +77,18 @@
     <span class="n">fit_linear_map</span><span class="p">,</span>
 <span class="p">)</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.export</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_ensure_dirs</span><span class="p">,</span>
+    <span class="n">_timestamped_dir</span><span class="p">,</span>
+    <span class="n">_alias_map_for</span><span class="p">,</span>
+    <span class="n">_inject_aligned_into_target_grid</span><span class="p">,</span>
+    <span class="n">_append_history</span><span class="p">,</span>
+    <span class="n">_enrich_combined_attrs</span><span class="p">,</span>
+    <span class="n">_enrich_processed_attrs</span><span class="p">,</span>
+    <span class="n">_copy_coord_attrs</span><span class="p">,</span>
+    <span class="n">_copy_global_attrs</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">STEP_DEPENDENCIES</span>
@@ -734,25 +746,22 @@
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] Plotting skipped due to error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="c1"># --- Apply + Save ---</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">apply_and_save</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] Applying fits and saving outputs to: </span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">results</span> <span class="o">=</span> <span class="n">fit_and_save_to_target</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-                <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-                <span class="n">out_dir</span><span class="o">=</span><span class="n">out_dir</span><span class="p">,</span>
-                <span class="n">variable_r2_criteria</span><span class="o">=</span><span class="n">variable_r2_criteria</span><span class="p">,</span>
-                <span class="n">max_time_hr</span><span class="o">=</span><span class="n">max_time_hr</span><span class="p">,</span>
-                <span class="n">max_dist_km</span><span class="o">=</span><span class="n">max_dist_km</span><span class="p">,</span>
-                <span class="n">ancillaries</span><span class="o">=</span><span class="n">ancillaries</span><span class="p">,</span>
-                <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">show_plots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Fit] Saved files:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;paths&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Fit] apply_and_save=False — skipping writing aligned datasets.&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] Applying fits and saving outputs to: </span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">fit_and_save_to_target</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+            <span class="n">out_dir</span><span class="o">=</span><span class="n">out_dir</span><span class="p">,</span>
+            <span class="n">variable_r2_criteria</span><span class="o">=</span><span class="n">variable_r2_criteria</span><span class="p">,</span>
+            <span class="n">max_time_hr</span><span class="o">=</span><span class="n">max_time_hr</span><span class="p">,</span>
+            <span class="n">max_dist_km</span><span class="o">=</span><span class="n">max_dist_km</span><span class="p">,</span>
+            <span class="n">ancillaries</span><span class="o">=</span><span class="n">ancillaries</span><span class="p">,</span>
+            <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">show_plots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Fit] Saved files:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;paths&quot;</span><span class="p">,</span> <span class="p">{}))</span>
         <span class="c1"># store fits for potential later use in the appropriate self.processed_per_glider</span>
         <span class="k">for</span> <span class="n">anc</span><span class="p">,</span> <span class="n">fit_info</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fits&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">anc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">:</span>
@@ -968,90 +977,431 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;last_fit_to_device_</span><span class="si">{</span><span class="n">device_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fits</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;fits&quot;</span><span class="p">:</span> <span class="n">fits</span><span class="p">,</span> <span class="s2">&quot;device_name&quot;</span><span class="p">:</span> <span class="n">device_name</span><span class="p">}</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;fits&quot;</span><span class="p">:</span> <span class="n">fits</span><span class="p">,</span> <span class="s2">&quot;device_name&quot;</span><span class="p">:</span> <span class="n">device_name</span><span class="p">}</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">save_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Save datasets based on config flags in settings.saving (optional):</span>
+<span class="sd">            settings:</span>
+<span class="sd">                saving:</span>
+<span class="sd">                save_raw: true</span>
+<span class="sd">                save_processed: true</span>
+<span class="sd">                save_combined_target: true</span>
+<span class="sd">                save_lite: true</span>
+<span class="sd">                output_dir: &quot;&quot;       # optional; if missing/empty, a timestamped folder is used</span>
+
+<span class="sd">            What gets written:</span>
+<span class="sd">            1) {pipeline}_raw.nc</span>
+<span class="sd">            2) {pipeline}_processed_agg.nc              (PROFILE_NUMBER × DEPTH_bin medians)</span>
+<span class="sd">            3) {target}_combined_agg.nc                 (target medians + aligned ancillary/device)</span>
+<span class="sd">            4) {target}_combined_agg_lite.nc            (PROFILE_NUMBER, DEPTH_bin, LAT, LON, processed vars)</span>
+
+<span class="sd">            Requires:</span>
+<span class="sd">            - preview_alignment() has run (so processed medians are cached)</span>
+<span class="sd">            - self.r2_datasets[*] exist for ancillaries if you want aligned variables included</span>
+<span class="sd">            - (optional) self._last_validation with keys: device_name, r2_ds, variables</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="c1"># --- sanity ---</span>
+            <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span> <span class="ow">or</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39; not available.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># --- config ---</span>
+            <span class="n">saving_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;saving&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="n">save_raw</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_raw&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+            <span class="n">save_processed</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_processed&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+            <span class="n">save_combined</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_combined_target&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+            <span class="n">save_lite</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_lite&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+            <span class="n">out_dir</span> <span class="o">=</span> <span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_dir&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_timestamped_dir</span><span class="p">(</span>
+                <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;exports&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">_ensure_dirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Output directory: </span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># alignment variables (std names)</span>
+            <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+            <span class="c1"># --- ensure caches exist from preview_alignment() ---</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;processed_per_glider&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_exportables&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;processed&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;lite&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+
+            <span class="c1"># ===== 1) RAW per pipeline =====</span>
+            <span class="k">if</span> <span class="n">save_raw</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">ds_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">])</span>
+                    <span class="c1"># standardize names for this save (so downstream reads are consistent)</span>
+                    <span class="n">rename_map</span> <span class="o">=</span> <span class="n">_alias_map_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                    <span class="n">ds_raw_std</span> <span class="o">=</span> <span class="n">ds_raw</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span> <span class="k">if</span> <span class="n">rename_map</span> <span class="k">else</span> <span class="n">ds_raw</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_raw.nc&quot;</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">ds_raw_std</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="p">{})</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Raw: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Failed RAW for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># ===== 2) PROCESSED per pipeline =====</span>
+            <span class="k">if</span> <span class="n">save_processed</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span>
+                        <span class="ow">and</span> <span class="s2">&quot;agg&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="p">):</span>
+                        <span class="n">agg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># compute once if not cached</span>
+                        <span class="n">rename_map</span> <span class="o">=</span> <span class="n">_alias_map_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                        <span class="n">ds_std</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">rename_map</span>
+                            <span class="k">else</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="n">agg</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">ds_std</span><span class="p">),</span> <span class="n">alignment_vars</span><span class="p">)</span>
+                        <span class="c1"># cache</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;renamed&quot;</span><span class="p">:</span> <span class="n">ds_std</span><span class="p">,</span>
+                            <span class="s2">&quot;interp&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># optional to store</span>
+                            <span class="s2">&quot;agg&quot;</span><span class="p">:</span> <span class="n">agg</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_processed_agg.nc&quot;</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">agg</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="p">{})</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Processed: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Failed PROCESSED for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># ===== 3) COMBINED TARGET (aggregated) =====</span>
+            <span class="n">combined_ds</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">save_combined</span> <span class="ow">or</span> <span class="n">save_lite</span><span class="p">:</span>
+                <span class="c1"># base = target aggregated grid and variables</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span>
+                    <span class="ow">or</span> <span class="s2">&quot;agg&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span>
+                <span class="p">):</span>
+                    <span class="c1"># compute if missing</span>
+                    <span class="n">rename_map</span> <span class="o">=</span> <span class="n">_alias_map_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+                    <span class="n">ds_std</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">rename_map</span>
+                        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="n">t_agg</span> <span class="o">=</span> <span class="n">aggregate_vars</span><span class="p">(</span><span class="n">interpolate_DEPTH</span><span class="p">(</span><span class="n">ds_std</span><span class="p">),</span> <span class="n">alignment_vars</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;renamed&quot;</span><span class="p">:</span> <span class="n">ds_std</span><span class="p">,</span>
+                        <span class="s2">&quot;interp&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;agg&quot;</span><span class="p">:</span> <span class="n">t_agg</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">t_agg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">]</span>
+
+                <span class="n">combined_vars</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="c1"># include target own medians</span>
+                <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">alignment_vars</span><span class="p">:</span>
+                    <span class="n">med</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">if</span> <span class="n">med</span> <span class="ow">in</span> <span class="n">t_agg</span><span class="p">:</span>
+                        <span class="n">combined_vars</span><span class="p">[</span><span class="n">med</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_agg</span><span class="p">[</span><span class="n">med</span><span class="p">]</span>
+
+                <span class="c1"># add aligned variables from each ancillary r2_ds if available</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;r2_datasets&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">anc</span><span class="p">,</span> <span class="n">r2_ds</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r2_ds</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="ow">or</span> <span class="n">anc</span> <span class="o">==</span> <span class="n">target</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">alignment_vars</span><span class="p">:</span>
+                            <span class="n">name_src</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="n">name_tgt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="k">if</span> <span class="p">(</span>
+                                <span class="p">(</span><span class="n">name_src</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="p">)</span>
+                                <span class="ow">and</span> <span class="p">(</span><span class="n">name_tgt</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="p">)</span>
+                                <span class="ow">and</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">t_agg</span><span class="p">)</span>
+                            <span class="p">):</span>
+                                <span class="n">aligned_da</span> <span class="o">=</span> <span class="n">_inject_aligned_into_target_grid</span><span class="p">(</span>
+                                    <span class="n">t_agg</span><span class="p">,</span> <span class="n">r2_ds</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">anc</span><span class="p">,</span> <span class="n">var</span>
+                                <span class="p">)</span>
+                                <span class="n">combined_vars</span><span class="p">[</span><span class="n">aligned_da</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">aligned_da</span>
+
+                <span class="c1"># optional: include device validation aligned variables if you cached them</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_last_validation&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_last_validation</span><span class="p">,</span> <span class="nb">dict</span>
+                <span class="p">):</span>
+                    <span class="n">dev_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_validation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;device_name&quot;</span><span class="p">)</span>
+                    <span class="n">r2_dev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_validation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;r2_ds&quot;</span><span class="p">)</span>
+                    <span class="n">dev_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_validation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;variables&quot;</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">dev_name</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r2_dev</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">dev_vars</span><span class="p">:</span>
+                            <span class="n">name_src</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">dev_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="n">name_tgt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="k">if</span> <span class="p">(</span>
+                                <span class="p">(</span><span class="n">name_src</span> <span class="ow">in</span> <span class="n">r2_dev</span><span class="p">)</span>
+                                <span class="ow">and</span> <span class="p">(</span><span class="n">name_tgt</span> <span class="ow">in</span> <span class="n">r2_dev</span><span class="p">)</span>
+                                <span class="ow">and</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">t_agg</span><span class="p">)</span>
+                            <span class="p">):</span>
+                                <span class="n">aligned_da</span> <span class="o">=</span> <span class="n">_inject_aligned_into_target_grid</span><span class="p">(</span>
+                                    <span class="n">t_agg</span><span class="p">,</span> <span class="n">r2_dev</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">dev_name</span><span class="p">,</span> <span class="n">var</span>
+                                <span class="p">)</span>
+                                <span class="n">combined_vars</span><span class="p">[</span><span class="n">aligned_da</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">aligned_da</span>
+
+                <span class="n">combined_ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">combined_vars</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">t_agg</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">save_combined</span><span class="p">:</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_combined_agg.nc&quot;</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">combined_ds</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="p">{})</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Combined target: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Failed COMBINED for &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># ===== 4) LITE combined =====</span>
+            <span class="k">if</span> <span class="n">save_lite</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">combined_ds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># ensure we have it</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Save] Lite requested — building combined target first.&quot;</span><span class="p">)</span>
+                    <span class="c1"># recurse minimal path</span>
+                    <span class="c1"># (call ourselves with save_combined=False to avoid duplicate write)</span>
+                    <span class="n">save_combined_before</span> <span class="o">=</span> <span class="n">save_combined</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="c1"># temporarily force just combined build in-memory</span>
+                        <span class="k">pass</span>
+                    <span class="k">finally</span><span class="p">:</span>
+                        <span class="n">save_combined</span> <span class="o">=</span> <span class="n">save_combined_before</span>
+
+                <span class="c1"># we need LAT/LON per profile; use existing summary if available</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;summary_per_glider&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span>
+                <span class="p">):</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+                    <span class="c1"># Expect columns: PROFILE_NUMBER, median_LATITUDE, median_LONGITUDE</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
+                        <span class="n">k</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">columns</span>
+                        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span>
+                            <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;median_LONGITUDE&quot;</span><span class="p">,</span>
+                        <span class="p">]</span>
+                    <span class="p">):</span>
+                        <span class="n">lat</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                            <span class="n">s</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)[</span><span class="s2">&quot;median_LATITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                            <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,),</span>
+                            <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()},</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">lon</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                            <span class="n">s</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)[</span>
+                                <span class="s2">&quot;median_LONGITUDE&quot;</span>
+                            <span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                            <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,),</span>
+                            <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()},</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="c1"># reindex to target grid profiles</span>
+                        <span class="k">if</span> <span class="p">(</span>
+                            <span class="n">combined_ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                            <span class="ow">and</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span> <span class="ow">in</span> <span class="n">combined_ds</span><span class="o">.</span><span class="n">dims</span>
+                        <span class="p">):</span>
+                            <span class="n">lat</span> <span class="o">=</span> <span class="n">lat</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">combined_ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">])</span>
+                            <span class="n">lon</span> <span class="o">=</span> <span class="n">lon</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">combined_ds</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">lat</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LATITUDE&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">lon</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LONGITUDE&quot;</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lat</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LATITUDE&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">lon</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LONGITUDE&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Build lite: keep coords + processed variables only</span>
+                <span class="n">keep_vars</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">combined_ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">combined_ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;median_&quot;</span><span class="p">):</span>
+                            <span class="n">keep_vars</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">combined_ds</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+
+                    <span class="n">lite</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">keep_vars</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">combined_ds</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># fallback to target aggregated only</span>
+                    <span class="n">t_agg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">]</span>
+                    <span class="n">keep_vars</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="n">v</span><span class="p">:</span> <span class="n">t_agg</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">t_agg</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;median_&quot;</span><span class="p">)</span>
+                    <span class="p">}</span>
+                    <span class="n">lite</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">keep_vars</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">t_agg</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+
+                <span class="c1"># attach per-profile lat/lon (1D) as coords</span>
+                <span class="n">lite</span> <span class="o">=</span> <span class="n">lite</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">:</span> <span class="n">lat</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">:</span> <span class="n">lon</span><span class="p">})</span>
+
+                <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_combined_agg_lite.nc&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">lite</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="p">{})</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Lite combined: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Failed LITE for &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Save] Done.&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="PipelineManager.save_exportables">
-<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.save_exportables">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save_exportables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="PipelineManager.save_outputs">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.save_outputs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Save exportable datasets (raw, processed, lite) to NetCDF files.</span>
-<span class="sd">        The datasets are stored in self._exportables as:</span>
-<span class="sd">            {</span>
-<span class="sd">                &quot;raw&quot;: {pipeline_name: xr.Dataset, ...},</span>
-<span class="sd">                &quot;processed&quot;: {pipeline_name: xr.Dataset, ...},</span>
-<span class="sd">                &quot;lite&quot;: {pipeline_name: xr.Dataset, ...}</span>
-<span class="sd">            }</span>
-<span class="sd">        - Raw data exists if any pipeline has been run.</span>
-<span class="sd">        - Processed Data exists any Pipeline Manager method has been run that creates it (e.g. align_to_target).</span>
-<span class="sd">            - It can be combined into a single data set on export if desired.</span>
-<span class="sd">        - Lite data is optionally generated during save_exportables</span>
+<span class="sd">        Save:</span>
+<span class="sd">          - Raw datasets (as they arrived from each pipeline)</span>
+<span class="sd">          - Processed datasets per pipeline (aggregated medians in self.processed_per_glider[name][&#39;agg&#39;])</span>
+<span class="sd">          - Combined target dataset (target medians + any *_ALIGNED_TO_{target} vars found in memory)</span>
+<span class="sd">          - Lite version of the combined dataset (coords/profile ids + processed vars only)</span>
 
-<span class="sd">        The output directory and filename patterns are read from self.settings[&#39;export&#39;]:</span>
-<span class="sd">        export:</span>
-<span class="sd">            output_path: &quot;&lt;dir or empty for timestamped dir&gt;&quot;</span>
-<span class="sd">            filename_pattern: &quot;{pipeline}_{type}.nc&quot;  # {pipeline} and {type} are placeholders</span>
+<span class="sd">        Flags in settings.saving:</span>
+<span class="sd">          save_raw: true/false</span>
+<span class="sd">          save_processed: true/false</span>
+<span class="sd">          save_combined_target: true/false</span>
+<span class="sd">          save_lite: true/false</span>
+<span class="sd">          output_dir: &quot;&lt;dir&gt;&quot; (optional; default timestamped dir)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">combine_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Combine multiple xarray Datasets into one, handling conflicts.&quot;&quot;&quot;</span>
-            <span class="n">combined</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">,</span> <span class="n">combine_attrs</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">combined</span>
+        <span class="c1"># ----- config</span>
+        <span class="n">saving_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;saving&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">save_raw</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_raw&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+        <span class="n">save_processed</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_processed&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+        <span class="n">save_combined</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_combined_target&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+        <span class="n">save_lite</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;save_lite&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_exportables&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No exportable datasets available to save.&quot;</span><span class="p">)</span>
-
-        <span class="n">export_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;export&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">export_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">out_dir</span><span class="p">:</span>
-            <span class="n">out_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
-                <span class="sa">f</span><span class="s2">&quot;exported_datasets_</span><span class="si">{</span><span class="n">_dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">T%H%M%SZ&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">saving_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_dir&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;exports_</span><span class="si">{</span><span class="n">_dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">T%H%M%SZ&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">pattern</span> <span class="o">=</span> <span class="n">export_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename_pattern&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{pipeline}</span><span class="s2">_</span><span class="si">{type}</span><span class="s2">.nc&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Saving datasets to directory: </span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Using filename pattern: </span><span class="si">{</span><span class="n">pattern</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">saved_paths</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;processed&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;lite&quot;</span><span class="p">:</span> <span class="p">{}}</span>
 
-        <span class="k">for</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">datasets</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exportables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">datasets</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] No datasets to save for type &#39;</span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
-                <span class="k">continue</span>
+        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-            <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s2">&quot;processed&quot;</span> <span class="ow">and</span> <span class="n">export_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;combine_processed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="c1"># Combine all processed datasets into one file</span>
-                <span class="n">combined_ds</span> <span class="o">=</span> <span class="n">combine_datasets</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">datasets</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
-                <span class="n">filename</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pipeline</span><span class="o">=</span><span class="s2">&quot;ALL_PROCESSED&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-                <span class="n">out_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
-                <span class="n">combined_ds</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">out_path</span><span class="p">)</span>
-                <span class="n">saved_paths</span><span class="p">[</span><span class="n">dtype</span><span class="p">][</span><span class="s2">&quot;ALL_PROCESSED&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_path</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Saved combined processed dataset to: </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># Save each dataset individually</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">filename</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pipeline</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-                    <span class="n">out_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
-                    <span class="n">ds</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">out_path</span><span class="p">)</span>
-                    <span class="n">saved_paths</span><span class="p">[</span><span class="n">dtype</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_path</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Saved </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2"> dataset for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; to: </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># ----- 1) Raw</span>
+        <span class="k">if</span> <span class="n">save_raw</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">ds_raw</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+                <span class="n">ds_to_save</span> <span class="o">=</span> <span class="n">ds_raw</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">ds_to_save</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">_append_history</span><span class="p">(</span>
+                    <span class="n">ds_to_save</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Raw dataset exported for pipeline &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_raw.nc&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ds_to_save</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Raw → </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Raw FAILED for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="c1"># Optionally create and save lite versions (e.g.key variables only)</span>
-            <span class="k">if</span> <span class="n">dtype</span> <span class="o">!=</span> <span class="s2">&quot;lite&quot;</span> <span class="ow">and</span> <span class="n">export_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;generate_lite&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="n">lite_datasets</span> <span class="o">=</span> <span class="p">{}</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">lite_ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span>
-                        <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">()],</span>
-                        <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">lite_datasets</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lite_ds</span>
-                <span class="c1"># Save lite datasets</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">lite_datasets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">filename</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pipeline</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;lite&quot;</span><span class="p">)</span>
-                    <span class="n">out_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
-                    <span class="n">ds</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">out_path</span><span class="p">)</span>
-                    <span class="n">saved_paths</span><span class="p">[</span><span class="s2">&quot;lite&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_path</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Export] Saved lite dataset for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; to: </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="c1"># Must have processed_per_glider populated</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;processed_per_glider&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">,</span> <span class="nb">dict</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;No cached processed data found. Run preview_alignment() first (it populates self.processed_per_glider).&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># ----- 2) Processed (aggregated medians)</span>
+        <span class="k">if</span> <span class="n">save_processed</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">parts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">ds_agg</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agg&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ds_agg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds_agg</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Skipping processed export for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (no &#39;agg&#39;).&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">ds_proc</span> <span class="o">=</span> <span class="n">ds_agg</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">ds_proc</span> <span class="o">=</span> <span class="n">_enrich_processed_attrs</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ds_proc</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">,</span> <span class="n">bin_dim</span><span class="o">=</span><span class="s2">&quot;DEPTH_bin&quot;</span>
+                <span class="p">)</span>
+                <span class="n">ds_proc</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">_append_history</span><span class="p">(</span>
+                    <span class="n">ds_proc</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Processed medians exported for pipeline &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_processed_agg.nc&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ds_proc</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Processed → </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Processed FAILED for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ----- 3) Combined target dataset</span>
+        <span class="k">if</span> <span class="n">save_combined</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39; not found in processed_per_glider.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">ds_target_agg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_per_glider</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="s2">&quot;agg&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds_target_agg</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39; has no aggregated dataset in cache.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">ds_comb</span> <span class="o">=</span> <span class="n">ds_target_agg</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="c1"># Bring in any *_ALIGNED_TO_{target} variables present in memory</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;_ALIGNED_TO_</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">target</span><span class="p">:</span>
+                    <span class="c1"># also include any aligned vars already attached to the target dataset (e.g., target aligned to a device)</span>
+                    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="p">):</span>
+                            <span class="n">ds_comb</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="n">v</span><span class="p">]</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="p">):</span>
+                        <span class="n">ds_comb</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="n">v</span><span class="p">]</span>
+
+            <span class="c1"># Enrich attrs</span>
+            <span class="n">ds_comb</span> <span class="o">=</span> <span class="n">_enrich_combined_attrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">ds_comb</span><span class="p">,</span> <span class="n">alignment_vars</span><span class="p">)</span>
+            <span class="n">ds_comb</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">_append_history</span><span class="p">(</span>
+                <span class="n">ds_comb</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Combined dataset exported for target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_combined_agg.nc&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ds_comb</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Combined target → </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Combined target FAILED: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># ----- 4) Lite</span>
+            <span class="k">if</span> <span class="n">save_lite</span><span class="p">:</span>
+                <span class="n">keep_vars</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">keep_vars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;median_&quot;</span><span class="p">)]</span>
+                <span class="p">)</span>
+                <span class="n">keep_vars</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">suffix</span><span class="p">)])</span>
+
+                <span class="n">ds_lite</span> <span class="o">=</span> <span class="n">ds_comb</span><span class="p">[</span><span class="n">keep_vars</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="c1"># reattach common coords if present</span>
+                <span class="n">keep_coords</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">c</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span>
+                        <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;TIME&quot;</span><span class="p">,</span>
+                    <span class="p">]</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="o">.</span><span class="n">coords</span> <span class="ow">or</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">keep_coords</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+                        <span class="n">ds_lite</span> <span class="o">=</span> <span class="n">ds_lite</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">c</span><span class="p">:</span> <span class="n">ds_comb</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">c</span><span class="p">]})</span>
+                    <span class="k">elif</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ds_comb</span><span class="p">:</span>
+                        <span class="n">ds_lite</span> <span class="o">=</span> <span class="n">ds_lite</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="n">c</span><span class="p">:</span> <span class="n">ds_comb</span><span class="p">[</span><span class="n">c</span><span class="p">]})</span>
+
+                <span class="n">_copy_global_attrs</span><span class="p">(</span>
+                    <span class="n">ds_lite</span><span class="p">,</span>
+                    <span class="n">ds_comb</span><span class="p">,</span>
+                    <span class="n">history_line</span><span class="o">=</span><span class="s2">&quot;Lite view (subset of variables) exported.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">_copy_coord_attrs</span><span class="p">(</span><span class="n">ds_lite</span><span class="p">,</span> <span class="n">ds_comb</span><span class="p">,</span> <span class="n">coord_names</span><span class="o">=</span><span class="n">keep_coords</span><span class="p">)</span>
+
+                <span class="n">path_lite</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">_combined_agg_lite.nc&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ds_lite</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path_lite</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Lite → </span><span class="si">{</span><span class="n">path_lite</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Save] Lite FAILED: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
