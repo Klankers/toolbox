@@ -9,6 +9,7 @@ Contents
 
    installation
    usage
+   developer_guide
    api/index
    contributing
 
