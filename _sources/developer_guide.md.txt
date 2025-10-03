@@ -37,6 +37,7 @@ Steps are not limited to one per file - in fact, a single file can contain multi
     This ensures that the step is discoverable by the Pipeline Manager, as well as allowing you do define other classes in the same file without registering them.
 5. Implement the `run` method, which contains the logic for your step. This method should take no arguments other than `self`, and should return a `self.context` object.
    ```python
+   @register_step
     class MyNewStep(BaseStep):
         step_name = "My New Step"
         
@@ -46,6 +47,7 @@ Steps are not limited to one per file - in fact, a single file can contain multi
     ```
 6. Optionally, implement the `generate_diagnostics` method if your step produces any diagnostic plots or outputs.
    ```python
+   @register_step
     class MyNewStep(BaseStep):
         step_name = "My New Step"
         

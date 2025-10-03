@@ -87,7 +87,8 @@ processing stage, validation routine, or export).</p>
 <p>This ensures that the step is discoverable by the Pipeline Manager, as well as allowing you do define other classes in the same file without registering them.</p>
 </li>
 <li><p>Implement the <code class="docutils literal notranslate"><span class="pre">run</span></code> method, which contains the logic for your step. This method should take no arguments other than <code class="docutils literal notranslate"><span class="pre">self</span></code>, and should return a <code class="docutils literal notranslate"><span class="pre">self.context</span></code> object.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@register_step</span>
+ <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
      <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
      
      <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -97,7 +98,8 @@ processing stage, validation routine, or export).</p>
 </div>
 </li>
 <li><p>Optionally, implement the <code class="docutils literal notranslate"><span class="pre">generate_diagnostics</span></code> method if your step produces any diagnostic plots or outputs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@register_step</span>
+ <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
      <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
      
      <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

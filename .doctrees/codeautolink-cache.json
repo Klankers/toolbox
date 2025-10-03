@@ -61,7 +61,7 @@
       "doc_lineno": 30
     },
     {
-      "source": " class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context        \n",
+      "source": "@register_step\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context        \n",
       "names": [],
       "example": {
         "document": "developer_guide",
@@ -74,7 +74,7 @@
       "doc_lineno": 39
     },
     {
-      "source": " class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context\n     \n     def generate_diagnostics(self):\n         # Your diagnostics logic here\n         pass\n",
+      "source": "@register_step\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context\n     \n     def generate_diagnostics(self):\n         # Your diagnostics logic here\n         pass\n",
       "names": [],
       "example": {
         "document": "developer_guide",
@@ -84,7 +84,7 @@
           "How to add a new step"
         ]
       },
-      "doc_lineno": 48
+      "doc_lineno": 49
     }
   ],
   "index": []
