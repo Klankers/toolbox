@@ -128,3 +128,14 @@ pygments_dark_style = "monokai"
 
 copybutton_prompt_text = r">>> |\$ "
 copybutton_prompt_is_regexp = True
+
+
+myst_enable_extensions = [
+    "colon_fence",  # ::: fenced blocks
+    "deflist",  # definition lists
+    "linkify",  # auto-detect bare links
+    "smartquotes",  # nicer quotes/dashes
+]
+
+# Optional: create anchors for h1-h3 automatically
+myst_heading_anchors = 3
