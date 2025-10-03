@@ -12,7 +12,7 @@ A step is a stage in the pipeline that can be defined via Python, and configured
 Steps are not limited to one per file - in fact, a single file can contain multiple steps. For example, the [salinity.py](https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/variables/salinity/index.html) file contains both a QC and an ADJ step.
 
 ## How to add a new step
-1. Create a new Python file in the appropriate directory under `src/toolbox/steps/custom/`.
+1. Create a new Python file in the appropriate directory under `src/toolbox/steps/custom/`.<br>
    **NOTE**: if you are creating a step for specific vairables - such as a salinity QC step - then it should go in the `variables` subdirectory.
 2. Define a new class for your step, inheriting from `BaseStep` (or another appropriate base class, such as `VariableStep` or `DataStep`).
    ```python
@@ -78,5 +78,5 @@ Steps are not limited to one per file - in fact, a single file can contain multi
         param2: value2
    ```
 
-8. Any parameters defined in the `parameters` section of the config file will be passed to your step as attributes. You can access them in your `run` method using `self.param1`, `self.param2`, etc.
+8. Any parameters defined in the `parameters` section of the config file will be passed to your step as attributes. You can access them in your `run` method using `self.param1`, `self.param2`, etc. <br>
    **NOTE** This is handled automatically by the `BaseStep` class. More information can be found in the [BaseStep documentation](https://noc-obg-autonomy.github.io/toolbox/_modules/toolbox/steps.html).  
