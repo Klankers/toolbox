@@ -11,6 +11,16 @@ import tkinter as tk
 import numpy as np
 import re
 
+def _parse_duration_to_kwargs(duration: str) -> dict:
+    m = re.fullmatch(r"(\d+)([smhd])", duration)
+    if not m:
+        raise ValueError(f"Unsupported duration format: {duration}")
+    val, unit = int(m.group(1)), m.group(2)
+    return {"s": dict(seconds=val),
+            "m": dict(minutes=val),
+            "h": dict(hours=val),
+            "d": dict(days=val)}[unit]
+
 def find_profiles(
     df,
     gradient_thresholds=[0.02, -0.02],
@@ -19,7 +29,8 @@ def find_profiles(
     depth_col="DEPTH",
     profile_duration='2m',
     transect_duration='10m',
-    transect_depth_range=10.0,
+    transect_depth_range=[10.0],
+    transect_depth_bottom_limits=None,
     cust_col=None,
     cust_gradient_thresholds=[0.005, -0.025],
     strict_profiles=False,
@@ -104,10 +115,9 @@ def find_profiles(
     df = (
         df.select(
             *cols,
-            pl.col(depth_col,cust_col)
-            .replace([np.inf, -np.inf, np.nan], None)
-            .interpolate_by(time_col)
-            .name.prefix(f"INTERP_"),
+            *(pl.col(c).replace([np.inf, -np.inf, np.nan], None)
+                        .interpolate_by(time_col)
+                        .name.prefix("INTERP_") for c in [depth_col, cust_col] if c)
         )
         .with_row_index()
         .drop_nulls(subset=[f"INTERP_{depth_col}",f"INTERP_{cust_col}"])
@@ -165,6 +175,7 @@ def find_profiles(
     if use_only_pit_vel:
         # Ignore gradient thresholding, just use pitch product
         df = df.with_columns(pl.col("pitch_profile").alias("is_profile"))
+
     else:
         if strict_profiles:
             df = df.with_columns(
@@ -196,27 +207,12 @@ def find_profiles(
     # Join back and mask out short profiles
     df = df.join(profile_durations, on="profile_num", how="left")
 
-    # Parse profile_duration string into pl.duration kwargs
-    # TODO Done below with transect_duration, needs to be merged into a single function.
-    m = re.fullmatch(r"(\d+)([smhd])", profile_duration)
-    if not m:
-        raise ValueError(f"Unsupported duration format: {profile_duration}")
-    val, unit = m.groups()
-    val = int(val)
-    if unit == "s":
-        kwargs = dict(seconds=val)
-    elif unit == "m":
-        kwargs = dict(minutes=val)
-    elif unit == "h":
-        kwargs = dict(hours=val)
-    elif unit == "d":
-        kwargs = dict(days=val)
-
+    kwargs = _parse_duration_to_kwargs(profile_duration)
     df = df.with_columns(
         pl.when(pl.col("elapsed") >= pl.duration(**kwargs))
-          .then(pl.col("is_profile"))
-          .otherwise(False)
-          .alias("is_profile")
+        .then(pl.col("is_profile"))
+        .otherwise(False)
+        .alias("is_profile")
     ).drop("elapsed")
 
     # Re-number profiles after duration filter (so IDs match valid segments)
@@ -229,15 +225,10 @@ def find_profiles(
 
     # Parse both filter windows to seconds
     m0 = re.fullmatch(r"(\d+)([smhd])", filter_win_sizes[0])
-    m1 = re.fullmatch(r"(\d+)([smhd])", filter_win_sizes[1])
-    if not (m0 and m1):
+    if not m0:
         raise ValueError("Unsupported duration format in filter_win_sizes")
-
     v0, u0 = int(m0.group(1)), m0.group(2)
-    v1, u1 = int(m1.group(1)), m1.group(2)
-    mult = {"s": 1, "m": 60, "h": 3600, "d": 86400}
-
-    w0 = v0 * mult[u0]
+    w0 = v0 * {"s": 1, "m": 60, "h": 3600, "d": 86400}[u0]
 
     # Approximate group delay of median+mean (causal): half each window
     # backfill_seconds = back_fill_mod * (w0/2 + w1/2)
@@ -291,8 +282,13 @@ def find_profiles(
     ])
     
     # Check that depth stays within user defined transect depth window
+    if isinstance(transect_depth_range, (list, tuple)):
+        ref_depth_range = transect_depth_range[0]
+    else:
+        ref_depth_range = transect_depth_range
+
     df = df.with_columns(
-        ((pl.col("roll_max_depth") - pl.col("roll_min_depth")) <= transect_depth_range)
+        ((pl.col("roll_max_depth") - pl.col("roll_min_depth")) <= ref_depth_range)
         .alias("depth_stable")
     )
 
@@ -330,33 +326,49 @@ def find_profiles(
           .agg((pl.col(f"INTERP_{depth_col}").max() - pl.col(f"INTERP_{depth_col}").min()).alias("depth_span"))
     )
 
-        # Join both checks back
-    df = df.join(transect_durations, on="transect_num", how="left")
-    df = df.join(transect_depths, on="transect_num", how="left")
+    # Compute mean depth per transect
+    transect_means = (
+        df.filter(pl.col("transect_num") >= 0)
+          .group_by("transect_num")
+          .agg(pl.col(f"INTERP_{depth_col}").mean().alias("mean_depth"))
+    )
 
-    # Parse transect_duration string into pl.duration kwargs
-    # TODO Done above with profile_duration, needs to be merged into a single function.
-    m = re.fullmatch(r"(\d+)([smhd])", transect_duration)
-    if not m:
-        raise ValueError(f"Unsupported duration format: {transect_duration}")
-    val, unit = m.groups()
-    val = int(val)
-    if unit == "s":
-        kwargs = dict(seconds=val)
-    elif unit == "m":
-        kwargs = dict(minutes=val)
-    elif unit == "h":
-        kwargs = dict(hours=val)
-    elif unit == "d":
-        kwargs = dict(days=val)
+    df = (df.join(transect_durations, on="transect_num", how="left")
+            .join(transect_depths, on="transect_num", how="left")
+            .join(transect_means, on="transect_num", how="left"))
 
-    # Apply filters, must satisfy both min duration AND max depth span
+    # Validate and build depth-dependent window mask
+    if len(transect_depth_range) > 1:
+        if not transect_depth_bottom_limits:
+            raise ValueError("transect_depth_bottom_limits must be provided when multiple transect_depth_range values are used.")
+        if len(transect_depth_range) - 1 != len(transect_depth_bottom_limits):
+            raise ValueError("transect_depth_bottom_limits must have length len(transect_depth_range) - 1")
+
+        expr = None
+        for i, rng in enumerate(transect_depth_range):
+            if i == 0:
+                cond = pl.col("mean_depth") <= transect_depth_bottom_limits[0]
+            elif i == len(transect_depth_range) - 1:
+                cond = pl.col("mean_depth") > transect_depth_bottom_limits[-1]
+            else:
+                cond = (
+                    (pl.col("mean_depth") > transect_depth_bottom_limits[i - 1]) &
+                    (pl.col("mean_depth") <= transect_depth_bottom_limits[i])
+                )
+            expr = pl.when(cond).then(rng) if expr is None else expr.when(cond).then(rng)
+        expr = expr.otherwise(transect_depth_range[-1])
+        df = df.with_columns(expr.alias("depth_window"))
+    else:
+        df = df.with_columns(pl.lit(transect_depth_range[0]).alias("depth_window"))
+    
+    kwargs = _parse_duration_to_kwargs(transect_duration)
     df = df.with_columns(
-        pl.when((pl.col("elapsed") >= pl.duration(**kwargs)) & (pl.col("depth_span") <= transect_depth_range))
-          .then(pl.col("is_transect"))
-          .otherwise(False)
-          .alias("is_transect")
-    ).drop(["elapsed", "depth_span"])
+        pl.when((pl.col("elapsed") >= pl.duration(**kwargs)) &
+                (pl.col("depth_span") <= pl.col("depth_window")))
+        .then(pl.col("is_transect"))
+        .otherwise(False)
+        .alias("is_transect")
+    ).drop(["elapsed", "depth_span", "mean_depth", "depth_window"])
 
         # Re-number transects after filtering (so IDs match valid segments)
     df = df.with_columns(
