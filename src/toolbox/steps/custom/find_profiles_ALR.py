@@ -13,7 +13,7 @@ import re
 
 def find_profiles(
     df,
-    gradient_thresholds: list,
+    gradient_thresholds=[0.02, -0.02],
     filter_win_sizes=["20s", "10s"],
     time_col="TIME",
     depth_col="DEPTH",
@@ -21,7 +21,7 @@ def find_profiles(
     transect_duration='10m',
     transect_depth_range=10.0,
     cust_col=None,
-    cust_gradient_thresholds=None,
+    cust_gradient_thresholds=[0.005, -0.025],
     strict_profiles=False,
     use_only_pit_vel=False,
     backfill_segments=False,
@@ -51,16 +51,26 @@ def find_profiles(
         Name of the column containing depth measurements
     profile_duration : str, default='2m'
         Minimum duration for a profile to be considered valid, in Polars duration format (e.g. '30s', '5m', '1h').
-    transect_duration : str, default='10m',
+    transect_duration : str, default='10m'
         Minimum duration for a transect to be considered valid, in Polars duration format (e.g. '30s', '5m', '1h').
-
+   transect_depth_range : int64, default=10.0
+        Maximum depth difference (in meters) from transect start for a transect to be considered continuous/valid.
     cust_col : str, default=None
         Name of a data column in the input dataframe, with matching time and depth measurements, to be displayed
         alongside profiling plots, e.g. pitch
-    cust_filter_win_sizes : list, default=None
+    cust_gradient_thresholds : list, default=None
         Two-element list [positive_threshold, negative_threshold] defining the
         range of your custom variable that is NOT considered part of a profile.
-
+    strict_profiles : bool, default=False
+        If True, a point must meet BOTH gradient and pitch criteria to be considered part of a profile.
+    use_only_pit_vel : bool, default=False
+        If True, only a (-)pitch*velocity product is used to threshold profiles. The threshold setting is tied to
+        the "cust_gradient_thresholds" parameter. Only the value in index 0 is used, the value in index 1 is ignored.
+    backfill_segments : bool, default=False
+        If True, extends identified profile and transect segments backwards in time by an amount defined by
+        filter_win_sizes[0] * back_fill_mod.
+    back_fill_mod : 
+    
     Returns
     -------
     polars.DataFrame
