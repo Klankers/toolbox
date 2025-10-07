@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import tkinter as tk
 import numpy as np
+import re
 
 def find_profiles(
     df,
@@ -16,15 +17,15 @@ def find_profiles(
     filter_win_sizes=["20s", "10s"],
     time_col="TIME",
     depth_col="DEPTH",
-    cust_col=None,
-    cust_gradient_thresholds=None,
+    profile_duration='2m',
     transect_duration='10m',
     transect_depth_range=10.0,
-    profile_duration='2m',
+    cust_col=None,
+    cust_gradient_thresholds=None,
     strict_profiles=False,
-    back_fill_mod=0.5,
-    use_only_pit_vel=False,   # NEW toggle
-    backfill_segments=False,  # NEW toggle
+    use_only_pit_vel=False,
+    backfill_segments=False,
+    back_fill_mod=1,
 ):
     """
     Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.
@@ -48,6 +49,11 @@ def find_profiles(
         Name of the column containing timestamp data
     depth_col : str, default='DEPTH'
         Name of the column containing depth measurements
+    profile_duration : str, default='2m'
+        Minimum duration for a profile to be considered valid, in Polars duration format (e.g. '30s', '5m', '1h').
+    transect_duration : str, default='10m',
+        Minimum duration for a transect to be considered valid, in Polars duration format (e.g. '30s', '5m', '1h').
+
     cust_col : str, default=None
         Name of a data column in the input dataframe, with matching time and depth measurements, to be displayed
         alongside profiling plots, e.g. pitch
@@ -125,7 +131,7 @@ def find_profiles(
         .name.prefix("smooth_"),
     )
 
-       # Determine which points are part of profiles based on gradient thresholds
+    # Determine which points are part of profiles based on gradient thresholds
     pos_grad, neg_grad = gradient_thresholds
     df = df.with_columns(
         pl.col("smooth_grad").is_between(neg_grad, pos_grad).not_().alias("grad_profile")
@@ -163,10 +169,9 @@ def find_profiles(
     # Assign unique profile numbers to consecutive points identified as profiles
     # This converts the boolean 'is_profile' column into numbered profile segments
     df = df.with_columns(
-        (
-            pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
-            * pl.col("is_profile")
-            - 1
+        (pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+        * pl.col("is_profile")
+        - 1
         ).alias("profile_num")
     )
 
@@ -183,7 +188,6 @@ def find_profiles(
 
     # Parse profile_duration string into pl.duration kwargs
     # TODO Done below with transect_duration, needs to be merged into a single function.
-    import re
     m = re.fullmatch(r"(\d+)([smhd])", profile_duration)
     if not m:
         raise ValueError(f"Unsupported duration format: {profile_duration}")
@@ -207,14 +211,12 @@ def find_profiles(
 
     # Re-number profiles after duration filter (so IDs match valid segments)
     df = df.with_columns(
-        (
-            pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+        (pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
             * pl.col("is_profile")
             - 1
-        ).alias("profile_num")
+        ).alias("profile_num_new")
     )
 
-    # --------------------------------------------------
     # Parse both filter windows to seconds
     m0 = re.fullmatch(r"(\d+)([smhd])", filter_win_sizes[0])
     m1 = re.fullmatch(r"(\d+)([smhd])", filter_win_sizes[1])
@@ -226,12 +228,13 @@ def find_profiles(
     mult = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 
     w0 = v0 * mult[u0]
-    w1 = v1 * mult[u1]
 
     # Approximate group delay of median+mean (causal): half each window
-    backfill_seconds = back_fill_mod * (w0/2 + w1/2)
+    # backfill_seconds = back_fill_mod * (w0/2 + w1/2)
+    backfill_seconds = back_fill_mod * w0
 
     if backfill_segments:
+
         # Build extended intervals for each profile
         profile_bounds = (
             df.filter(pl.col("is_profile"))
@@ -261,11 +264,10 @@ def find_profiles(
 
             # Re-number profiles after back-extension
             df = df.with_columns(
-                (
-                    pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+                (pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
                     * pl.col("is_profile")
                     - 1
-                ).alias("profile_num")
+                ).alias("profile_num_new")
             )
 
     # Rolling min and max of depth over the transect window duration
@@ -277,7 +279,7 @@ def find_profiles(
         .rolling_max_by(time_col, window_size=transect_duration)
         .alias("roll_max_depth"),
     ])
-
+    
     # Check that depth stays within user defined transect depth window
     df = df.with_columns(
         ((pl.col("roll_max_depth") - pl.col("roll_min_depth")) <= transect_depth_range)
@@ -348,8 +350,7 @@ def find_profiles(
 
         # Re-number transects after filtering (so IDs match valid segments)
     df = df.with_columns(
-        (
-            pl.col("is_transect").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
+        (pl.col("is_transect").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
             * pl.col("is_transect")
             - 1
         ).alias("transect_num")
@@ -357,7 +358,6 @@ def find_profiles(
 
     if backfill_segments:
 
-        # --------------------------------------------------
         # Force back-extension of transects by filter_win_sizes[0] * back_fill_mod
         transect_bounds = (
             df.filter(pl.col("is_transect"))
@@ -389,7 +389,6 @@ def find_profiles(
                 - 1
             ).alias("transect_num")
         )
-        # --------------------------------------------------
 
     # Reforming the full length dataframe (This executes faster than polars join or merge methods)
     front_pad = np.full((df["index"].min(), len(df.columns)), np.nan)
