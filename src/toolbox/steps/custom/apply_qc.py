@@ -6,26 +6,18 @@ import toolbox.utils.diagnostics as diag
 import polars as pl
 import xarray as xr
 from datetime import datetime
-from abc import ABC, abstractmethod
+from geodatasets import get_path
 import matplotlib.pyplot as plt
 import matplotlib
+import numpy as np
+import shapely as sh
+import geopandas
 
 # Defining QC functions from "Argo Quality Control Manual for CTD and Trajectory Data" (https://archimer.ifremer.fr/doc/00228/33951/).
 # TODO: Do we need a bin nan rows QC to speed up processing?
 
 
-class QC_Test(ABC):
-
-    @abstractmethod
-    def return_qc(self):
-        pass
-
-    @abstractmethod
-    def plot_diagnostics(self):
-        pass
-
-
-class impossible_date_test(QC_Test):
+class impossible_date_test:
     """
     Target Variable: TIME
     Test Number: 2
@@ -34,6 +26,7 @@ class impossible_date_test(QC_Test):
     """
 
     def __init__(self, df):
+        self.name = "impossible date test"
         self.required_variables = ["TIME"]
         self.df = df
         self.flags = None
@@ -70,7 +63,7 @@ class impossible_date_test(QC_Test):
         plt.show(block=True)
 
 
-class impossible_location_test(QC_Test):
+class impossible_location_test:
     """
     Target Variable: LATITUDE, LONGITUDE
     Test Number: 3
@@ -79,6 +72,7 @@ class impossible_location_test(QC_Test):
     """
 
     def __init__(self, df):
+        self.name = "impossible location test"
         self.required_variables = ["LATITUDE", "LONGITUDE"]
         self.df = df
         self.flags = None
@@ -131,81 +125,157 @@ class impossible_location_test(QC_Test):
         plt.show(block=True)
 
 
-# TODO: In progress of converting these to QC_TEST classes and writing diagnostics for each test
-def position_on_land_test(df):
+class position_on_land_test:
     """
     Target Variable: LATITUDE, LONGITUDE
     Test Number: 4
     Flag Number: 4 (bad data)
     Checks that the measurement location is not on land.
     """
-    import geopandas
-    import shapely as sh
+    def __init__(self, df):
 
-    # Define the land regions with shapely polygons
-    world = geopandas.read_file(
-        r"C:\Users\banga\Downloads\110m_cultural\ne_110m_admin_0_countries.dbf"
-    )
-    land_polygons = sh.ops.unary_union(
-        world.geometry
-    )  # Concat the polygons into a MultiPolygon object
+        self.name = "position on land test"
+        self.required_variables = ["LATITUDE", "LONGITUDE"]
+        self.df = df
+        self.flags = None
 
-    # Check if lat, long coords fall within the area of the land polygons
-    df = df.with_columns(
-        pl.struct("LONGITUDE", "LATITUDE")
-        .map_batches(
-            lambda x: sh.contains_xy(
-                land_polygons, x.struct.field("LONGITUDE"), x.struct.field("LATITUDE")
-            )
-            * 4
+    def return_qc(self):
+
+        # Concat the polygons into a MultiPolygon object
+        self.world = geopandas.read_file(
+            get_path("naturalearth.land")
         )
-        .alias("LONGITUDE_QC")
-    )
-    # Add the flags to LATITUDE as well.
-    df = df.with_columns(pl.col("LONGITUDE_QC").alias("LATITUDE_QC"))
+        land_polygons = sh.ops.unary_union(
+            self.world.geometry
+        )
 
-    return df
+        # Check if lat, long coords fall within the area of the land polygons
+        self.df = self.df.with_columns(
+            pl.struct("LONGITUDE", "LATITUDE")
+            .map_batches(
+                lambda x: sh.contains_xy(
+                    land_polygons,
+                    x.struct.field("LONGITUDE").to_numpy(),
+                    x.struct.field("LATITUDE").to_numpy()
+                )
+                * 4
+            )
+            .alias("LONGITUDE_QC")
+        )
+        # Add the flags to LATITUDE as well.
+        self.df = self.df.with_columns(pl.col("LONGITUDE_QC").alias("LATITUDE_QC"))
+
+        self.flags = self.df.select(pl.col("^.*_QC$"))
+        return self.flags
+
+    def plot_diagnostics(self):
+        matplotlib.use("tkagg")
+        fig, ax = plt.subplots(figsize=(12, 8), dpi=200)
+
+        # Plot land boundaries
+        self.world.plot(ax=ax, facecolor="lightgray", edgecolor="black", alpha=0.3)
+
+        # Separate flagged and unflagged points (if LATITUDE has been flagged, so will LONGITUDE)
+        unflagged = self.df.filter(pl.col("LATITUDE_QC") == 0)
+        flagged = self.df.filter(pl.col("LATITUDE_QC") == 4)
+
+        # Plot points
+        for data, col, label in zip([unflagged, flagged], ["b", "r"], ["Good", "Bad"]):
+            ax.scatter(
+                data["LONGITUDE"],
+                data["LATITUDE"],
+                c=col,
+                s=20,
+                alpha=0.6,
+                label=label,
+            )
+        ax.set(
+            xlabel="Longitude",
+            ylabel="Latitude",
+            title=self.name
+        )
+        ax.legend()
+        fig.tight_layout()
+        plt.show(block=True)
 
 
-def impossible_speed_test(df):
+class impossible_speed_test:
     """
     Target Variable: TIME, LATITUDE, LONGITUDE
     Test Number: 5
     Flag Number: 4 (bad data)
     Checks that the the glider speed stays below 3m/s
     """
-    df = df.with_columns((pl.col(time_col).diff().cast(pl.Float64) * 1e-9).alias("dt"))
-    for label in ["LATITUDE", "LONGITUDE"]:
-        df = df.with_columns(
-            pl.col(label)
-            .replace([np.inf, -np.inf, np.nan], None)
-            .interpolate_by("TIME")
-            .diff()
-            .alias(f"delta_{label}")
-        )
-        df = df.with_columns(
-            (pl.col(f"delta_{label}") / pl.col("dt")).alias(f"{label}_speed")
-        )
-    df = df.with_columns(
-        ((pl.col("LATITUDE_speed") ** 2 + pl.col("LONGITUDE_speed") ** 2) ** 0.5).alias(
-            "absolute_speed"
-        )
-    )
 
-    df = df.with_columns(
-        (
-            (pl.col(label) < 3)
-            & pl.col(label).is_not_null()
-            & pl.col(label).is_finite()
-        ).alias("speed_is_valid")
-    )
+    def __init__(self, df):
 
-    for label in ["LATITUDE", "LONGITUDE", "TIME"]:
-        df = df.with_columns(
-            (pl.col("speed_is_valid").cast(pl.Int64) * 4).alias(f"{label}_QC")
+        self.name = "impossible speed test"
+        self.required_variables = ["TIME", "LATITUDE", "LONGITUDE"]
+        self.df = df
+        self.flags = None
+
+    def return_qc(self):
+
+        self.df = self.df.with_columns((pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt"))
+        for label in ["LATITUDE", "LONGITUDE"]:
+            self.df = self.df.with_columns(
+                pl.col(label)
+                .replace([np.inf, -np.inf, np.nan], None)
+                .interpolate_by("TIME")
+                .diff()
+                .alias(f"delta_{label}")
+            )
+            self.df = self.df.with_columns(
+                (pl.col(f"delta_{label}") / pl.col("dt")).alias(f"{label}_speed")
+            )
+        self.df = self.df.with_columns(
+            ((pl.col("LATITUDE_speed") ** 2 + pl.col("LONGITUDE_speed") ** 2) ** 0.5).alias(
+                "absolute_speed"
+            )
         )
 
-    return df
+        # TODO: Does this need a flag for potentially bad data for cases where speed is inf?
+        self.df = self.df.with_columns(
+            (
+                (pl.col("absolute_speed") < 3)
+                & pl.col("absolute_speed").is_not_null()
+                & pl.col("absolute_speed").is_finite()
+            ).alias("speed_is_valid")
+        )
+
+        for label in ["LATITUDE", "LONGITUDE", "TIME"]:
+            self.df = self.df.with_columns(
+                (pl.col("speed_is_valid").not_().cast(pl.Int64) * 4).alias(f"{label}_QC")
+            )
+
+        self.flags = self.df.select(pl.col("^.*_QC$"))
+        return self.flags
+
+    def plot_diagnostics(self):
+        matplotlib.use("tkagg")
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=200)
+
+        # Values
+        ax.plot(self.df["TIME"], self.df["absolute_speed"], c="b")
+        ax.set(
+            xlabel="Time (s)",
+            ylabel="Absolute Speed (m/s)",
+        )
+        ax.yaxis.label.set_color("b")
+
+        # Flags
+        ax_twin = ax.twinx()
+        ax_twin.plot(self.df["TIME"], self.df[f"LATITUDE_QC"], c="r")
+        ax_twin.set(
+            xlabel="Time",
+            ylabel=f"Flag",
+        )
+        ax_twin.yaxis.label.set_color("r")
+
+        # Speed threshold
+        ax.axhline(3, ls="--", c="k")
+        fig.tight_layout()
+        plt.show(block=True)
 
 
 def global_range_test(df):
@@ -341,6 +411,8 @@ class ApplyQC(BaseStep):
         self.QC_REGISTER = {
             "impossible date test": impossible_date_test,
             "impossible location test": impossible_location_test,
+            "position on land test": position_on_land_test,
+            "impossible speed test": impossible_speed_test,
         }
         self.qc_order = []
         
