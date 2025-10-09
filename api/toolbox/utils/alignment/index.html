@@ -95,9 +95,6 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.utils.alignment.apply_linear_map_to_da" title="toolbox.utils.alignment.apply_linear_map_to_da"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_linear_map_to_da</span></code></a>(da, slope, intercept[, out_name])</p></td>
 <td><p>Apply y = slope * da + intercept to an xarray.DataArray.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.utils.alignment.fit_and_save_to_target" title="toolbox.utils.alignment.fit_and_save_to_target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_and_save_to_target</span></code></a>(self, target, out_dir[, ...])</p></td>
-<td><p>For each ancillary source:</p></td>
-</tr>
 </tbody>
 </table>
 </section>
@@ -279,21 +276,6 @@ pairs that pass R²/time/distance filters. Plots 1:1 and fitted line.</p>
 Returns a new DataArray (optionally renamed).</p>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="toolbox.utils.alignment.fit_and_save_to_target">
-<span class="sig-prename descclassname"><span class="pre">toolbox.utils.alignment.</span></span><span class="sig-name descname"><span class="pre">fit_and_save_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_r2_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_time_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dist_km</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/utils/alignment.html#fit_and_save_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.utils.alignment.fit_and_save_to_target" title="Link to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>For each ancillary source:</dt><dd><ul class="simple">
-<li><p>Collect all (ancillary, target) depth-binned points passing thresholds from self.r2_datasets[anc]</p></li>
-<li><p>Fit linear maps (y = slope*x + intercept) for each alignment var</p></li>
-<li><p>Apply those maps to the <em>full</em> ancillary dataset variables</p></li>
-<li><p>Save aligned ancillary dataset to NetCDF.</p></li>
-</ul>
-</dd>
-</dl>
-<p>Produces variables named <cite>{var}_ALIGNED_TO_{target}</cite> in the saved files.</p>
-</dd></dl>
-
 </section>
 </section>
 
@@ -322,7 +304,6 @@ Returns a new DataArray (optionally renamed).</p>
 <li><a class="reference internal" href="#toolbox.utils.alignment.fit_linear_map"><code class="docutils literal notranslate"><span class="pre">fit_linear_map()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.utils.alignment.plot_pair_scatter_grid"><code class="docutils literal notranslate"><span class="pre">plot_pair_scatter_grid()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.utils.alignment.apply_linear_map_to_da"><code class="docutils literal notranslate"><span class="pre">apply_linear_map_to_da()</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.utils.alignment.fit_and_save_to_target"><code class="docutils literal notranslate"><span class="pre">fit_and_save_to_target()</span></code></a></li>
 </ul>
 </li>
 </ul>

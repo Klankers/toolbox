@@ -1088,168 +1088,104 @@
 
 
 
-<div class="viewcode-block" id="fit_and_save_to_target">
-<a class="viewcode-back" href="../../../api/toolbox/utils/alignment/index.html#toolbox.utils.alignment.fit_and_save_to_target">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_and_save_to_target</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">target</span><span class="p">,</span>
-    <span class="n">out_dir</span><span class="p">,</span>
-    <span class="n">variable_r2_criteria</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. {&quot;TEMP&quot;:0.9, &quot;CNDC&quot;:0.85, ...}; falls back to self.settings if None</span>
-    <span class="n">max_time_hr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># optional extra filters on pairs when collecting training points</span>
-    <span class="n">max_dist_km</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">ancillaries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># list[str] to restrict which sources to fit; default = all except target</span>
-    <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">show_plots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># quick QA using your existing scatter grid</span>
-<span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_inject_aligned_into_target_grid</span><span class="p">(</span>
+    <span class="n">target_agg</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">r2_ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">target_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ancillary_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">var</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ancillary_aligned_agg</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># expects median_{VAR}_ALIGNED_TO_{target}</span>
+    <span class="n">bin_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;DEPTH_bin&quot;</span><span class="p">,</span>
+    <span class="n">pair_dim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PAIR_INDEX&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    For each ancillary source:</span>
-<span class="sd">      - Collect all (ancillary, target) depth-binned points passing thresholds from self.r2_datasets[anc]</span>
-<span class="sd">      - Fit linear maps (y = slope*x + intercept) for each alignment var</span>
-<span class="sd">      - Apply those maps to the *full* ancillary dataset variables</span>
-<span class="sd">      - Save aligned ancillary dataset to NetCDF.</span>
+<span class="sd">    Create a DataArray on TARGET&#39;s (PROFILE_NUMBER, DEPTH_bin) grid, using the</span>
+<span class="sd">    ancillary&#39;s *already-aligned* aggregated medians (no further fitting).</span>
 
-<span class="sd">    Produces variables named `{var}_ALIGNED_TO_{target}` in the saved files.</span>
+<span class="sd">    Requires ancillary_aligned_agg to contain:</span>
+<span class="sd">        median_{var}_ALIGNED_TO_{target}</span>
+<span class="sd">    with dims (PROFILE_NUMBER, DEPTH_bin).</span>
+
+<span class="sd">    Pair mapping is read from r2_ds (PAIR_INDEX → TARGET profile id + DEPTH_bin).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;r2_datasets&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Run preview_alignment() (which populates self.r2_datasets) before fitting.&quot;</span>
-        <span class="p">)</span>
-    <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span> <span class="ow">or</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target &#39;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&#39; not available in manager contexts.&quot;</span><span class="p">)</span>
+    <span class="n">tgt_prof_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
+    <span class="n">tgt_med</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_TARGET_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">anc_med_aligned</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_ALIGNED_TO_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="c1"># Vars to fit &amp; thresholds</span>
-    <span class="n">alignment_vars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="k">if</span> <span class="n">variable_r2_criteria</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">variable_r2_criteria</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">&quot;variable_r2_criteria&quot;</span><span class="p">,</span> <span class="p">{}</span>
-        <span class="p">)</span>
-    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">alignment_vars</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">variable_r2_criteria</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing R² thresholds for variables: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="c1"># Which ancillaries?</span>
-    <span class="n">all_sources</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="n">target</span><span class="p">]</span>
-    <span class="n">anc_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ancillaries</span><span class="p">)</span> <span class="k">if</span> <span class="n">ancillaries</span> <span class="k">else</span> <span class="n">all_sources</span>
-
-    <span class="c1"># Optional QA plots before/after</span>
-    <span class="k">if</span> <span class="n">show_plots</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;plot_pair_scatter_grid&quot;</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">plot_pair_scatter_grid</span><span class="p">(</span>
-                <span class="n">r2_datasets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="p">,</span>
-                <span class="n">variables</span><span class="o">=</span><span class="n">alignment_vars</span><span class="p">,</span>
-                <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-                <span class="n">variable_r2_criteria</span><span class="o">=</span><span class="n">variable_r2_criteria</span><span class="p">,</span>
-                <span class="n">max_time_hr</span><span class="o">=</span><span class="n">max_time_hr</span><span class="p">,</span>
-                <span class="n">max_dist_km</span><span class="o">=</span><span class="n">max_dist_km</span><span class="p">,</span>
+    <span class="c1"># Validate r2_ds has the structure we need</span>
+    <span class="k">for</span> <span class="n">need</span> <span class="ow">in</span> <span class="p">[</span><span class="n">pair_dim</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">need</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="o">.</span><span class="n">dims</span> <span class="ow">and</span> <span class="n">need</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;_inject_aligned_into_target_grid: missing dim/coord &#39;</span><span class="si">{</span><span class="n">need</span><span class="si">}</span><span class="s2">&#39; in r2_ds.&quot;</span>
             <span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] (Plot) Skipped grid due to: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">need</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tgt_prof_id</span><span class="p">,</span> <span class="n">tgt_med</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">need</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;_inject_aligned_into_target_grid: missing &#39;</span><span class="si">{</span><span class="n">need</span><span class="si">}</span><span class="s2">&#39; in r2_ds.&quot;</span>
+            <span class="p">)</span>
 
-    <span class="c1"># Helper: alias→std rename for each source so {var} exists consistently</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_alias_map_for</span><span class="p">(</span><span class="n">source_name</span><span class="p">):</span>
-        <span class="c1"># alignment_map: {std_var: {glider_name: alias_name}}</span>
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="n">alias</span><span class="p">:</span> <span class="n">std</span>
-            <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">mapping</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">alias</span> <span class="o">:=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source_name</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">ancillary_aligned_agg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;_inject_aligned_into_target_grid: ancillary_aligned_agg must be provided.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">anc_med_aligned</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ancillary_aligned_agg</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;_inject_aligned_into_target_grid: &#39;</span><span class="si">{</span><span class="n">anc_med_aligned</span><span class="si">}</span><span class="s2">&#39; not found in ancillary_aligned_agg.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">out_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;median_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_ALIGNED_TO_</span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">target_agg</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">],</span> <span class="n">target_agg</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">bin_dim</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">bin_dim</span><span class="p">),</span>
+        <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">:</span> <span class="n">target_agg</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">],</span>
+            <span class="n">bin_dim</span><span class="p">:</span> <span class="n">target_agg</span><span class="p">[</span><span class="n">bin_dim</span><span class="p">],</span>
+        <span class="p">},</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">out_name</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="p">[</span><span class="n">pair_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+        <span class="n">tgt_pid</span> <span class="o">=</span> <span class="n">r2_ds</span><span class="p">[</span><span class="n">tgt_prof_id</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">pair_dim</span><span class="p">:</span> <span class="n">pid</span><span class="p">})</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">tgt_pid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_agg</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">pair_bins</span> <span class="o">=</span> <span class="n">r2_ds</span><span class="p">[</span><span class="n">bin_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">common_bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">pair_bins</span><span class="p">,</span> <span class="n">target_agg</span><span class="p">[</span><span class="n">bin_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">common_bins</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">anc_prof_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2">_PROFILE_NUMBER&quot;</span>
+        <span class="k">if</span> <span class="n">anc_prof_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r2_ds</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">anc_pid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">r2_ds</span><span class="p">[</span><span class="n">anc_prof_col</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">pair_dim</span><span class="p">:</span> <span class="n">pid</span><span class="p">})</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">anc_pid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ancillary_aligned_agg</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">vals</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">ancillary_aligned_agg</span><span class="p">[</span><span class="n">anc_med_aligned</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">anc_pid</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">bin_dim</span><span class="p">:</span> <span class="n">common_bins</span><span class="p">})</span>
+            <span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">PROFILE_NUMBER</span><span class="o">=</span><span class="n">tgt_pid</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">bin_dim</span><span class="p">:</span> <span class="n">common_bins</span><span class="p">})]</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+        <span class="p">)</span>
+
+    <span class="n">out</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">ancillary_name</span><span class="si">}</span><span class="s2"> aligned to </span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2"> (on </span><span class="si">{</span><span class="n">target_name</span><span class="si">}</span><span class="s2"> grid)&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">ancillary_name</span><span class="p">,</span>
+            <span class="s2">&quot;mapped_to&quot;</span><span class="p">:</span> <span class="n">target_name</span><span class="p">,</span>
+            <span class="s2">&quot;fit_applied&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># fit was applied upstream when creating {VAR}_ALIGNED_TO_{target}</span>
+            <span class="s2">&quot;fit_stage&quot;</span><span class="p">:</span> <span class="s2">&quot;ancillary_dataset&quot;</span><span class="p">,</span>
         <span class="p">}</span>
-
-    <span class="n">saved_paths</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">fits_summary</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># fits_summary[anc][var] = dict(slope, intercept, r2, n)</span>
-
-    <span class="k">for</span> <span class="n">anc</span> <span class="ow">in</span> <span class="n">anc_list</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">anc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] Skipping &#39;</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">&#39; (no context).&quot;</span><span class="p">)</span>
-            <span class="k">continue</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[Fit] === </span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2"> → align to </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> ===&quot;</span><span class="p">)</span>
-        <span class="n">r2_ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">r2_datasets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">anc</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">r2_ds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r2_ds</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] No R² dataset for &#39;</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">&#39;. Skipping.&quot;</span><span class="p">)</span>
-            <span class="k">continue</span>
-
-        <span class="c1"># Get ancillary dataset and standardize variable names using alignment_map</span>
-        <span class="n">anc_ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">anc</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
-        <span class="n">rename_map</span> <span class="o">=</span> <span class="n">_alias_map_for</span><span class="p">(</span><span class="n">anc</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">rename_map</span><span class="p">:</span>
-            <span class="c1"># reverse: alias -&gt; std</span>
-            <span class="n">anc_ds_std</span> <span class="o">=</span> <span class="n">anc_ds</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">rename_map</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">anc_ds_std</span> <span class="o">=</span> <span class="n">anc_ds</span>
-
-        <span class="c1"># Compute per-variable fits from r2_ds (using your helper)</span>
-        <span class="n">anc_fits</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">alignment_vars</span><span class="p">:</span>
-            <span class="c1"># training points: ancillary vs target, flattened across depth bins &amp; pairs</span>
-            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">collect_xy_from_r2_ds</span><span class="p">(</span>
-                <span class="n">r2_ds</span><span class="p">,</span>
-                <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">,</span>
-                <span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-                <span class="n">ancillary_name</span><span class="o">=</span><span class="n">anc</span><span class="p">,</span>
-                <span class="n">r2_min</span><span class="o">=</span><span class="n">variable_r2_criteria</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">),</span>
-                <span class="n">time_max</span><span class="o">=</span><span class="n">max_time_hr</span><span class="p">,</span>
-                <span class="n">dist_max</span><span class="o">=</span><span class="n">max_dist_km</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">fit</span> <span class="o">=</span> <span class="n">fit_linear_map</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>  <span class="c1"># {&#39;slope&#39;,&#39;intercept&#39;,&#39;r2&#39;,&#39;n&#39;}</span>
-            <span class="n">anc_fits</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">fit</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[Fit] </span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">  slope=</span><span class="si">{</span><span class="n">fit</span><span class="p">[</span><span class="s1">&#39;slope&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">  intercept=</span><span class="si">{</span><span class="n">fit</span><span class="p">[</span><span class="s1">&#39;intercept&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">  &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;R²=</span><span class="si">{</span><span class="n">fit</span><span class="p">[</span><span class="s1">&#39;r2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  N=</span><span class="si">{</span><span class="n">fit</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Apply fits to the full ancillary dataset for all present variables</span>
-        <span class="n">ds_out</span> <span class="o">=</span> <span class="n">anc_ds_std</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">created_vars</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">alignment_vars</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds_out</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] [</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">] variable &#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">&#39; not present in dataset — skip.&quot;</span><span class="p">)</span>
-                <span class="k">continue</span>
-            <span class="n">slope</span> <span class="o">=</span> <span class="n">anc_fits</span><span class="p">[</span><span class="n">var</span><span class="p">][</span><span class="s2">&quot;slope&quot;</span><span class="p">]</span>
-            <span class="n">intercept</span> <span class="o">=</span> <span class="n">anc_fits</span><span class="p">[</span><span class="n">var</span><span class="p">][</span><span class="s2">&quot;intercept&quot;</span><span class="p">]</span>
-            <span class="n">npts</span> <span class="o">=</span> <span class="n">anc_fits</span><span class="p">[</span><span class="n">var</span><span class="p">][</span><span class="s2">&quot;n&quot;</span><span class="p">]</span>
-            <span class="n">out_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_ALIGNED_TO_</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span>
-
-            <span class="n">aligned</span> <span class="o">=</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">ds_out</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">+</span> <span class="n">intercept</span>  <span class="c1"># broadcasts over dims</span>
-            <span class="c1"># annotate</span>
-            <span class="n">aligned</span> <span class="o">=</span> <span class="n">aligned</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">ds_out</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">aligned</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">out_name</span>
-            <span class="n">aligned</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> aligned to </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;alignment_target&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
-                    <span class="s2">&quot;alignment_source&quot;</span><span class="p">:</span> <span class="n">anc</span><span class="p">,</span>
-                    <span class="s2">&quot;alignment_slope&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">slope</span><span class="p">),</span>
-                    <span class="s2">&quot;alignment_intercept&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">intercept</span><span class="p">),</span>
-                    <span class="s2">&quot;alignment_fit_points&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">npts</span><span class="p">),</span>
-                    <span class="s2">&quot;alignment_generated&quot;</span><span class="p">:</span> <span class="n">_dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;Z&quot;</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-            <span class="n">ds_out</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">aligned</span>
-            <span class="n">created_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out_name</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">created_vars</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] No aligned variables created for &#39;</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">&#39;. Skipping save.&quot;</span><span class="p">)</span>
-            <span class="k">continue</span>
-
-        <span class="c1"># Save NetCDF</span>
-        <span class="n">out_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">_aligned_to_</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">.nc&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">overwrite</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_path</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] File exists, not overwriting: </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Light-weight encodings: keep float types compact if possible</span>
-            <span class="n">encoding</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zlib&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;complevel&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">created_vars</span><span class="p">}</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">ds_out</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">out_path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] Saved: </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">saved_paths</span><span class="p">[</span><span class="n">anc</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_path</span>
-                <span class="n">fits_summary</span><span class="p">[</span><span class="n">anc</span><span class="p">]</span> <span class="o">=</span> <span class="n">anc_fits</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Fit] Failed to save &#39;</span><span class="si">{</span><span class="n">anc</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;paths&quot;</span><span class="p">:</span> <span class="n">saved_paths</span><span class="p">,</span> <span class="s2">&quot;fits&quot;</span><span class="p">:</span> <span class="n">fits_summary</span><span class="p">}</span></div>
-
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
 </pre></div>
 
             <div class="clearer"></div>

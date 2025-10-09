@@ -209,27 +209,9 @@ This includes:</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.fit_to_target">
-<span class="sig-name descname"><span class="pre">fit_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.fit_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.fit_to_target" title="Link to this definition">¶</a></dt>
-<dd><p>Align all datasets to a target dataset, compute R² against ancillary sources,
-and (optionally) fit ancillary data to the target and save outputs based on config.</p>
-<p>Reads options from self.settings:
-settings:</p>
-<blockquote>
-<div><p>diagnostics:
-matchup_thresholds:</p>
-<blockquote>
-<div><p>max_time_threshold: &lt;float&gt;
-max_distance_threshold: &lt;float&gt;</p>
-</div></blockquote>
-<p>alignment:
-variable_r2_criteria: {VAR: R2_MIN, …}
-show_plots: &lt;bool&gt;
-save_plots: &lt;bool&gt;
-plot_output_path: &lt;str&gt;
-apply_and_save: &lt;bool&gt;
-output_path: &lt;str or “”&gt;  # dir to save aligned files; if empty, a timestamped dir is created</p>
-</div></blockquote>
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.fit_and_save_to_target">
+<span class="sig-name descname"><span class="pre">fit_and_save_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_r2_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_time_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dist_km</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.fit_and_save_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.fit_and_save_to_target" title="Link to this definition">¶</a></dt>
+<dd><p>Fit ancillary variables to target datasets using profile-pair medians and per-variable R² criteria.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -278,21 +260,14 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_outputs">
 <span class="sig-name descname"><span class="pre">save_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_outputs" title="Link to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Save:</dt><dd><ul class="simple">
-<li><p>Raw datasets (as they arrived from each pipeline)</p></li>
-<li><p>Processed datasets per pipeline (aggregated medians in self.processed_per_glider[name][‘agg’])</p></li>
-<li><p>Combined target dataset (target medians + any <a href="#id1"><span class="problematic" id="id2">*</span></a>_ALIGNED_TO_{target} vars found in memory)</p></li>
-<li><p>Lite version of the combined dataset (coords/profile ids + processed vars only)</p></li>
-</ul>
-</dd>
-<dt>Flags in settings.saving:</dt><dd><p>save_raw: true/false
-save_processed: true/false
-save_combined_target: true/false
-save_lite: true/false
-output_dir: “&lt;dir&gt;” (optional; default timestamped dir)</p>
-</dd>
-</dl>
+<dd><p>Save:
+- Raw datasets (as they arrived from each pipeline)
+- Processed datasets per pipeline (aggregated medians)
+- Combined target dataset (target medians + ancillary aligned medians on target grid)
+- Lite version of the combined dataset</p>
+<p>Also:
+- The TARGET processed file includes median_{VAR}_{ANC}_ALIGNED_TO_{target}.
+- Fit parameters (slope/intercept/R²/N) are written into global attrs.</p>
 </dd></dl>
 
 </dd></dl>
@@ -336,7 +311,7 @@ output_dir: “&lt;dir&gt;” (optional; default timestamped dir)</p>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.get_contexts"><code class="docutils literal notranslate"><span class="pre">PipelineManager.get_contexts()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.summarise_all_profiles"><code class="docutils literal notranslate"><span class="pre">PipelineManager.summarise_all_profiles()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.preview_alignment"><code class="docutils literal notranslate"><span class="pre">PipelineManager.preview_alignment()</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.fit_to_target"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_to_target()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.fit_and_save_to_target"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_and_save_to_target()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.validate_with_device"><code class="docutils literal notranslate"><span class="pre">PipelineManager.validate_with_device()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.fit_to_device"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_to_device()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.save_outputs"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_outputs()</span></code></a></li>
