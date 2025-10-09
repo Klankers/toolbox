@@ -1006,162 +1006,101 @@ def apply_linear_map_to_da(da, slope, intercept, out_name=None):
     return out
 
 
-def fit_and_save_to_target(
-    self,
-    target,
-    out_dir,
-    variable_r2_criteria=None,  # e.g. {"TEMP":0.9, "CNDC":0.85, ...}; falls back to self.settings if None
-    max_time_hr=None,  # optional extra filters on pairs when collecting training points
-    max_dist_km=None,
-    ancillaries=None,  # list[str] to restrict which sources to fit; default = all except target
-    overwrite=False,
-    show_plots=True,  # quick QA using your existing scatter grid
-):
+def _inject_aligned_into_target_grid(
+    target_agg: xr.Dataset,
+    r2_ds: xr.Dataset,
+    target_name: str,
+    ancillary_name: str,
+    var: str,
+    ancillary_aligned_agg: (
+        xr.Dataset | None
+    ) = None,  # expects median_{VAR}_ALIGNED_TO_{target}
+    bin_dim: str = "DEPTH_bin",
+    pair_dim: str = "PAIR_INDEX",
+) -> xr.DataArray:
     """
-    For each ancillary source:
-      - Collect all (ancillary, target) depth-binned points passing thresholds from self.r2_datasets[anc]
-      - Fit linear maps (y = slope*x + intercept) for each alignment var
-      - Apply those maps to the *full* ancillary dataset variables
-      - Save aligned ancillary dataset to NetCDF.
+    Create a DataArray on TARGET's (PROFILE_NUMBER, DEPTH_bin) grid, using the
+    ancillary's *already-aligned* aggregated medians (no further fitting).
 
-    Produces variables named `{var}_ALIGNED_TO_{target}` in the saved files.
+    Requires ancillary_aligned_agg to contain:
+        median_{var}_ALIGNED_TO_{target}
+    with dims (PROFILE_NUMBER, DEPTH_bin).
+
+    Pair mapping is read from r2_ds (PAIR_INDEX → TARGET profile id + DEPTH_bin).
     """
-    if not getattr(self, "r2_datasets", None):
-        raise RuntimeError(
-            "Run preview_alignment() (which populates self.r2_datasets) before fitting."
-        )
-    if target not in self.pipelines or target not in self._contexts:
-        raise ValueError(f"Target '{target}' not available in manager contexts.")
+    tgt_prof_id = f"TARGET_{target_name}_PROFILE_NUMBER"
+    tgt_med = f"median_{var}_TARGET_{target_name}"
+    anc_med_aligned = f"median_{var}_ALIGNED_TO_{target_name}"
 
-    # Vars to fit & thresholds
-    alignment_vars = list(self.alignment_map.keys())
-    if variable_r2_criteria is None:
-        variable_r2_criteria = self.settings.get("alignment", {}).get(
-            "variable_r2_criteria", {}
-        )
-    missing = [v for v in alignment_vars if v not in variable_r2_criteria]
-    if missing:
-        raise ValueError(f"Missing R² thresholds for variables: {missing}")
-
-    os.makedirs(out_dir, exist_ok=True)
-
-    # Which ancillaries?
-    all_sources = [n for n in self.pipelines.keys() if n != target]
-    anc_list = list(ancillaries) if ancillaries else all_sources
-
-    # Optional QA plots before/after
-    if show_plots and hasattr(self, "plot_pair_scatter_grid"):
-        try:
-            plot_pair_scatter_grid(
-                r2_datasets=self.r2_datasets,
-                variables=alignment_vars,
-                target_name=target,
-                variable_r2_criteria=variable_r2_criteria,
-                max_time_hr=max_time_hr,
-                max_dist_km=max_dist_km,
+    # Validate r2_ds has the structure we need
+    for need in [pair_dim, bin_dim]:
+        if need not in r2_ds.dims and need not in r2_ds.coords:
+            raise ValueError(
+                f"_inject_aligned_into_target_grid: missing dim/coord '{need}' in r2_ds."
             )
-        except Exception as e:
-            print(f"[Fit] (Plot) Skipped grid due to: {e}")
+    for need in [tgt_prof_id, tgt_med]:
+        if need not in r2_ds:
+            raise ValueError(
+                f"_inject_aligned_into_target_grid: missing '{need}' in r2_ds."
+            )
 
-    # Helper: alias→std rename for each source so {var} exists consistently
-    def _alias_map_for(source_name):
-        # alignment_map: {std_var: {glider_name: alias_name}}
-        return {
-            alias: std
-            for std, mapping in self.alignment_map.items()
-            if (alias := mapping.get(source_name))
+    if ancillary_aligned_agg is None:
+        raise ValueError(
+            "_inject_aligned_into_target_grid: ancillary_aligned_agg must be provided."
+        )
+    if anc_med_aligned not in ancillary_aligned_agg:
+        raise ValueError(
+            f"_inject_aligned_into_target_grid: '{anc_med_aligned}' not found in ancillary_aligned_agg."
+        )
+
+    out_name = f"median_{var}_{ancillary_name}_ALIGNED_TO_{target_name}"
+    out = xr.DataArray(
+        np.full(
+            (target_agg.sizes["PROFILE_NUMBER"], target_agg.sizes[bin_dim]),
+            np.nan,
+            dtype=np.float32,
+        ),
+        dims=("PROFILE_NUMBER", bin_dim),
+        coords={
+            "PROFILE_NUMBER": target_agg["PROFILE_NUMBER"],
+            bin_dim: target_agg[bin_dim],
+        },
+        name=out_name,
+    )
+
+    for pid in r2_ds[pair_dim].values:
+        tgt_pid = r2_ds[tgt_prof_id].sel({pair_dim: pid}).item()
+        if tgt_pid not in target_agg["PROFILE_NUMBER"].values:
+            continue
+
+        pair_bins = r2_ds[bin_dim].values
+        common_bins = np.intersect1d(pair_bins, target_agg[bin_dim].values)
+        if common_bins.size == 0:
+            continue
+
+        anc_prof_col = f"{ancillary_name}_PROFILE_NUMBER"
+        if anc_prof_col not in r2_ds:
+            continue
+        anc_pid = int(r2_ds[anc_prof_col].sel({pair_dim: pid}).item())
+        if anc_pid not in ancillary_aligned_agg["PROFILE_NUMBER"].values:
+            continue
+
+        vals = (
+            ancillary_aligned_agg[anc_med_aligned]
+            .sel(PROFILE_NUMBER=anc_pid, **{bin_dim: common_bins})
+            .values
+        )
+        out.loc[dict(PROFILE_NUMBER=tgt_pid, **{bin_dim: common_bins})] = vals.astype(
+            np.float32
+        )
+
+    out.attrs.update(
+        {
+            "long_name": f"{var} from {ancillary_name} aligned to {target_name} (on {target_name} grid)",
+            "source": ancillary_name,
+            "mapped_to": target_name,
+            "fit_applied": True,  # fit was applied upstream when creating {VAR}_ALIGNED_TO_{target}
+            "fit_stage": "ancillary_dataset",
         }
-
-    saved_paths = {}
-    fits_summary = {}  # fits_summary[anc][var] = dict(slope, intercept, r2, n)
-
-    for anc in anc_list:
-        if anc not in self._contexts:
-            print(f"[Fit] Skipping '{anc}' (no context).")
-            continue
-
-        print(f"\n[Fit] === {anc} → align to {target} ===")
-        r2_ds = self.r2_datasets.get(anc)
-        if r2_ds is None or not isinstance(r2_ds, xr.Dataset):
-            print(f"[Fit] No R² dataset for '{anc}'. Skipping.")
-            continue
-
-        # Get ancillary dataset and standardize variable names using alignment_map
-        anc_ds = self._contexts[anc]["data"]
-        rename_map = _alias_map_for(anc)
-        if rename_map:
-            # reverse: alias -> std
-            anc_ds_std = anc_ds.rename(rename_map)
-        else:
-            anc_ds_std = anc_ds
-
-        # Compute per-variable fits from r2_ds (using your helper)
-        anc_fits = {}
-        for var in alignment_vars:
-            # training points: ancillary vs target, flattened across depth bins & pairs
-            x, y = collect_xy_from_r2_ds(
-                r2_ds,
-                var=var,
-                target_name=target,
-                ancillary_name=anc,
-                r2_min=variable_r2_criteria.get(var),
-                time_max=max_time_hr,
-                dist_max=max_dist_km,
-            )
-            fit = fit_linear_map(x, y)  # {'slope','intercept','r2','n'}
-            anc_fits[var] = fit
-            print(
-                f"[Fit] {anc}:{var}  slope={fit['slope']:.4g}  intercept={fit['intercept']:.4g}  "
-                f"R²={fit['r2']:.3f}  N={fit['n']}"
-            )
-
-        # Apply fits to the full ancillary dataset for all present variables
-        ds_out = anc_ds_std.copy()
-        created_vars = []
-        for var in alignment_vars:
-            if var not in ds_out:
-                print(f"[Fit] [{anc}] variable '{var}' not present in dataset — skip.")
-                continue
-            slope = anc_fits[var]["slope"]
-            intercept = anc_fits[var]["intercept"]
-            npts = anc_fits[var]["n"]
-            out_name = f"{var}_ALIGNED_TO_{target}"
-
-            aligned = slope * ds_out[var] + intercept  # broadcasts over dims
-            # annotate
-            aligned = aligned.astype(ds_out[var].dtype, copy=False)
-            aligned.name = out_name
-            aligned.attrs.update(
-                {
-                    "long_name": f"{var} aligned to {target}",
-                    "alignment_target": target,
-                    "alignment_source": anc,
-                    "alignment_slope": float(slope),
-                    "alignment_intercept": float(intercept),
-                    "alignment_fit_points": int(npts),
-                    "alignment_generated": _dt.datetime.utcnow().isoformat() + "Z",
-                }
-            )
-            ds_out[out_name] = aligned
-            created_vars.append(out_name)
-
-        if not created_vars:
-            print(f"[Fit] No aligned variables created for '{anc}'. Skipping save.")
-            continue
-
-        # Save NetCDF
-        out_path = os.path.join(out_dir, f"{anc}_aligned_to_{target}.nc")
-        if (not overwrite) and os.path.exists(out_path):
-            print(f"[Fit] File exists, not overwriting: {out_path}")
-        else:
-            # Light-weight encodings: keep float types compact if possible
-            encoding = {name: {"zlib": True, "complevel": 2} for name in created_vars}
-            try:
-                ds_out.to_netcdf(out_path, encoding=encoding)
-                print(f"[Fit] Saved: {out_path}")
-                saved_paths[anc] = out_path
-                fits_summary[anc] = anc_fits
-            except Exception as e:
-                print(f"[Fit] Failed to save '{anc}': {e}")
-
-    return {"paths": saved_paths, "fits": fits_summary}
+    )
+    return out

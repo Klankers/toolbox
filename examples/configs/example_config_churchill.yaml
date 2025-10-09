@@ -10,7 +10,7 @@ steps:
       file_path: "../../examples/data/OG1/Churchill_647_R.nc" # Path to the input NetCDF file
       add_meta: false # Add metadata to the data
       add_elapsed_time: false
-      add_dev_cols: true  # Add developer columns for debugging
+      add_dev_cols: false 
     diagnostics: false  # Enable diagnostics
 
   - name: "Derive CTD"

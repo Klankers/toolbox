@@ -53,61 +53,6 @@ def _fit_from_r2_ds(r2_ds, target_name, ancillary_name, var):
     return float(model.coef_[0]), float(model.intercept_), r2, int(x.size)
 
 
-def _inject_aligned_into_target_grid(
-    target_agg, r2_ds, target_name, ancillary_name, var
-):
-    """
-    Build a DataArray on the target aggregated grid (PROFILE_NUMBER × DEPTH_bin) and
-    fill aligned ancillary values at the matched (target_profile, common_bins) per pair.
-
-    Returns aligned_da (PROFILE_NUMBER, DEPTH_bin).
-    """
-    out_name = f"median_{var}_{ancillary_name}_ALIGNED_TO_{target_name}"
-    # base (all NaN) on target grid
-    aligned = xr.full_like(target_agg[f"median_{var}"], np.nan)
-    aligned = aligned.rename(out_name)
-
-    # fit from this r2_ds
-    slope, intercept, r2, npts = _fit_from_r2_ds(
-        r2_ds, target_name, ancillary_name, var
-    )
-    if not (np.isfinite(slope) and np.isfinite(intercept)):
-        return aligned  # no fill; remains NaN
-
-    # need PAIR_INDEX → target profile id and the ancillary medians by depth_bin
-    pid_t_name = f"TARGET_{target_name}_PROFILE_NUMBER"
-    x_name = f"median_{var}_{ancillary_name}"
-    if (pid_t_name not in r2_ds) or (x_name not in r2_ds):
-        return aligned
-
-    # iterate pairs (best-per-target pairing in your finder → at most one per target)
-    for pid in r2_ds["PAIR_INDEX"].values:
-        t_pid = r2_ds[pid_t_name].sel(PAIR_INDEX=pid).item()
-        x_profile = r2_ds[x_name].sel(PAIR_INDEX=pid)  # dims: DEPTH_bin (common bins)
-        if "DEPTH_bin" not in x_profile.dims:
-            continue
-        bins = x_profile["DEPTH_bin"].values
-        vals = (slope * x_profile + intercept).values
-
-        # write into target grid at (t_pid, those common bins)
-        # guard missing target profile id
-        if t_pid in target_agg["PROFILE_NUMBER"].values:
-            # align indexer
-            aligned.loc[dict(PROFILE_NUMBER=t_pid, DEPTH_bin=bins)] = vals
-
-    # stamp some attrs
-    aligned.attrs.update(
-        {
-            "alignment_target": target_name,
-            "alignment_source": ancillary_name,
-            "alignment_variable": var,
-            "alignment_slope": slope,
-            "alignment_intercept": intercept,
-        }
-    )
-    return aligned
-
-
 def _append_history(attrs: dict, line: str) -> dict:
     """Return a copy of attrs with 'history' appended with a new line."""
     out = dict(attrs) if attrs else {}
