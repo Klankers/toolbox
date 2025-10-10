@@ -257,19 +257,6 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_outputs">
-<span class="sig-name descname"><span class="pre">save_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_outputs" title="Link to this definition">¶</a></dt>
-<dd><p>Save:
-- Raw datasets (as they arrived from each pipeline)
-- Processed datasets per pipeline (aggregated medians)
-- Combined target dataset (target medians + ancillary aligned medians on target grid)
-- Lite version of the combined dataset</p>
-<p>Also:
-- The TARGET processed file includes median_{VAR}_{ANC}_ALIGNED_TO_{target}.
-- Fit parameters (slope/intercept/R²/N) are written into global attrs.</p>
-</dd></dl>
-
 </dd></dl>
 
 </section>
@@ -314,7 +301,6 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.fit_and_save_to_target"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_and_save_to_target()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.validate_with_device"><code class="docutils literal notranslate"><span class="pre">PipelineManager.validate_with_device()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.fit_to_device"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_to_device()</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.save_outputs"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_outputs()</span></code></a></li>
 </ul>
 </li>
 </ul>
