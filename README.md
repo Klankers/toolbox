@@ -84,7 +84,7 @@ Key characteristics:
     [Load OG1] → [Derive CTD*] → [Find Profiles] → [Data Export]
                       *diagnostics enabled
     ```
-    5. ### Exporting Pipeline Configuration
+5. ### Exporting Pipeline Configuration
     The entire pipeline configuration can be exported to a YAML file for reproducibility:
     ```python
     pipeline.export_config("exported_pipeline.yaml")
