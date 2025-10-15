@@ -62,10 +62,10 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.variables.salinity.QCSalinity" title="toolbox.steps.custom.variables.salinity.QCSalinity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCSalinity</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Base class for pipeline steps with config-mirroring support.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.variables.salinity.AdjustSalinity" title="toolbox.steps.custom.variables.salinity.AdjustSalinity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AdjustSalinity</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Base class for pipeline steps with config-mirroring support.</p></td>
 </tr>
 </tbody>
 </table>
@@ -92,6 +92,8 @@
 <dt class="sig sig-object py" id="toolbox.steps.custom.variables.salinity.QCSalinity">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.variables.salinity.</span></span><span class="sig-name descname"><span class="pre">QCSalinity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/toolbox/steps/custom/variables/salinity.html#QCSalinity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.variables.salinity.QCSalinity" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
+<p>Base class for pipeline steps with config-mirroring support.
+Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.custom.variables.salinity.QCSalinity.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'QC:</span> <span class="pre">Salinity'</span></em><a class="reference internal" href="../../../../../../_modules/toolbox/steps/custom/variables/salinity.html#QCSalinity.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.variables.salinity.QCSalinity.step_name" title="Link to this definition">¶</a></dt>
@@ -103,6 +105,8 @@
 <dt class="sig sig-object py" id="toolbox.steps.custom.variables.salinity.AdjustSalinity">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.variables.salinity.</span></span><span class="sig-name descname"><span class="pre">AdjustSalinity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/toolbox/steps/custom/variables/salinity.html#AdjustSalinity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.variables.salinity.AdjustSalinity" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
+<p>Base class for pipeline steps with config-mirroring support.
+Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.custom.variables.salinity.AdjustSalinity.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ADJ:</span> <span class="pre">Salinity'</span></em><a class="reference internal" href="../../../../../../_modules/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.variables.salinity.AdjustSalinity.step_name" title="Link to this definition">¶</a></dt>
@@ -143,7 +147,7 @@ This function should further be adapted to unpumped CTD by taking into account t
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics">
 <span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics" title="Link to this definition">¶</a></dt>
-<dd><p>Hook for diagnostics (optional)</p>
+<dd><p>Hook for diagnostics (optional).</p>
 </dd></dl>
 
 <dl class="py method">

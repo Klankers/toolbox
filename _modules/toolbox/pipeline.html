@@ -52,6 +52,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_dt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">graphviz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Digraph</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">summarising_profiles</span><span class="p">,</span>
@@ -72,40 +75,47 @@
 <span class="p">)</span>
 
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">STEP_DEPENDENCIES</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">graphviz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Digraph</span>
-
-
 <div class="viewcode-block" id="Pipeline">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Pipeline</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pipeline</span><span class="p">(</span><span class="n">ConfigMirrorMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Config-aware pipeline that can:</span>
+<span class="sd">      - Load config YAML into private self._parameters</span>
+<span class="sd">      - Keep global_parameters mirrored to _parameters[&#39;pipeline&#39;]</span>
+<span class="sd">      - Build, run, and export steps as before</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize pipeline with optional config file&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Pipeline.steps">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.steps">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># hierarchical step configs</span></div>
 
-        <span class="c1"># Define the graph for visualiation</span>
 <div class="viewcode-block" id="Pipeline.graph">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.graph">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">Digraph</span><span class="p">(</span><span class="s2">&quot;Pipeline&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">,</span> <span class="n">graph_attr</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rankdir&quot;</span><span class="p">:</span> <span class="s2">&quot;TB&quot;</span><span class="p">})</span></div>
 
+<div class="viewcode-block" id="Pipeline.global_parameters">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.global_parameters">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># mirrors _parameters[&quot;pipeline&quot;]</span></div>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># initialise config mirror system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_config_mirror</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">config_path</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-                <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;pipeline&quot;</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;steps&quot;</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_config_from_file</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pipeline&quot;</span><span class="p">])</span>
+            <span class="c1"># set convenience alias for user-facing access</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pipeline&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="c1"># build steps from loaded config</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">,</span> <span class="p">[]))</span>
 
 <div class="viewcode-block" id="Pipeline.build_steps">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.build_steps">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps_config</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursively build steps from configuration&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps_config</span><span class="p">:</span>
-            <span class="c1"># Check if the step has required stpes already imported</span>
             <span class="n">REQUIRED_STEPS</span> <span class="o">=</span> <span class="n">STEP_DEPENDENCIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="p">[])</span>
             <span class="k">for</span> <span class="n">required_step</span> <span class="ow">in</span> <span class="n">REQUIRED_STEPS</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">required_step</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
@@ -119,7 +129,6 @@
                 <span class="n">parent_name</span><span class="o">=</span><span class="n">parent_name</span><span class="p">,</span>
                 <span class="n">run_immediately</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="c1"># Recurse into substeps</span>
             <span class="k">if</span> <span class="s2">&quot;substeps&quot;</span> <span class="ow">in</span> <span class="n">step</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;substeps&quot;</span><span class="p">],</span> <span class="n">parent_name</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span></div>
 
@@ -136,10 +145,8 @@
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Dynamically adds a step and optionally runs it immediately&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">step_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">STEP_CLASSES</span><span class="p">)</span>
-            <span class="c1"># Check if the step is recognised</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognized. or missing @register_step.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognized or missing @register_step.&quot;</span>
             <span class="p">)</span>
 
         <span class="n">step_config</span> <span class="o">=</span> <span class="p">{</span>
@@ -150,7 +157,6 @@
         <span class="p">}</span>
 
         <span class="k">if</span> <span class="n">parent_name</span><span class="p">:</span>
-            <span class="c1"># Add step as a substep of a parent if it exists</span>
             <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">parent_name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">parent</span><span class="p">:</span>
                 <span class="n">parent</span><span class="p">[</span><span class="s2">&quot;substeps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_config</span><span class="p">)</span>
@@ -192,17 +198,15 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No steps to run.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-
         <span class="n">last_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running last step: </span><span class="si">{</span><span class="n">last_step</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">last_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">last_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.run">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the entire pipeline&quot;&quot;&quot;</span>
-
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span>
 
@@ -213,13 +217,12 @@
 <div class="viewcode-block" id="Pipeline.visualise_pipeline">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.visualise_pipeline">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visualise_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates a visualiation of the pipeline execution&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates a visualisation of the pipeline execution&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">add_to_graph</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="n">step_name</span> <span class="o">=</span> <span class="n">step_config</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-            <span class="c1"># ensure graphviz node colourway is clear that diagnostics are enabled</span>
             <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span> <span class="k">if</span> <span class="n">diagnostics</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">node</span><span class="p">(</span>
                 <span class="n">step_name</span><span class="p">,</span>
@@ -228,28 +231,19 @@
                 <span class="n">style</span><span class="o">=</span><span class="s2">&quot;filled&quot;</span><span class="p">,</span>
                 <span class="n">fillcolor</span><span class="o">=</span><span class="s2">&quot;lightblue&quot;</span> <span class="k">if</span> <span class="n">diagnostics</span> <span class="k">else</span> <span class="s2">&quot;white&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-
             <span class="k">if</span> <span class="n">parent_name</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span><span class="n">parent_name</span><span class="p">,</span> <span class="n">step_name</span><span class="p">)</span>
-
-            <span class="c1"># Add an edge to show the order/flow of substeps</span>
-
             <span class="k">if</span> <span class="n">step_order</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">step_order</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">step_order</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span><span class="n">step_order</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">step_order</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
-
-            <span class="c1"># Recursively add substeps</span>
-
             <span class="n">substep_order</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">substep</span> <span class="ow">in</span> <span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;substeps&quot;</span><span class="p">,</span> <span class="p">[]):</span>
                 <span class="n">substep_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">substep</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
                 <span class="n">add_to_graph</span><span class="p">(</span><span class="n">substep</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="n">substep_order</span><span class="p">)</span>
 
-        <span class="c1"># Start by iterating through all top-level steps</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
-            <span class="n">step_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span>  <span class="c1"># Top-level step order</span>
+            <span class="n">step_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span>
             <span class="n">add_to_graph</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="n">step_order</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;pipeline_visualisation&quot;</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
@@ -257,32 +251,45 @@
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.generate_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a configuration dictionary from the current pipeline setup&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;pipeline&quot;</span><span class="p">:</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;global_parameters&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
-            <span class="p">),</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;pipeline&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="p">,</span>
             <span class="s2">&quot;steps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span>
-        <span class="p">}</span></div>
+        <span class="p">}</span>
+        <span class="c1"># Keep private config in sync</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cfg</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.export_config">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.export_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;generated_pipeline.yaml&quot;</span><span class="p">):</span>
-        <span class="n">config_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">()</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write current config to file (respects private _parameters)&quot;&quot;&quot;</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">()</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">config_dict</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline config exported to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">config_dict</span></div>
+            <span class="n">yaml</span><span class="o">.</span><span class="n">safe_dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline config exported → </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cfg</span></div>
+
+
+    <span class="c1"># --- new unified save using mixin ---</span>
+<div class="viewcode-block" id="Pipeline.save_config">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.Pipeline.save_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;pipeline_config.yaml&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the canonical private config (same as manager.save_config).&quot;&quot;&quot;</span>
+        <span class="c1"># ensure _parameters is up to date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">())</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="PipelineManager">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">PipelineManager</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PipelineManager</span><span class="p">(</span><span class="n">ConfigMirrorMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A class enabling the execution of multiple pipelines in sequence.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># init regular state</span>
 <div class="viewcode-block" id="PipelineManager.pipelines">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.pipelines">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># {pipeline_name: Pipeline instance}</span></div>
@@ -291,32 +298,47 @@
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.alignment_map">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># {standard_name: {pipeline_name: alias}}</span></div>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># stores the result of get_contexts()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span> <span class="o">=</span> <span class="kc">None</span>
 <div class="viewcode-block" id="PipelineManager.settings">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.settings">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="p">{}</span></div>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_summary_ran</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># NEW: private config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_config_mirror</span><span class="p">()</span>
 
 <div class="viewcode-block" id="PipelineManager.load_mission_control">
 <a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.load_mission_control">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_mission_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load pipeline and alignment configuration from a mission control YAML file.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_mission_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load MissionControl YAML into private self._parameters.</span>
+<span class="sd">        - Builds pipelines</span>
+<span class="sd">        - Builds alignment_map</span>
+<span class="sd">        - Mirrors selected keys as attributes (e.g., &#39;settings&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
 
-        <span class="c1"># Load pipelines</span>
-        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pipelines&quot;</span><span class="p">,</span> <span class="p">[]):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_pipeline</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">])</span>
+        <span class="c1"># 1) Store full mission config in private _parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="n">mirror_keys</span> <span class="ow">or</span> <span class="p">[</span><span class="s2">&quot;settings&quot;</span><span class="p">])</span>
 
-        <span class="c1"># Load alignment variable aliases</span>
-        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;variables&quot;</span><span class="p">,</span> <span class="p">{})</span>
-        <span class="k">for</span> <span class="n">std_var</span><span class="p">,</span> <span class="n">details</span> <span class="ow">in</span> <span class="n">alignment_vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">aliases</span> <span class="o">=</span> <span class="n">details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;aliases&quot;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span><span class="p">[</span><span class="n">std_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">aliases</span>
+        <span class="c1"># 2) Build pipelines (also load each pipeline&#39;s config file into its own private store)</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pipelines&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="n">cfg_path</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_pipeline</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cfg_path</span><span class="p">)</span>
 
-        <span class="c1"># Load settings</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;settings&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
+        <span class="c1"># 3) Alignment aliases → alignment_map</span>
+        <span class="n">alignment_vars</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alignment&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;variables&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alignment_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">std</span><span class="p">:</span> <span class="p">(</span><span class="n">details</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;aliases&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">std</span><span class="p">,</span> <span class="n">details</span> <span class="ow">in</span> <span class="n">alignment_vars</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="c1"># 4) Mirror settings (and any other mirrored keys) into attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_parameter_bridge</span><span class="p">(</span><span class="n">mirror_keys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_param_attr_keys</span> <span class="ow">or</span> <span class="p">{</span><span class="s2">&quot;settings&quot;</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="PipelineManager.add_pipeline">
@@ -325,7 +347,40 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a single pipeline with a unique name.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; already added.&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span></div>
+        <span class="n">pl</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>  <span class="c1"># assumes Pipeline accepts path (see section C)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">pl</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Pipeline Manager] Pipeline &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; added from </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PipelineManager.save_manager_config">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.save_manager_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_manager_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save MissionControl/Manager config from self._parameters.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PipelineManager.save_pipeline_configs">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.save_pipeline_configs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_pipeline_configs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{name}</span><span class="s2">.yaml&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ask each Pipeline to write its private config to YAML.</span>
+<span class="sd">        The pipeline file content comes from pipeline._parameters (including its steps).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">pl</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipelines</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">filename</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Config] Saved pipeline configs → </span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PipelineManager.save_all_configs">
+<a class="viewcode-back" href="../../api/toolbox/pipeline/index.html#toolbox.pipeline.PipelineManager.save_all_configs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_all_configs</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">manager_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pipelines_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pipeline_filename</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{name}</span><span class="s2">.yaml&quot;</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience: save manager config and all pipeline configs.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_manager_config</span><span class="p">(</span><span class="n">manager_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_pipeline_configs</span><span class="p">(</span><span class="n">pipelines_dir</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">pipeline_filename</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="PipelineManager.run_all">

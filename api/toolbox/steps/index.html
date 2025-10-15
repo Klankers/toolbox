@@ -54,7 +54,8 @@
             
   <section id="module-toolbox.steps">
 <span id="toolbox-steps"></span><h1>toolbox.steps<a class="headerlink" href="#module-toolbox.steps" title="Link to this heading">¶</a></h1>
-<p>This module contains the logic to dynamically discover and register step implementations.</p>
+<p>This module contains the logic to dynamically discover and register step implementations,
+and to instantiate them in a config-aware way.</p>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -80,16 +81,6 @@
 </tbody>
 </table>
 </section>
-<section id="classes">
-<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.BaseStep" title="toolbox.steps.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseStep</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</section>
 <section id="functions">
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
@@ -97,57 +88,14 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.discover_steps" title="toolbox.steps.discover_steps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">discover_steps</span></code></a>()</p></td>
 <td><p>Dynamically discover and import step modules from the custom directory.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.create_step" title="toolbox.steps.create_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_step</span></code></a>(step_config, _context)</p></td>
-<td><p>Create a step instance based on the provided configuration.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.create_step" title="toolbox.steps.create_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_step</span></code></a>(step_config[, context])</p></td>
+<td><p>Factory to create a Step instance from a dictionary or YAML file.</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="package-contents">
 <h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.name">
-<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#toolbox.steps.BaseStep.name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.parameters">
-<span class="sig-name descname"><span class="pre">parameters</span></span><a class="headerlink" href="#toolbox.steps.BaseStep.parameters" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.diagnostics">
-<span class="sig-name descname"><span class="pre">diagnostics</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#toolbox.steps.BaseStep.diagnostics" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.context">
-<span class="sig-name descname"><span class="pre">context</span></span><a class="headerlink" href="#toolbox.steps.BaseStep.context" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.run">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep.run" title="Link to this definition">¶</a></dt>
-<dd><p>To be implemented by subclasses</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.generate_diagnostics">
-<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep.generate_diagnostics" title="Link to this definition">¶</a></dt>
-<dd><p>Hook for diagnostics (optional)</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="toolbox.steps.BaseStep.log">
-<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#BaseStep.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.BaseStep.log" title="Link to this definition">¶</a></dt>
-<dd><p>Log messages with step name</p>
-</dd></dl>
-
-</dd></dl>
-
 <dl class="py data">
 <dt class="sig sig-object py" id="toolbox.steps.REGISTERED_STEPS">
 <span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">REGISTERED_STEPS</span></span><a class="reference internal" href="../../../_modules/toolbox/steps/base_step.html#REGISTERED_STEPS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.REGISTERED_STEPS" title="Link to this definition">¶</a></dt>
@@ -171,8 +119,26 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="toolbox.steps.create_step">
-<span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">create_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps.html#create_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.create_step" title="Link to this definition">¶</a></dt>
-<dd><p>Create a step instance based on the provided configuration.</p>
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.</span></span><span class="sig-name descname"><span class="pre">create_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/steps.html#create_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.create_step" title="Link to this definition">¶</a></dt>
+<dd><p>Factory to create a Step instance from a dictionary or YAML file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <ul>
+<li><p>If dict: must contain at least {‘name’: &lt;step_name&gt;}.</p></li>
+<li><p>If str: path to a YAML file describing the step.</p></li>
+</ul>
+</p></li>
+<li><p><strong>context</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> | </em><em>None</em>) – Shared context passed through the pipeline.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instantiated, config-aware step.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep">BaseStep</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -191,19 +157,8 @@
 <li><a class="reference internal" href="#">toolbox.steps</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#attributes">Attributes</a></li>
-<li><a class="reference internal" href="#classes">Classes</a></li>
 <li><a class="reference internal" href="#functions">Functions</a></li>
 <li><a class="reference internal" href="#package-contents">Package Contents</a><ul>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep"><code class="docutils literal notranslate"><span class="pre">BaseStep</span></code></a><ul>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.name"><code class="docutils literal notranslate"><span class="pre">BaseStep.name</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.parameters"><code class="docutils literal notranslate"><span class="pre">BaseStep.parameters</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseStep.diagnostics</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.context"><code class="docutils literal notranslate"><span class="pre">BaseStep.context</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.run"><code class="docutils literal notranslate"><span class="pre">BaseStep.run()</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseStep.generate_diagnostics()</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.BaseStep.log"><code class="docutils literal notranslate"><span class="pre">BaseStep.log()</span></code></a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#toolbox.steps.REGISTERED_STEPS"><code class="docutils literal notranslate"><span class="pre">REGISTERED_STEPS</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.STEP_CLASSES"><code class="docutils literal notranslate"><span class="pre">STEP_CLASSES</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.STEP_DEPENDENCIES"><code class="docutils literal notranslate"><span class="pre">STEP_DEPENDENCIES</span></code></a></li>

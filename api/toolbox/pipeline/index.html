@@ -60,7 +60,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.pipeline.Pipeline" title="toolbox.pipeline.Pipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pipeline</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Config-aware pipeline that can:</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.pipeline.PipelineManager" title="toolbox.pipeline.PipelineManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PipelineManager</span></code></a></p></td>
 <td><p>A class enabling the execution of multiple pipelines in sequence.</p></td>
@@ -73,7 +73,16 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.pipeline.Pipeline">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.pipeline.</span></span><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>Bases: <a class="reference internal" href="../utils/config_mirror/index.html#toolbox.utils.config_mirror.ConfigMirrorMixin" title="toolbox.utils.config_mirror.ConfigMirrorMixin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.config_mirror.ConfigMirrorMixin</span></code></a></p>
+<dl class="simple">
+<dt>Config-aware pipeline that can:</dt><dd><ul class="simple">
+<li><p>Load config YAML into private self._parameters</p></li>
+<li><p>Keep global_parameters mirrored to _parameters[‘pipeline’]</p></li>
+<li><p>Build, run, and export steps as before</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.steps">
 <span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.steps" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -81,6 +90,11 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.graph">
 <span class="sig-name descname"><span class="pre">graph</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.graph" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.global_parameters">
+<span class="sig-name descname"><span class="pre">global_parameters</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.global_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.global_parameters" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -116,7 +130,7 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.visualise_pipeline">
 <span class="sig-name descname"><span class="pre">visualise_pipeline</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.visualise_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.visualise_pipeline" title="Link to this definition">¶</a></dt>
-<dd><p>Generates a visualiation of the pipeline execution</p>
+<dd><p>Generates a visualisation of the pipeline execution</p>
 </dd></dl>
 
 <dl class="py method">
@@ -128,14 +142,22 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.export_config">
 <span class="sig-name descname"><span class="pre">export_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'generated_pipeline.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.export_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.export_config" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Write current config to file (respects private _parameters)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.Pipeline.save_config">
+<span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pipeline_config.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#Pipeline.save_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.Pipeline.save_config" title="Link to this definition">¶</a></dt>
+<dd><p>Save the canonical private config (same as manager.save_config).</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.pipeline.</span></span><span class="sig-name descname"><span class="pre">PipelineManager</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager" title="Link to this definition">¶</a></dt>
-<dd><p>A class enabling the execution of multiple pipelines in sequence.</p>
+<dd><p>Bases: <a class="reference internal" href="../utils/config_mirror/index.html#toolbox.utils.config_mirror.ConfigMirrorMixin" title="toolbox.utils.config_mirror.ConfigMirrorMixin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.config_mirror.ConfigMirrorMixin</span></code></a></p>
+<p>A class enabling the execution of multiple pipelines in sequence.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.pipelines">
 <span class="sig-name descname"><span class="pre">pipelines</span></span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.pipelines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.pipelines" title="Link to this definition">¶</a></dt>
@@ -153,14 +175,36 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.load_mission_control">
-<span class="sig-name descname"><span class="pre">load_mission_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.load_mission_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.load_mission_control" title="Link to this definition">¶</a></dt>
-<dd><p>Load pipeline and alignment configuration from a mission control YAML file.</p>
+<span class="sig-name descname"><span class="pre">load_mission_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mirror_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.load_mission_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.load_mission_control" title="Link to this definition">¶</a></dt>
+<dd><p>Load MissionControl YAML into private self._parameters.
+- Builds pipelines
+- Builds alignment_map
+- Mirrors selected keys as attributes (e.g., ‘settings’)</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.add_pipeline">
 <span class="sig-name descname"><span class="pre">add_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.add_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.add_pipeline" title="Link to this definition">¶</a></dt>
 <dd><p>Add a single pipeline with a unique name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_manager_config">
+<span class="sig-name descname"><span class="pre">save_manager_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_manager_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_manager_config" title="Link to this definition">¶</a></dt>
+<dd><p>Save MissionControl/Manager config from self._parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_pipeline_configs">
+<span class="sig-name descname"><span class="pre">save_pipeline_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'{name}.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_pipeline_configs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_pipeline_configs" title="Link to this definition">¶</a></dt>
+<dd><p>Ask each Pipeline to write its private config to YAML.
+The pipeline file content comes from pipeline._parameters (including its steps).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.pipeline.PipelineManager.save_all_configs">
+<span class="sig-name descname"><span class="pre">save_all_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manager_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipelines_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'{name}.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/toolbox/pipeline.html#PipelineManager.save_all_configs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.pipeline.PipelineManager.save_all_configs" title="Link to this definition">¶</a></dt>
+<dd><p>Convenience: save manager config and all pipeline configs.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -278,6 +322,7 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline"><code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a><ul>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.steps"><code class="docutils literal notranslate"><span class="pre">Pipeline.steps</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.graph"><code class="docutils literal notranslate"><span class="pre">Pipeline.graph</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.pipeline.Pipeline.global_parameters"><code class="docutils literal notranslate"><span class="pre">Pipeline.global_parameters</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.build_steps"><code class="docutils literal notranslate"><span class="pre">Pipeline.build_steps()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.add_step"><code class="docutils literal notranslate"><span class="pre">Pipeline.add_step()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.execute_step"><code class="docutils literal notranslate"><span class="pre">Pipeline.execute_step()</span></code></a></li>
@@ -286,6 +331,7 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.visualise_pipeline"><code class="docutils literal notranslate"><span class="pre">Pipeline.visualise_pipeline()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.generate_config"><code class="docutils literal notranslate"><span class="pre">Pipeline.generate_config()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.Pipeline.export_config"><code class="docutils literal notranslate"><span class="pre">Pipeline.export_config()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.pipeline.Pipeline.save_config"><code class="docutils literal notranslate"><span class="pre">Pipeline.save_config()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager"><code class="docutils literal notranslate"><span class="pre">PipelineManager</span></code></a><ul>
@@ -294,6 +340,9 @@ output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.settings"><code class="docutils literal notranslate"><span class="pre">PipelineManager.settings</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.load_mission_control"><code class="docutils literal notranslate"><span class="pre">PipelineManager.load_mission_control()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.add_pipeline"><code class="docutils literal notranslate"><span class="pre">PipelineManager.add_pipeline()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.save_manager_config"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_manager_config()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.save_pipeline_configs"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_pipeline_configs()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.save_all_configs"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_all_configs()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.run_all"><code class="docutils literal notranslate"><span class="pre">PipelineManager.run_all()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.get_contexts"><code class="docutils literal notranslate"><span class="pre">PipelineManager.get_contexts()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.pipeline.PipelineManager.summarise_all_profiles"><code class="docutils literal notranslate"><span class="pre">PipelineManager.summarise_all_profiles()</span></code></a></li>

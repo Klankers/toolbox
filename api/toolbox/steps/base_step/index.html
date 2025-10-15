@@ -70,7 +70,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseStep</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Base class for pipeline steps with config-mirroring support.</p></td>
 </tr>
 </tbody>
 </table>
@@ -101,7 +101,10 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>Bases: <a class="reference internal" href="../../utils/config_mirror/index.html#toolbox.utils.config_mirror.ConfigMirrorMixin" title="toolbox.utils.config_mirror.ConfigMirrorMixin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.config_mirror.ConfigMirrorMixin</span></code></a></p>
+<p>Base class for pipeline steps with config-mirroring support.
+Every concrete subclass (registered via &#64;register_step) inherits this.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.name" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -124,19 +127,39 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.run">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.run" title="Link to this definition">¶</a></dt>
-<dd><p>To be implemented by subclasses</p>
+<dd><p>To be implemented by subclasses.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.generate_diagnostics">
 <span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.generate_diagnostics" title="Link to this definition">¶</a></dt>
-<dd><p>Hook for diagnostics (optional)</p>
+<dd><p>Hook for diagnostics (optional).</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.log">
 <span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.log" title="Link to this definition">¶</a></dt>
-<dd><p>Log messages with step name</p>
+<dd><p>Log messages with step name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.update_parameters">
+<span class="sig-name descname"><span class="pre">update_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.update_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.update_parameters" title="Link to this definition">¶</a></dt>
+<dd><p>Update parameter values both in attributes and in private store.
+.. rubric:: Example</p>
+<p>self.update_parameters(file_path=’newfile.nc’, add_meta=False)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.generate_config">
+<span class="sig-name descname"><span class="pre">generate_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.generate_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.generate_config" title="Link to this definition">¶</a></dt>
+<dd><p>Return this step’s config dict (suitable for saving to YAML).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.base_step.BaseStep.save_config">
+<span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/toolbox/steps/base_step.html#BaseStep.save_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.base_step.BaseStep.save_config" title="Link to this definition">¶</a></dt>
+<dd><p>Save this step’s config to YAML (for standalone debugging).</p>
 </dd></dl>
 
 </dd></dl>
@@ -169,6 +192,9 @@
 <li><a class="reference internal" href="#toolbox.steps.base_step.BaseStep.run"><code class="docutils literal notranslate"><span class="pre">BaseStep.run()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.base_step.BaseStep.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseStep.generate_diagnostics()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.base_step.BaseStep.log"><code class="docutils literal notranslate"><span class="pre">BaseStep.log()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.base_step.BaseStep.update_parameters"><code class="docutils literal notranslate"><span class="pre">BaseStep.update_parameters()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.base_step.BaseStep.generate_config"><code class="docutils literal notranslate"><span class="pre">BaseStep.generate_config()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.base_step.BaseStep.save_config"><code class="docutils literal notranslate"><span class="pre">BaseStep.save_config()</span></code></a></li>
 </ul>
 </li>
 </ul>

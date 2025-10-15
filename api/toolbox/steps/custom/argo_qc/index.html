@@ -71,7 +71,7 @@
 <td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.argo_qc.ArgoQCStep" title="toolbox.steps.custom.argo_qc.ArgoQCStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArgoQCStep</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Base class for pipeline steps with config-mirroring support.</p></td>
 </tr>
 </tbody>
 </table>
@@ -251,6 +251,8 @@ Checks for spikes in temperature and prctical salinity between nearest neighbour
 <dt class="sig sig-object py" id="toolbox.steps.custom.argo_qc.ArgoQCStep">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.argo_qc.</span></span><span class="sig-name descname"><span class="pre">ArgoQCStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/argo_qc.html#ArgoQCStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.argo_qc.ArgoQCStep" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
+<p>Base class for pipeline steps with config-mirroring support.
+Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.custom.argo_qc.ArgoQCStep.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Argo</span> <span class="pre">QC'</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/argo_qc.html#ArgoQCStep.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.argo_qc.ArgoQCStep.step_name" title="Link to this definition">¶</a></dt>
@@ -264,7 +266,7 @@ Checks for spikes in temperature and prctical salinity between nearest neighbour
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.custom.argo_qc.ArgoQCStep.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/argo_qc.html#ArgoQCStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.argo_qc.ArgoQCStep.run" title="Link to this definition">¶</a></dt>
-<dd><p>To be implemented by subclasses</p>
+<dd><p>To be implemented by subclasses.</p>
 </dd></dl>
 
 </dd></dl>

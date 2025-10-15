@@ -45,7 +45,9 @@
           <div class="body" role="main">
             
   <h1>Source code for toolbox.steps.base_step</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Registry of explicitly registered step classes</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
+
+<span class="c1"># Registry of explicitly registered step classes</span>
 <div class="viewcode-block" id="REGISTERED_STEPS">
 <a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.REGISTERED_STEPS">[docs]</a>
 <span class="n">REGISTERED_STEPS</span> <span class="o">=</span> <span class="p">{}</span></div>
@@ -67,9 +69,15 @@
 
 
 <div class="viewcode-block" id="BaseStep">
-<a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.BaseStep">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">BaseStep</span><span class="p">:</span>
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseStep</span><span class="p">(</span><span class="n">ConfigMirrorMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for pipeline steps with config-mirroring support.</span>
+<span class="sd">    Every concrete subclass (registered via @register_step) inherits this.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># === Core behaviour (same as before) ===</span>
 <div class="viewcode-block" id="BaseStep.name">
 <a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.name">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span></div>
@@ -87,30 +95,80 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">context</span> <span class="ow">or</span> <span class="p">{}</span></div>
 
 
-        <span class="c1"># add attrs from parameters to self</span>
+        <span class="c1"># === Initialise config mirror system ===</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_config_mirror</span><span class="p">()</span>
+        <span class="c1"># canonical parameters go in private store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+            <span class="s2">&quot;diagnostics&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="c1"># mirror parameters &amp; diagnostics as attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_parameter_bridge</span><span class="p">(</span><span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="s2">&quot;diagnostics&quot;</span><span class="p">])</span>
+
+        <span class="c1"># expose param keys as attributes (for user convenience)</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <div class="viewcode-block" id="BaseStep.run">
-<a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.BaseStep.run">[docs]</a>
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;To be implemented by subclasses&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;To be implemented by subclasses.&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; must implement a run() method.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
 <div class="viewcode-block" id="BaseStep.generate_diagnostics">
-<a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.BaseStep.generate_diagnostics">[docs]</a>
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook for diagnostics (optional)&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook for diagnostics (optional).&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 
 <div class="viewcode-block" id="BaseStep.log">
-<a class="viewcode-back" href="../../../api/toolbox/steps/index.html#toolbox.steps.base_step.BaseStep.log">[docs]</a>
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.log">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log messages with step name&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log messages with step name.&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.update_parameters">
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.update_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update parameter values both in attributes and in private store.</span>
+<span class="sd">        Example:</span>
+<span class="sd">            self.update_parameters(file_path=&#39;newfile.nc&#39;, add_meta=False)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.generate_config">
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.generate_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return this step&#39;s config dict (suitable for saving to YAML).&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_attributes_to_parameters</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.save_config">
+<a class="viewcode-back" href="../../../api/toolbox/steps/base_step/index.html#toolbox.steps.base_step.BaseStep.save_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save this step&#39;s config to YAML (for standalone debugging).&quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
+
+        <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">safe_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_name</span><span class="si">}</span><span class="s2">_step.yaml&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">yaml</span><span class="o">.</span><span class="n">safe_dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] Step config saved → </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cfg</span></div>
 </div>
 
 </pre></div>
