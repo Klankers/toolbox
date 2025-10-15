@@ -1,16 +1,18 @@
 """
 toolbox.steps
 ~~~~~~~~~~~~~~~~~~
-This module contains the logic to dynamically discover and register step implementations.
+This module contains the logic to dynamically discover and register step implementations,
+and to instantiate them in a config-aware way.
 """
 
 import os
 import importlib
 import pathlib
-from .base_step import BaseStep, REGISTERED_STEPS
+import yaml
+from .base_step import REGISTERED_STEPS
 
+# Global registries
 STEP_CLASSES = {}
-
 STEP_DEPENDENCIES = {
     "QC: Salinity": ["Load OG1"],
 }
@@ -36,28 +38,69 @@ def discover_steps():
         except Exception as e:
             print(f"[Discovery] Failed to import {module_name}: {e}")
 
-    # Populate step classes
+    # Populate global step class map
     STEP_CLASSES.update(REGISTERED_STEPS)
     for step_name in STEP_CLASSES:
         print(f"[Discovery] Registered step: {step_name}")
 
 
-# Auto-discover steps on import
+# Auto-discover steps when toolbox.steps is imported
 discover_steps()
 
 
-def create_step(step_config, _context):
-    """Create a step instance based on the provided configuration."""
-    step_name = step_config["name"]
+def create_step(step_config, context=None):
+    """
+    Factory to create a Step instance from a dictionary or YAML file.
+
+    Parameters
+    ----------
+    step_config : dict | str
+        - If dict: must contain at least {'name': <step_name>}.
+        - If str: path to a YAML file describing the step.
+    context : dict | None
+        Shared context passed through the pipeline.
+
+    Returns
+    -------
+    BaseStep
+        An instantiated, config-aware step.
+    """
+    # --- If user passed a YAML path instead of a dict ---
+    if isinstance(step_config, str):
+        if not os.path.exists(step_config):
+            raise FileNotFoundError(f"Step config file not found: {step_config}")
+        with open(step_config, "r") as f:
+            step_config = yaml.safe_load(f) or {}
+        if "name" not in step_config:
+            raise ValueError(f"Invalid step YAML: missing 'name' key → {step_config}")
+
+    # --- Validate and resolve step class ---
+    step_name = step_config.get("name")
+    if not step_name:
+        raise ValueError("Step config missing required 'name' field.")
+
     step_class = STEP_CLASSES.get(step_name)
     if not step_class:
         raise ValueError(
-            f"Step '{step_name}' not recognized or missing @register_step."
+            f"Step '{step_name}' not recognized or missing @register_step. "
+            f"Available: {list(STEP_CLASSES.keys())}"
         )
 
-    return step_class(
+    # --- Instantiate the step ---
+    parameters = step_config.get("parameters", {}) or {}
+    diagnostics = bool(step_config.get("diagnostics", False))
+    step = step_class(
         name=step_name,
-        parameters=step_config.get("parameters", {}),
-        diagnostics=step_config.get("diagnostics", False),
-        context=_context,
+        parameters=parameters,
+        diagnostics=diagnostics,
+        context=context,
     )
+
+    # --- Synchronize config-mirroring store (if step supports it) ---
+    # BaseStep inherits ConfigMirrorMixin
+    if hasattr(step, "_parameters") and hasattr(step, "_reset_parameter_bridge"):
+        step._parameters.update(step_config)
+        # ensure mirrored keys are recognized
+        step._reset_parameter_bridge(mirror_keys=["parameters", "diagnostics"])
+
+    return step

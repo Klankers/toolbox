@@ -6,6 +6,9 @@ import numpy as np
 import xarray as xr
 import os
 import datetime as _dt
+from graphviz import Digraph
+
+from toolbox.utils.config_mirror import ConfigMirrorMixin
 
 from toolbox.utils.diagnostics import (
     summarising_profiles,
@@ -26,30 +29,34 @@ from toolbox.utils.alignment import (
 )
 
 
-from toolbox.utils.validation import validate
+class Pipeline(ConfigMirrorMixin):
+    """
+    Config-aware pipeline that can:
+      - Load config YAML into private self._parameters
+      - Keep global_parameters mirrored to _parameters['pipeline']
+      - Build, run, and export steps as before
+    """
 
-from toolbox.steps import create_step, STEP_CLASSES, STEP_DEPENDENCIES
-from graphviz import Digraph
-
-
-class Pipeline:
     def __init__(self, config_path=None):
         """Initialize pipeline with optional config file"""
-        self.steps = []
-        # Define the graph for visualiation
+        self.steps = []  # hierarchical step configs
         self.graph = Digraph("Pipeline", format="png", graph_attr={"rankdir": "TB"})
+        self.global_parameters = {}  # mirrors _parameters["pipeline"]
+        self._context = None
+
+        # initialise config mirror system
+        self._init_config_mirror()
 
         if config_path:
-            with open(config_path, "r") as file:
-                config = yaml.safe_load(file)
-            self.global_parameters = config["pipeline"]
-            self.build_steps(config["steps"])
-        self._context = None
+            self.load_config_from_file(config_path, mirror_keys=["pipeline"])
+            # set convenience alias for user-facing access
+            self.global_parameters = self._parameters.get("pipeline", {})
+            # build steps from loaded config
+            self.build_steps(self._parameters.get("steps", []))
 
     def build_steps(self, steps_config, parent_name=None):
         """Recursively build steps from configuration"""
         for step in steps_config:
-            # Check if the step has required stpes already imported
             REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
             for required_step in REQUIRED_STEPS:
                 if required_step not in STEP_CLASSES:
@@ -63,7 +70,6 @@ class Pipeline:
                 parent_name=parent_name,
                 run_immediately=False,
             )
-            # Recurse into substeps
             if "substeps" in step:
                 self.build_steps(step["substeps"], parent_name=step["name"])
 
@@ -77,10 +83,8 @@ class Pipeline:
     ):
         """Dynamically adds a step and optionally runs it immediately"""
         if step_name not in STEP_CLASSES:
-            print(STEP_CLASSES)
-            # Check if the step is recognised
             raise ValueError(
-                f"Step '{step_name}' is not recognized. or missing @register_step."
+                f"Step '{step_name}' is not recognized or missing @register_step."
             )
 
         step_config = {
@@ -91,7 +95,6 @@ class Pipeline:
         }
 
         if parent_name:
-            # Add step as a substep of a parent if it exists
             parent = self._find_step(self.steps, parent_name)
             if parent:
                 parent["substeps"].append(step_config)
@@ -127,14 +130,12 @@ class Pipeline:
         if not self.steps:
             print("No steps to run.")
             return
-
         last_step = self.steps[-1]
         print(f"Running last step: {last_step['name']}")
-        self.context = self.execute_step(last_step, self._context)
+        self._context = self.execute_step(last_step, self._context)
 
     def run(self):
         """Runs the entire pipeline"""
-
         for step in self.steps:
             self._context = self.execute_step(step, self._context)
 
@@ -142,13 +143,12 @@ class Pipeline:
             self.visualise_pipeline()
 
     def visualise_pipeline(self):
-        """Generates a visualiation of the pipeline execution"""
+        """Generates a visualisation of the pipeline execution"""
         self.graph.clear()
 
         def add_to_graph(step_config, parent_name=None, step_order=None):
             step_name = step_config["name"]
             diagnostics = step_config.get("diagnostics", False)
-            # ensure graphviz node colourway is clear that diagnostics are enabled
             color = "red" if diagnostics else "black"
             self.graph.node(
                 step_name,
@@ -157,80 +157,120 @@ class Pipeline:
                 style="filled",
                 fillcolor="lightblue" if diagnostics else "white",
             )
-
             if parent_name:
                 self.graph.edge(parent_name, step_name)
-
-            # Add an edge to show the order/flow of substeps
-
             if step_order and len(step_order) > 1:
                 for i in range(len(step_order) - 1):
                     self.graph.edge(step_order[i], step_order[i + 1])
-
-            # Recursively add substeps
-
             substep_order = []
             for substep in step_config.get("substeps", []):
                 substep_order.append(substep["name"])
                 add_to_graph(substep, parent_name=step_name, step_order=substep_order)
 
-        # Start by iterating through all top-level steps
         for step in self.steps:
-            step_order = [step["name"]]  # Top-level step order
+            step_order = [step["name"]]
             add_to_graph(step, step_order=step_order)
-
         self.graph.render("pipeline_visualisation", view=True)
 
     def generate_config(self):
         """Generate a configuration dictionary from the current pipeline setup"""
-        return {
-            "pipeline": (
-                self.global_parameters if hasattr(self, "global_parameters") else {}
-            ),
+        cfg = {
+            "pipeline": self.global_parameters,
             "steps": self.steps,
         }
+        # Keep private config in sync
+        self._parameters.update(cfg)
+        return cfg
 
     def export_config(self, output_path="generated_pipeline.yaml"):
-        config_dict = self.generate_config()
+        """Write current config to file (respects private _parameters)"""
+        cfg = self.generate_config()
         with open(output_path, "w") as f:
-            yaml.dump(config_dict, f, sort_keys=False)
-        print(f"Pipeline config exported to {output_path}")
-        return config_dict
+            yaml.safe_dump(cfg, f, sort_keys=False)
+        print(f"Pipeline config exported → {output_path}")
+        return cfg
+
+    # --- new unified save using mixin ---
+    def save_config(self, path="pipeline_config.yaml"):
+        """Save the canonical private config (same as manager.save_config)."""
+        # ensure _parameters is up to date
+        self._parameters.update(self.generate_config())
+        super().save_config(path)
 
 
-class PipelineManager:
+class PipelineManager(ConfigMirrorMixin):
     """A class enabling the execution of multiple pipelines in sequence."""
 
     def __init__(self):
+        # init regular state
         self.pipelines = {}  # {pipeline_name: Pipeline instance}
         self.alignment_map = {}  # {standard_name: {pipeline_name: alias}}
-        self._contexts = None  # stores the result of get_contexts()
+        self._contexts = None
         self.settings = {}
         self._summary_ran = False
+        # NEW: private config
+        self._init_config_mirror()
 
-    def load_mission_control(self, config_path):
-        """Load pipeline and alignment configuration from a mission control YAML file."""
+    def load_mission_control(self, config_path, mirror_keys=None):
+        """
+        Load MissionControl YAML into private self._parameters.
+        - Builds pipelines
+        - Builds alignment_map
+        - Mirrors selected keys as attributes (e.g., 'settings')
+        """
         with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
+            config = yaml.safe_load(f) or {}
 
-        # Load pipelines
-        for entry in config.get("pipelines", []):
-            self.add_pipeline(entry["name"], entry["config"])
+        # 1) Store full mission config in private _parameters
+        self.load_config(config, mirror_keys=mirror_keys or ["settings"])
 
-        # Load alignment variable aliases
-        alignment_vars = config.get("alignment", {}).get("variables", {})
-        for std_var, details in alignment_vars.items():
-            aliases = details.get("aliases", {})
-            self.alignment_map[std_var] = aliases
+        # 2) Build pipelines (also load each pipeline's config file into its own private store)
+        for entry in self._parameters.get("pipelines", []) or []:
+            name = entry["name"]
+            cfg_path = entry["config"]
+            self.add_pipeline(name, cfg_path)
 
-        # Load settings
-        self.settings = config.get("settings", {})
+        # 3) Alignment aliases → alignment_map
+        alignment_vars = (
+            self._parameters.get("alignment", {}).get("variables", {}) or {}
+        )
+        self.alignment_map = {
+            std: (details or {}).get("aliases", {}) or {}
+            for std, details in alignment_vars.items()
+        }
+
+        # 4) Mirror settings (and any other mirrored keys) into attributes
+        self._reset_parameter_bridge(mirror_keys=self._param_attr_keys or {"settings"})
 
     def add_pipeline(self, name, config_path):
         """Add a single pipeline with a unique name."""
         if name in self.pipelines:
             raise ValueError(f"Pipeline '{name}' already added.")
-        self.pipelines[name] = Pipeline(config_path)
+        pl = Pipeline(config_path)  # assumes Pipeline accepts path (see section C)
+        self.pipelines[name] = pl
+        print(f"[Pipeline Manager] Pipeline '{name}' added from {config_path}.")
+
+    def save_manager_config(self, path: str):
+        """Save MissionControl/Manager config from self._parameters."""
+        self.save_config(path)
+
+    def save_pipeline_configs(self, out_dir: str, filename="{name}.yaml"):
+        """
+        Ask each Pipeline to write its private config to YAML.
+        The pipeline file content comes from pipeline._parameters (including its steps).
+        """
+        os.makedirs(out_dir, exist_ok=True)
+        for name, pl in self.pipelines.items():
+            out = os.path.join(out_dir, filename.format(name=name))
+            pl.save_config(out)
+        print(f"[Config] Saved pipeline configs → {out_dir}")
+
+    def save_all_configs(
+        self, manager_path: str, pipelines_dir: str, pipeline_filename="{name}.yaml"
+    ):
+        """Convenience: save manager config and all pipeline configs."""
+        self.save_manager_config(manager_path)
+        self.save_pipeline_configs(pipelines_dir, filename=pipeline_filename)
 
     def run_all(self):
         """Run all registered pipelines and cache the resulting contexts."""
