@@ -23,7 +23,6 @@ from toolbox.utils.alignment import (
     plot_pair_scatter_grid,
     collect_xy_from_r2_ds,
     fit_linear_map,
-    _inject_aligned_into_target_grid,
 )
 
 
