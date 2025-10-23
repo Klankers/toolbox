@@ -3,7 +3,7 @@
   "api/toolbox/index": [],
   "api/toolbox/pipeline/index": [],
   "api/toolbox/steps/base_step/index": [],
-  "api/toolbox/steps/custom/argo_qc/index": [],
+  "api/toolbox/steps/custom/apply_qc/index": [],
   "api/toolbox/steps/custom/calibration/index": [],
   "api/toolbox/steps/custom/derive_ctd/index": [],
   "api/toolbox/steps/custom/export/index": [],

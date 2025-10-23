@@ -56,6 +56,10 @@
 <div class="viewcode-block" id="GenerateData">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/gen_data/index.html#toolbox.steps.custom.gen_data.GenerateData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GenerateData</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Example config setup:</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="GenerateData.step_name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/gen_data/index.html#toolbox.steps.custom.gen_data.GenerateData.step_name">[docs]</a>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Generate Data&quot;</span></div>
@@ -90,8 +94,7 @@
             <span class="s2">&quot;TEMP&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span>  <span class="c1"># Celcius</span>
             <span class="s2">&quot;CNDC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">34</span><span class="p">,</span> <span class="mi">35</span><span class="p">],</span>  <span class="c1"># S/m</span>
         <span class="p">}</span>
-        <span class="k">for</span> <span class="n">variable_name</span><span class="p">,</span> <span class="n">limits</span> <span class="ow">in</span> <span class="n">user_value_limits</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">variable_limits</span><span class="p">[</span><span class="n">variable_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">limits</span>
+        <span class="n">variable_limits</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_value_limits</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">diagnostics</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Generate Data] Variables: </span><span class="si">{</span><span class="n">variable_limits</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
