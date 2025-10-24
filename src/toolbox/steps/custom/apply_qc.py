@@ -8,10 +8,38 @@ import xarray as xr
 from datetime import datetime
 from geodatasets import get_path
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import matplotlib
 import numpy as np
 import shapely as sh
 import geopandas
+
+flag_cols = np.array([
+    "black",
+    "blue",
+    "gray",
+    "orange",
+    "red",
+    "gray",
+    "gray",
+    "gray",
+    "cyan",
+    "gray"
+])
+legend_elements = [
+    Line2D([0], [0], marker='o', color='w', markerfacecolor=flag_cols[0],
+           markersize=10, label='Unchecked (0)'),
+    Line2D([0], [0], marker='o', color='w', markerfacecolor=flag_cols[1],
+           markersize=10, label='Good (1)'),
+    Line2D([0], [0], marker='o', color='w', markerfacecolor=flag_cols[3],
+           markersize=10, label='Probably Bad (3)'),
+    Line2D([0], [0], marker='o', color='w', markerfacecolor=flag_cols[4],
+           markersize=10, label='Bad (4)'),
+    Line2D([0], [0], marker='o', color='w', markerfacecolor=flag_cols[8],
+           markersize=10, label='Interpolated (8)'),
+    Line2D([0], [0], marker='o', color='w', markerfacecolor=flag_cols[9],
+           markersize=10, label='Other'),
+]
 
 # Defining QC functions from "Argo Quality Control Manual for CTD and Trajectory Data" (https://archimer.ifremer.fr/doc/00228/33951/).
 
@@ -36,6 +64,7 @@ class test_template:
 
     name = ""
     required_variables = []
+    qc_outputs = []
 
     def __init__(self, df):
         self.df = df
@@ -49,6 +78,7 @@ class test_template:
         # Any relevant diagnostic
         pass
 
+# --------------------------- Universal tests ----------------------------
 
 class impossible_date_test(test_template):
     """
@@ -60,35 +90,36 @@ class impossible_date_test(test_template):
 
     name = "impossible date test"
     required_variables = ["TIME"]
+    qc_outputs = ["TIME_QC"]
 
     def return_qc(self):
         # Check if any of the datetime stamps fall outside 1985 and the current datetime
         self.flags = self.df.select(
-            (
-                (pl.col("TIME") > datetime(1985, 1, 1))
-                & (pl.col("TIME") < datetime.now())
-                & pl.col("TIME").is_not_null()
-            ).alias("TIME_is_valid")
-        )
-
-        self.flags = self.flags.select(
-            (pl.col("TIME_is_valid").not_().cast(pl.Int64) * 4).alias("TIME_QC"),
+            pl.when(
+                pl.col("TIME").is_null()
+            ).then(9)
+            .when(
+                ((pl.col("TIME") > datetime(1985, 1, 1))
+                & (pl.col("TIME") < datetime.now()))
+            ).then(1)
+            .otherwise(4)
+            .alias("TIME_QC")
         )
         return self.flags
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
         fig, ax = plt.subplots(figsize=(6, 4), dpi=200)
-        axs = [ax, ax.twinx()]
-        for ax, data, var, col in zip(
-            axs, [self.df, self.flags], ["TIME", "TIME_QC"], ["b", "r"]
-        ):
-            ax.plot(data[var], c=col)
-            ax.set(
-                xlabel="Index",
-                ylabel=var,
-            )
-            ax.yaxis.label.set_color(col)
+        colors = flag_cols[self.flags["TIME_QC"].to_numpy()]
+        ax.scatter(
+            range(len(self.df)), self.df["TIME"],
+            c=colors, s=1, rasterized=True
+        )
+        ax.set(
+            xlabel="Index",
+            ylabel="TIME",
+        )
+        ax.legend(handles=legend_elements, loc="upper right")
         fig.tight_layout()
         plt.show(block=True)
 
@@ -103,22 +134,19 @@ class impossible_location_test(test_template):
 
     name = "impossible location test"
     required_variables = ["LATITUDE", "LONGITUDE"]
+    qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
+        # Check LAT/LONG exist within expected bounds
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
             self.df = self.df.with_columns(
-                (
-                    (pl.col(label) > bounds[0])
-                    & (pl.col(label) < bounds[1])
-                    & pl.col(label).is_not_null()
-                    & pl.col(label).is_finite()
-                ).alias(f"{label}_is_valid")
-            )
-
-            self.df = self.df.with_columns(
-                (pl.col(f"{label}_is_valid").not_().cast(pl.Int64) * 4).alias(
-                    f"{label}_QC"
-                ),
+                pl.when(
+                    pl.col(label).is_nan()
+                ).then(9)
+                .when(
+                    (pl.col(label) > bounds[0]) & (pl.col(label) < bounds[1])
+                ).then(1)
+                .otherwise(4).alias(f"{label}_QC")
             )
 
         self.flags = self.df.select(pl.col("^.*_QC$"))
@@ -127,27 +155,25 @@ class impossible_location_test(test_template):
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
         fig, axs = plt.subplots(nrows=2, figsize=(8, 6), sharex=True, dpi=200)
+        colors = flag_cols[self.flags["LATITUDE_QC"].to_numpy()]
         for ax, var, bounds in zip(
             axs, ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
             # Data
-            ax.plot(self.df[var], c="b")
+            ax.scatter(
+                range(len(self.df)), self.df[var],
+                c=colors, s=1, rasterized=True
+            )
             ax.set(
                 xlabel="Index",
                 ylabel=var,
             )
-            ax.yaxis.label.set_color("b")
-            # Flags
-            ax_twin = ax.twinx()
-            ax_twin.plot(self.flags[f"{var}_QC"], c="r")
-            ax_twin.set(
-                xlabel="Index",
-                ylabel=f"{var}_QC",
-            )
-            ax_twin.yaxis.label.set_color("r")
+            ax.legend(handles=legend_elements, loc="upper right")
+
             # Bounds
             for bound in bounds:
                 ax.axhline(bound, ls="--", c="k")
+
         fig.tight_layout()
         plt.show(block=True)
 
@@ -162,6 +188,7 @@ class position_on_land_test(test_template):
 
     name = "position on land test"
     required_variables = ["LATITUDE", "LONGITUDE"]
+    qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
 
@@ -183,7 +210,7 @@ class position_on_land_test(test_template):
                     x.struct.field("LATITUDE").to_numpy()
                 )
                 * 4
-            )
+            ).replace({0: 1})
             .alias("LONGITUDE_QC")
         )
         # Add the flags to LATITUDE as well.
@@ -200,7 +227,7 @@ class position_on_land_test(test_template):
         self.world.plot(ax=ax, facecolor="lightgray", edgecolor="black", alpha=0.3)
 
         # Separate flagged and unflagged points (if LATITUDE has been flagged, so will LONGITUDE)
-        unflagged = self.df.filter(pl.col("LATITUDE_QC") == 0)
+        unflagged = self.df.filter(pl.col("LATITUDE_QC") == 1)
         flagged = self.df.filter(pl.col("LATITUDE_QC") == 4)
 
         # Plot points
@@ -233,6 +260,7 @@ class impossible_speed_test(test_template):
 
     name = "impossible speed test"
     required_variables = ["TIME", "LATITUDE", "LONGITUDE"]
+    qc_outputs = ["TIME_QC", "LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
 
@@ -265,7 +293,11 @@ class impossible_speed_test(test_template):
 
         for label in ["LATITUDE", "LONGITUDE", "TIME"]:
             self.df = self.df.with_columns(
-                (pl.col("speed_is_valid").not_().cast(pl.Int64) * 4).alias(f"{label}_QC")
+                pl.when(
+                    pl.col("speed_is_valid")
+                ).then(1)
+                .otherwise(4)
+                .alias(f"{label}_QC")
             )
 
         self.flags = self.df.select(pl.col("^.*_QC$"))
@@ -308,6 +340,7 @@ class pressure_range_test(test_template):
 
     name = "pressure range test"
     required_variables = ["PRES"]
+    qc_outputs = ["PRES_QC", "TEMP_QC", "CNDC_QC"]
 
     def return_qc(self):
 
@@ -315,7 +348,7 @@ class pressure_range_test(test_template):
         self.flags = self.df.select(
             pl.when(pl.col("PRES").is_between(-5, -2.4)).then(3)
             .when(pl.col("PRES") < -5).then(4)
-            .otherwise(0)
+            .otherwise(1)
             .alias("PRES_QC")
         )
 
@@ -355,6 +388,7 @@ class pressure_range_test(test_template):
         plt.show(block=True)
 
 
+
 def global_range_test(df):
     """
     Target Variable: PRES, TEMP, PRAC_SALINITY
@@ -384,7 +418,6 @@ def regional_range_test(df):
     Checks that the temperature and practically salinity do not lie outside expected
     regional (Mediterranean and Red Seas) extremes.
     """
-    import shapely as sh
 
     # Define Red and Mediterranean Sea areas
     Red_Sea = sh.geometry.Polygon(
@@ -478,19 +511,20 @@ class ApplyQC(BaseStep):
     def run(self):
         
         # Register of all QC steps and required variables
-        self.QC_REGISTER = {}
+        QC_REGISTER = {}
         for cls in test_template.__subclasses__():
-            if hasattr(cls, 'name') and cls.name:
-                self.QC_REGISTER[cls.name] = cls
+            if hasattr(cls, "name") and cls.name:
+                QC_REGISTER[cls.name] = cls
+
 
         # Defining the order of operations
         self.qc_order = []
         if self.parameters["QC_order"] is None:
-            print('[Apply QC] Please specify which QC operations to run')
+            print("[Apply QC] Please specify which QC operations to run")
         else:
             for qc_name in self.parameters["QC_order"]:
-                if qc_name in self.QC_REGISTER.keys():
-                    self.qc_order.append(self.QC_REGISTER[qc_name])
+                if qc_name in QC_REGISTER.keys():
+                    self.qc_order.append(QC_REGISTER[qc_name])
                 else:
                     print(f"[Apply QC] The QC test name: {qc_name} was not recognised. Skipping...")
 
@@ -502,11 +536,16 @@ class ApplyQC(BaseStep):
         else:
             self.log("Data found in context.")
         data = self.context["data"]
+
+        # Try and fetch the qc history from context and update it
+        qc_history = self.context.setdefault("qc_history", {})
         
-        # Collect all of the required varible names
+        # Collect all of the required varible names and qc outputs
         all_required_variables = set({})
+        test_qc_outputs_cols = set({})
         for test in self.qc_order:
             all_required_variables.update(test.required_variables)
+            test_qc_outputs_cols.update(test.qc_outputs)
 
         # Convert data to polars for fast processing
         if set(all_required_variables).issubset(set(data.keys())):
@@ -517,13 +556,11 @@ class ApplyQC(BaseStep):
                 f" Make sure that the variables are present in the data, or use remove tests from the order."
             )
 
-        # Try and fetch the qc history from context and update it
-        qc_history = self.context.setdefault("qc_history", {})
-
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [
-            flag_column for flag_column in data.data_vars if "_QC" in flag_column
+            flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
         ]
+
         self.flag_store = pl.DataFrame()
         if len(existing_flags) > 0:
             self.flag_store = pl.from_pandas(
