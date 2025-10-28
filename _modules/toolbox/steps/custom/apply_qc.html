@@ -55,18 +55,114 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">geodatasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.lines</span><span class="w"> </span><span class="kn">import</span> <span class="n">Line2D</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sh</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span>
 
-<span class="c1"># Defining QC functions from &quot;Argo Quality Control Manual for CTD and Trajectory Data&quot; (https://archimer.ifremer.fr/doc/00228/33951/).</span>
-<span class="c1"># TODO: Do we need a bin nan rows QC to speed up processing?</span>
+<div class="viewcode-block" id="flag_cols">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.flag_cols">[docs]</a>
+<span class="n">flag_cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+    <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;orange&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;red&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cyan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gray&quot;</span>
+<span class="p">])</span></div>
 
+<div class="viewcode-block" id="legend_elements">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.legend_elements">[docs]</a>
+<span class="n">legend_elements</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+           <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Unchecked (0)&#39;</span><span class="p">),</span>
+    <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+           <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Good (1)&#39;</span><span class="p">),</span>
+    <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+           <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Probably Bad (3)&#39;</span><span class="p">),</span>
+    <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+           <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Bad (4)&#39;</span><span class="p">),</span>
+    <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="mi">8</span><span class="p">],</span>
+           <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Interpolated (8)&#39;</span><span class="p">),</span>
+    <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="mi">9</span><span class="p">],</span>
+           <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Other&#39;</span><span class="p">),</span>
+<span class="p">]</span></div>
+
+
+<span class="c1"># Defining QC functions from &quot;Argo Quality Control Manual for CTD and Trajectory Data&quot; (https://archimer.ifremer.fr/doc/00228/33951/).</span>
+
+<div class="viewcode-block" id="range_test">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.range_test">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">range_test</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">variable_name</span><span class="p">,</span> <span class="n">limits</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+    <span class="c1"># Not the most efficient implementation because of second for loop.</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+        <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">variable_name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">variable_name</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">limits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="o">.</span><span class="n">not_</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">flag</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="test_template">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">test_template</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Target Variable:</span>
+<span class="sd">    Flag Number:</span>
+<span class="sd">    Variables Flagged:</span>
+<span class="sd">    ? description ?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="test_template.name">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.name">[docs]</a>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="test_template.required_variables">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.required_variables">[docs]</a>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="test_template.qc_outputs">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.qc_outputs">[docs]</a>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+<div class="viewcode-block" id="test_template.df">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.df">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="test_template.flags">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.flags">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="test_template.return_qc">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.return_qc">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># replace with processing of some kind</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
+
+
+<div class="viewcode-block" id="test_template.plot_diagnostics">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.test_template.plot_diagnostics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Any relevant diagnostic</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+<span class="c1"># --------------------------- Universal tests ----------------------------</span>
 
 <div class="viewcode-block" id="impossible_date_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_date_test">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">impossible_date_test</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">impossible_date_test</span><span class="p">(</span><span class="n">test_template</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Target Variable: TIME</span>
 <span class="sd">    Test Number: 2</span>
@@ -74,22 +170,17 @@
 <span class="sd">    Checks that the datetime of each point is valid.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
 <div class="viewcode-block" id="impossible_date_test.name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_date_test.name">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;impossible date test&quot;</span></div>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;impossible date test&quot;</span></div>
 
 <div class="viewcode-block" id="impossible_date_test.required_variables">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_date_test.required_variables">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span></div>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="impossible_date_test.df">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_date_test.df">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span></div>
-
-<div class="viewcode-block" id="impossible_date_test.flags">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_date_test.flags">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="impossible_date_test.qc_outputs">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_date_test.qc_outputs">[docs]</a>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME_QC&quot;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="impossible_date_test.return_qc">
@@ -97,15 +188,15 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Check if any of the datetime stamps fall outside 1985 and the current datetime</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
-            <span class="p">(</span>
-                <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1985</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
-                <span class="o">&amp;</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_not_null</span><span class="p">()</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;TIME_is_valid&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME_is_valid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">not_</span><span class="p">()</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;TIME_QC&quot;</span><span class="p">),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_null</span><span class="p">()</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">when</span><span class="p">(</span>
+                <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1985</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()))</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;TIME_QC&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
@@ -115,16 +206,16 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-        <span class="n">axs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">twinx</span><span class="p">()]</span>
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="n">axs</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;TIME_QC&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">]</span>
-        <span class="p">):</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">col</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-                <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
-                <span class="n">ylabel</span><span class="o">=</span><span class="n">var</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">flag_cols</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="s2">&quot;TIME_QC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
+            <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">legend_elements</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
         <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
@@ -133,7 +224,7 @@
 
 <div class="viewcode-block" id="impossible_location_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">impossible_location_test</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">impossible_location_test</span><span class="p">(</span><span class="n">test_template</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Target Variable: LATITUDE, LONGITUDE</span>
 <span class="sd">    Test Number: 3</span>
@@ -141,41 +232,32 @@
 <span class="sd">    Checks that the latitude and longitude are valid.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
 <div class="viewcode-block" id="impossible_location_test.name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test.name">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;impossible location test&quot;</span></div>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;impossible location test&quot;</span></div>
 
 <div class="viewcode-block" id="impossible_location_test.required_variables">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test.required_variables">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span></div>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="impossible_location_test.df">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test.df">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span></div>
-
-<div class="viewcode-block" id="impossible_location_test.flags">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test.flags">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="impossible_location_test.qc_outputs">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test.qc_outputs">[docs]</a>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE_QC&quot;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="impossible_location_test.return_qc">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_location_test.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Check LAT/LONG exist within expected bounds</span>
         <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">bounds</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">],</span> <span class="p">[(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">)]):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                    <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-                    <span class="o">&amp;</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">is_not_null</span><span class="p">()</span>
-                    <span class="o">&amp;</span> <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">is_finite</span><span class="p">()</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_is_valid&quot;</span><span class="p">)</span>
-            <span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_is_valid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">not_</span><span class="p">()</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_QC&quot;</span>
-                <span class="p">),</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span>
+                    <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">is_nan</span><span class="p">()</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">when</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">)</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;^.*_QC$&quot;</span><span class="p">))</span>
@@ -187,27 +269,25 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">flag_cols</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()]</span>
         <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">bounds</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
             <span class="n">axs</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">],</span> <span class="p">[(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">)]</span>
         <span class="p">):</span>
             <span class="c1"># Data</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">],</span>
+                <span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
                 <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
                 <span class="n">ylabel</span><span class="o">=</span><span class="n">var</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
-            <span class="c1"># Flags</span>
-            <span class="n">ax_twin</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>
-            <span class="n">ax_twin</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
-            <span class="n">ax_twin</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-                <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
-                <span class="n">ylabel</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">ax_twin</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">legend_elements</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+
             <span class="c1"># Bounds</span>
             <span class="k">for</span> <span class="n">bound</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">bound</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+
         <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
@@ -216,30 +296,25 @@
 
 <div class="viewcode-block" id="position_on_land_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.position_on_land_test">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">position_on_land_test</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">position_on_land_test</span><span class="p">(</span><span class="n">test_template</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Target Variable: LATITUDE, LONGITUDE</span>
 <span class="sd">    Test Number: 4</span>
 <span class="sd">    Flag Number: 4 (bad data)</span>
 <span class="sd">    Checks that the measurement location is not on land.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
 
 <div class="viewcode-block" id="position_on_land_test.name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.position_on_land_test.name">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;position on land test&quot;</span></div>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;position on land test&quot;</span></div>
 
 <div class="viewcode-block" id="position_on_land_test.required_variables">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.position_on_land_test.required_variables">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span></div>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="position_on_land_test.df">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.position_on_land_test.df">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span></div>
-
-<div class="viewcode-block" id="position_on_land_test.flags">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.position_on_land_test.flags">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="position_on_land_test.qc_outputs">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.position_on_land_test.qc_outputs">[docs]</a>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE_QC&quot;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="position_on_land_test.return_qc">
@@ -264,7 +339,7 @@
                     <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
                 <span class="p">)</span>
                 <span class="o">*</span> <span class="mi">4</span>
-            <span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
             <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;LONGITUDE_QC&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="c1"># Add the flags to LATITUDE as well.</span>
@@ -284,7 +359,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;lightgray&quot;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
         <span class="c1"># Separate flagged and unflagged points (if LATITUDE has been flagged, so will LONGITUDE)</span>
-        <span class="n">unflagged</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">unflagged</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">flagged</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
 
         <span class="c1"># Plot points</span>
@@ -311,7 +386,7 @@
 
 <div class="viewcode-block" id="impossible_speed_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_speed_test">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">impossible_speed_test</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">impossible_speed_test</span><span class="p">(</span><span class="n">test_template</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Target Variable: TIME, LATITUDE, LONGITUDE</span>
 <span class="sd">    Test Number: 5</span>
@@ -319,23 +394,17 @@
 <span class="sd">    Checks that the the glider speed stays below 3m/s</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
-
 <div class="viewcode-block" id="impossible_speed_test.name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_speed_test.name">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;impossible speed test&quot;</span></div>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;impossible speed test&quot;</span></div>
 
 <div class="viewcode-block" id="impossible_speed_test.required_variables">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_speed_test.required_variables">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span></div>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="impossible_speed_test.df">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_speed_test.df">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span></div>
-
-<div class="viewcode-block" id="impossible_speed_test.flags">
-<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_speed_test.flags">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="impossible_speed_test.qc_outputs">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.impossible_speed_test.qc_outputs">[docs]</a>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME_QC&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE_QC&quot;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="impossible_speed_test.return_qc">
@@ -371,7 +440,11 @@
 
         <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;TIME&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;speed_is_valid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">not_</span><span class="p">()</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">)</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span>
+                    <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;speed_is_valid&quot;</span><span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">)</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;^.*_QC$&quot;</span><span class="p">))</span>
@@ -409,6 +482,83 @@
 
 
 
+<div class="viewcode-block" id="pressure_range_test">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.pressure_range_test">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">pressure_range_test</span><span class="p">(</span><span class="n">test_template</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Target Variable: PRES (pressure)</span>
+<span class="sd">    Flag Number: 4 (bad data), 3 (Bad, potentially correctable)</span>
+<span class="sd">    Variables Flagged: PRES (pressure), TEMP (temperature), CNDC (conductivity)</span>
+<span class="sd">    Checks that the pressure is within a reasonable range.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="pressure_range_test.name">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.pressure_range_test.name">[docs]</a>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;pressure range test&quot;</span></div>
+
+<div class="viewcode-block" id="pressure_range_test.required_variables">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.pressure_range_test.required_variables">[docs]</a>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="pressure_range_test.qc_outputs">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.pressure_range_test.qc_outputs">[docs]</a>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PRES_QC&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP_QC&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC_QC&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="pressure_range_test.return_qc">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.pressure_range_test.return_qc">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c1"># Set flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;PRES&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_between</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.4</span><span class="p">))</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;PRES&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;PRES_QC&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Apply to other variables as well</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;PRES_QC&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;TEMP_QC&quot;</span><span class="p">),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;PRES_QC&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;CNDC_QC&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
+
+
+<div class="viewcode-block" id="pressure_range_test.plot_diagnostics">
+<a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.pressure_range_test.plot_diagnostics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+
+        <span class="c1"># Values</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
+            <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;Pressure&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Flags</span>
+        <span class="n">ax_twin</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>
+        <span class="n">ax_twin</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;PRES_QC&quot;</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">ax_twin</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
+            <span class="n">ylabel</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Flag&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ax_twin</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Speed threshold</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="o">-</span><span class="mf">2.4</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</div>
+
+
+
+
 <div class="viewcode-block" id="global_range_test">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.global_range_test">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">global_range_test</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
@@ -427,15 +577,7 @@
         <span class="p">(</span><span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">41</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="c1"># Not the most efficient implementation because of second for loop.</span>
-    <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">lims</span><span class="p">,</span> <span class="n">flag_vars</span><span class="p">,</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">test_calls</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">flag_var</span> <span class="ow">in</span> <span class="n">flag_vars</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="p">((</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-                <span class="o">.</span><span class="n">not_</span><span class="p">()</span>
-                <span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span>
-                <span class="o">*</span> <span class="n">flag</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag_var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">)</span>
-            <span class="p">)</span>
+
 
     <span class="k">return</span> <span class="n">df</span></div>
 
@@ -451,7 +593,6 @@
 <span class="sd">    Checks that the temperature and practically salinity do not lie outside expected</span>
 <span class="sd">    regional (Mediterranean and Red Seas) extremes.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sh</span>
 
     <span class="c1"># Define Red and Mediterranean Sea areas</span>
     <span class="n">Red_Sea</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Polygon</span><span class="p">(</span>
@@ -551,65 +692,67 @@
             <span class="p">)</span>
         <span class="c1"># Add new QC flag columns if they dont already exist</span>
         <span class="n">flag_columns_to_add</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">new_flags</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-            <span class="n">new_flags</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">flag_columns_to_add</span><span class="p">)],</span>
-        <span class="p">)</span></div>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flag_columns_to_add</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+                <span class="n">new_flags</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">flag_columns_to_add</span><span class="p">)],</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ApplyQC.run">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/apply_qc/index.html#toolbox.steps.custom.apply_qc.ApplyQC.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         
-        <span class="c1"># Register of all QC steps</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">QC_REGISTER</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;impossible date test&quot;</span><span class="p">:</span> <span class="n">impossible_date_test</span><span class="p">,</span>
-            <span class="s2">&quot;impossible location test&quot;</span><span class="p">:</span> <span class="n">impossible_location_test</span><span class="p">,</span>
-            <span class="s2">&quot;position on land test&quot;</span><span class="p">:</span> <span class="n">position_on_land_test</span><span class="p">,</span>
-            <span class="s2">&quot;impossible speed test&quot;</span><span class="p">:</span> <span class="n">impossible_speed_test</span><span class="p">,</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">qc_order</span> <span class="o">=</span> <span class="p">[]</span>
-        
+        <span class="c1"># Register of all QC steps and required variables</span>
+        <span class="n">QC_REGISTER</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">test_template</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">cls</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="n">QC_REGISTER</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+
+
         <span class="c1"># Defining the order of operations</span>
-        <span class="c1"># TODO: Register each QC test and check that all of the config-specified tests exist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qc_order</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;QC_order&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Please specify which QC operations to run&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[Apply QC] Please specify which QC operations to run&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">qc_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;QC_order&quot;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">qc_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">QC_REGISTER</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">qc_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qc_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">qc_name</span> <span class="ow">in</span> <span class="n">QC_REGISTER</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">qc_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">QC_REGISTER</span><span class="p">[</span><span class="n">qc_name</span><span class="p">])</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The QC test name: </span><span class="si">{</span><span class="n">qc_name</span><span class="si">}</span><span class="s2"> was not recognised. Skipping...&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Apply QC] The QC test name: </span><span class="si">{</span><span class="n">qc_name</span><span class="si">}</span><span class="s2"> was not recognised. Skipping...&quot;</span><span class="p">)</span>
 
         <span class="c1"># Check if the data is in the context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;[Argo QC] No data found in context. Please load data first.&quot;</span>
+                <span class="s2">&quot;[Apply QC] No data found in context. Please load data first.&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Try and fetch the qc history from context and update it</span>
+        <span class="n">qc_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;qc_history&quot;</span><span class="p">,</span> <span class="p">{})</span>
         
+        <span class="c1"># Collect all of the required varible names and qc outputs</span>
+        <span class="n">all_required_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">({})</span>
+        <span class="n">test_qc_outputs_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">({})</span>
+        <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_order</span><span class="p">:</span>
+            <span class="n">all_required_variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">required_variables</span><span class="p">)</span>
+            <span class="n">test_qc_outputs_cols</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">)</span>
+
         <span class="c1"># Convert data to polars for fast processing</span>
-        <span class="c1"># TODO: Make QC classes have required variables. Collect them and then check they are present in the data</span>
-        <span class="n">qc_variables</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;TIME&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;PRES&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">qc_variables</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">qc_variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">all_required_variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[Argo QC] The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">qc_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">) which are required for QC.&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; Make sure that the variables are present in the data, or use the &#39;Derive CDT&#39; step to append them.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;[Argo QC] The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">) which are required for QC.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; Make sure that the variables are present in the data, or use remove tests from the order.&quot;</span>
             <span class="p">)</span>
 
         <span class="c1"># Fetch existing flags from the data and create a place to store them</span>
         <span class="n">existing_flags</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">flag_column</span> <span class="k">for</span> <span class="n">flag_column</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s2">&quot;_QC&quot;</span> <span class="ow">in</span> <span class="n">flag_column</span>
+            <span class="n">flag_col</span> <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span>
         <span class="p">]</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">existing_flags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span>
@@ -619,10 +762,16 @@
         <span class="c1"># Run through all of the QC steps and add the flags to flag_store</span>
         <span class="k">for</span> <span class="n">qc_test</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_order</span><span class="p">:</span>
             <span class="c1"># Create an instance of this test step</span>
-            <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">QC_REGISTER</span><span class="p">[</span><span class="n">qc_test</span><span class="p">](</span><span class="n">df</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Apply QC] Applying: </span><span class="si">{</span><span class="n">qc_test</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">qc_test</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
             <span class="n">returned_flags</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">return_qc</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">organise_flags</span><span class="p">(</span><span class="n">returned_flags</span><span class="p">)</span>
-            
+
+            <span class="c1"># Update QC history</span>
+            <span class="k">for</span> <span class="n">flagged_var</span> <span class="ow">in</span> <span class="n">returned_flags</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">percent_flagged</span> <span class="o">=</span> <span class="p">(</span><span class="n">returned_flags</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">returned_flags</span><span class="p">)</span>
+                <span class="n">qc_history</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flagged_var</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">qc_test</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">percent_flagged</span><span class="p">))</span>
+
             <span class="c1"># Diagnostic plotting</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">]:</span>
                 <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
@@ -637,6 +786,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;qc_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qc_history</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 </div>
 

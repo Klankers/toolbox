@@ -57,21 +57,40 @@
   <section id="module-toolbox.steps.custom.apply_qc">
 <span id="toolbox-steps-custom-apply-qc"></span><h1>toolbox.steps.custom.apply_qc<a class="headerlink" href="#module-toolbox.steps.custom.apply_qc" title="Link to this heading">¶</a></h1>
 <p>Class definition for quality control steps.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.flag_cols" title="toolbox.steps.custom.apply_qc.flag_cols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flag_cols</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.legend_elements" title="toolbox.steps.custom.apply_qc.legend_elements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">legend_elements</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test" title="toolbox.steps.custom.apply_qc.impossible_date_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template" title="toolbox.steps.custom.apply_qc.test_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_template</span></code></a></p></td>
+<td><p>Target Variable:</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test" title="toolbox.steps.custom.apply_qc.impossible_date_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a></p></td>
 <td><p>Target Variable: TIME</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test" title="toolbox.steps.custom.apply_qc.impossible_location_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test" title="toolbox.steps.custom.apply_qc.impossible_location_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a></p></td>
 <td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test" title="toolbox.steps.custom.apply_qc.position_on_land_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test" title="toolbox.steps.custom.apply_qc.position_on_land_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a></p></td>
 <td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test" title="toolbox.steps.custom.apply_qc.impossible_speed_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test" title="toolbox.steps.custom.apply_qc.impossible_speed_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a></p></td>
 <td><p>Target Variable: TIME, LATITUDE, LONGITUDE</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test" title="toolbox.steps.custom.apply_qc.pressure_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pressure_range_test</span></code></a></p></td>
+<td><p>Target Variable: PRES (pressure)</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.ApplyQC" title="toolbox.steps.custom.apply_qc.ApplyQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ApplyQC</span></code></a></p></td>
 <td><p>Base class for pipeline steps with config-mirroring support.</p></td>
@@ -83,16 +102,19 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.global_range_test" title="toolbox.steps.custom.apply_qc.global_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_range_test</span></code></a>(df)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.range_test" title="toolbox.steps.custom.apply_qc.range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">range_test</span></code></a>(df, variable_name, limits, flag)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.global_range_test" title="toolbox.steps.custom.apply_qc.global_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_range_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: PRES, TEMP, PRAC_SALINITY</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.regional_range_test" title="toolbox.steps.custom.apply_qc.regional_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regional_range_test</span></code></a>(df)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.regional_range_test" title="toolbox.steps.custom.apply_qc.regional_range_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regional_range_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: TEMP, PRAC_SALINITY</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_increasing_test" title="toolbox.steps.custom.apply_qc.pressure_increasing_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pressure_increasing_test</span></code></a>(df)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_increasing_test" title="toolbox.steps.custom.apply_qc.pressure_increasing_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pressure_increasing_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: PRES</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.spike_test" title="toolbox.steps.custom.apply_qc.spike_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spike_test</span></code></a>(df)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.apply_qc.spike_test" title="toolbox.steps.custom.apply_qc.spike_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spike_test</span></code></a>(df)</p></td>
 <td><p>Target Variable: TEMP, PRAC_SALINITY</p></td>
 </tr>
 </tbody>
@@ -100,10 +122,70 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.flag_cols">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">flag_cols</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#flag_cols"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.flag_cols" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.legend_elements">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">legend_elements</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#legend_elements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.legend_elements" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.range_test">
+<span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">range_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#range_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.range_test" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">test_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template" title="Link to this definition">¶</a></dt>
+<dd><p>Target Variable:
+Flag Number:
+Variables Flagged:
+? description ?</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.required_variables" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.qc_outputs" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.df">
+<span class="sig-name descname"><span class="pre">df</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.df" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.flags">
+<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.flags" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.return_qc">
+<span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.return_qc" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.test_template.plot_diagnostics">
+<span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#test_template.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.test_template.plot_diagnostics" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_date_test">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">impossible_date_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_date_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_date_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TIME
+<dd><p>Bases: <a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template" title="toolbox.steps.custom.apply_qc.test_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_template</span></code></a></p>
+<p>Target Variable: TIME
 Test Number: 2
 Flag Number: 4 (bad data)
 Checks that the datetime of each point is valid.</p>
@@ -118,13 +200,8 @@ Checks that the datetime of each point is valid.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_date_test.df">
-<span class="sig-name descname"><span class="pre">df</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_date_test.df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_date_test.df" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_date_test.flags">
-<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_date_test.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_date_test.flags" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_date_test.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['TIME_QC']</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_date_test.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_date_test.qc_outputs" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -142,7 +219,8 @@ Checks that the datetime of each point is valid.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_location_test">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">impossible_location_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_location_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_location_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: LATITUDE, LONGITUDE
+<dd><p>Bases: <a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template" title="toolbox.steps.custom.apply_qc.test_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_template</span></code></a></p>
+<p>Target Variable: LATITUDE, LONGITUDE
 Test Number: 3
 Flag Number: 4 (bad data)
 Checks that the latitude and longitude are valid.</p>
@@ -157,13 +235,8 @@ Checks that the latitude and longitude are valid.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_location_test.df">
-<span class="sig-name descname"><span class="pre">df</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_location_test.df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_location_test.df" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_location_test.flags">
-<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_location_test.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_location_test.flags" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_location_test.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['LATITUDE_QC',</span> <span class="pre">'LONGITUDE_QC']</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_location_test.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_location_test.qc_outputs" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -181,7 +254,8 @@ Checks that the latitude and longitude are valid.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.position_on_land_test">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">position_on_land_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#position_on_land_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.position_on_land_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: LATITUDE, LONGITUDE
+<dd><p>Bases: <a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template" title="toolbox.steps.custom.apply_qc.test_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_template</span></code></a></p>
+<p>Target Variable: LATITUDE, LONGITUDE
 Test Number: 4
 Flag Number: 4 (bad data)
 Checks that the measurement location is not on land.</p>
@@ -196,13 +270,8 @@ Checks that the measurement location is not on land.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.position_on_land_test.df">
-<span class="sig-name descname"><span class="pre">df</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#position_on_land_test.df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.position_on_land_test.df" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.position_on_land_test.flags">
-<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#position_on_land_test.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.position_on_land_test.flags" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.position_on_land_test.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['LATITUDE_QC',</span> <span class="pre">'LONGITUDE_QC']</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#position_on_land_test.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.position_on_land_test.qc_outputs" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -220,7 +289,8 @@ Checks that the measurement location is not on land.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_speed_test">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">impossible_speed_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_speed_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_speed_test" title="Link to this definition">¶</a></dt>
-<dd><p>Target Variable: TIME, LATITUDE, LONGITUDE
+<dd><p>Bases: <a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template" title="toolbox.steps.custom.apply_qc.test_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_template</span></code></a></p>
+<p>Target Variable: TIME, LATITUDE, LONGITUDE
 Test Number: 5
 Flag Number: 4 (bad data)
 Checks that the the glider speed stays below 3m/s</p>
@@ -235,13 +305,8 @@ Checks that the the glider speed stays below 3m/s</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_speed_test.df">
-<span class="sig-name descname"><span class="pre">df</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_speed_test.df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.df" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_speed_test.flags">
-<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_speed_test.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.flags" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_speed_test.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['TIME_QC',</span> <span class="pre">'LATITUDE_QC',</span> <span class="pre">'LONGITUDE_QC']</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_speed_test.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.qc_outputs" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -252,6 +317,41 @@ Checks that the the glider speed stays below 3m/s</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.impossible_speed_test.plot_diagnostics">
 <span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#impossible_speed_test.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.plot_diagnostics" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.pressure_range_test">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">pressure_range_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#pressure_range_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.pressure_range_test" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template" title="toolbox.steps.custom.apply_qc.test_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_template</span></code></a></p>
+<p>Target Variable: PRES (pressure)
+Flag Number: 4 (bad data), 3 (Bad, potentially correctable)
+Variables Flagged: PRES (pressure), TEMP (temperature), CNDC (conductivity)
+Checks that the pressure is within a reasonable range.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.pressure_range_test.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'pressure</span> <span class="pre">range</span> <span class="pre">test'</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#pressure_range_test.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.pressure_range_test.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.pressure_range_test.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PRES']</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#pressure_range_test.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.pressure_range_test.required_variables" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.pressure_range_test.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PRES_QC',</span> <span class="pre">'TEMP_QC',</span> <span class="pre">'CNDC_QC']</span></em><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#pressure_range_test.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.pressure_range_test.qc_outputs" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.pressure_range_test.return_qc">
+<span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#pressure_range_test.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.pressure_range_test.return_qc" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="toolbox.steps.custom.apply_qc.pressure_range_test.plot_diagnostics">
+<span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/apply_qc.html#pressure_range_test.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.apply_qc.pressure_range_test.plot_diagnostics" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -332,14 +432,27 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
     <h3><a href="../../../../../index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">toolbox.steps.custom.apply_qc</a><ul>
+<li><a class="reference internal" href="#attributes">Attributes</a></li>
 <li><a class="reference internal" href="#classes">Classes</a></li>
 <li><a class="reference internal" href="#functions">Functions</a></li>
 <li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.flag_cols"><code class="docutils literal notranslate"><span class="pre">flag_cols</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.legend_elements"><code class="docutils literal notranslate"><span class="pre">legend_elements</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.range_test"><code class="docutils literal notranslate"><span class="pre">range_test()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template"><code class="docutils literal notranslate"><span class="pre">test_template</span></code></a><ul>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.name"><code class="docutils literal notranslate"><span class="pre">test_template.name</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.required_variables"><code class="docutils literal notranslate"><span class="pre">test_template.required_variables</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.qc_outputs"><code class="docutils literal notranslate"><span class="pre">test_template.qc_outputs</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.df"><code class="docutils literal notranslate"><span class="pre">test_template.df</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.flags"><code class="docutils literal notranslate"><span class="pre">test_template.flags</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.return_qc"><code class="docutils literal notranslate"><span class="pre">test_template.return_qc()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.test_template.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">test_template.plot_diagnostics()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test"><code class="docutils literal notranslate"><span class="pre">impossible_date_test</span></code></a><ul>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.name"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.name</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.required_variables"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.required_variables</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.df"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.df</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.flags"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.flags</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.qc_outputs"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.qc_outputs</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.return_qc"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.return_qc()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_date_test.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">impossible_date_test.plot_diagnostics()</span></code></a></li>
 </ul>
@@ -347,8 +460,7 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test"><code class="docutils literal notranslate"><span class="pre">impossible_location_test</span></code></a><ul>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.name"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.name</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.required_variables"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.required_variables</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.df"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.df</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.flags"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.flags</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.qc_outputs"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.qc_outputs</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.return_qc"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.return_qc()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_location_test.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">impossible_location_test.plot_diagnostics()</span></code></a></li>
 </ul>
@@ -356,8 +468,7 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test"><code class="docutils literal notranslate"><span class="pre">position_on_land_test</span></code></a><ul>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.name"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.name</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.required_variables"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.required_variables</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.df"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.df</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.flags"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.flags</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.qc_outputs"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.qc_outputs</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.return_qc"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.return_qc()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.position_on_land_test.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">position_on_land_test.plot_diagnostics()</span></code></a></li>
 </ul>
@@ -365,10 +476,17 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test</span></code></a><ul>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.name"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.name</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.required_variables"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.required_variables</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.df"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.df</span></code></a></li>
-<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.flags"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.flags</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.qc_outputs"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.qc_outputs</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.return_qc"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.return_qc()</span></code></a></li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.impossible_speed_test.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">impossible_speed_test.plot_diagnostics()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test"><code class="docutils literal notranslate"><span class="pre">pressure_range_test</span></code></a><ul>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test.name"><code class="docutils literal notranslate"><span class="pre">pressure_range_test.name</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test.required_variables"><code class="docutils literal notranslate"><span class="pre">pressure_range_test.required_variables</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test.qc_outputs"><code class="docutils literal notranslate"><span class="pre">pressure_range_test.qc_outputs</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test.return_qc"><code class="docutils literal notranslate"><span class="pre">pressure_range_test.return_qc()</span></code></a></li>
+<li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.pressure_range_test.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">pressure_range_test.plot_diagnostics()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#toolbox.steps.custom.apply_qc.global_range_test"><code class="docutils literal notranslate"><span class="pre">global_range_test()</span></code></a></li>
