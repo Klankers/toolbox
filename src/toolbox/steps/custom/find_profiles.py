@@ -255,7 +255,7 @@ class FindProfilesStep(BaseStep):
 
             for ax in axs[:2]:
                 ax.legend(loc="upper right")
-            plt.show(block=True)
+            plt.show(block=False)
 
         root = tk.Tk()
         root.title("Parameter Adjustment")
@@ -297,8 +297,9 @@ class FindProfilesStep(BaseStep):
 
         # Function to handle Cancel button click
         def on_cancel():
-            plt.close()
-            root.destroy()
+            plt.close('all')
+            root.quit()  # Stops the mainloop
+            root.destroy()  # Destroys the window
 
         def on_regenerate():
             # Update parameter attributes
@@ -310,7 +311,7 @@ class FindProfilesStep(BaseStep):
             self.depth_col = entries["depth_column"].get()
 
             # Regenerate data and plot it
-            plt.close()
+            plt.close('all')
             generate_plot()
 
         def on_save():
@@ -320,8 +321,9 @@ class FindProfilesStep(BaseStep):
                 f"  Filter Window Sizes: {self.win_sizes}\n"
                 f"  Depth column: {self.depth_col}\n"
             )
-            plt.close()
-            root.destroy()
+            plt.close('all')
+            root.quit()  # Stops the mainloop
+            root.destroy()  # Destroys the window
 
         tk.Button(root, text="Regenerate", command=on_regenerate).grid(
             row=row + 1, column=0, pady=(20, 0)

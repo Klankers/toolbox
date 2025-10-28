@@ -55,19 +55,7 @@ class DeriveCTDVariables(BaseStep):
             self.log(f"Data found in context.")
 
         data = self.context["data"]
-
-        # Apply unit conversions to raw sensor measurements
-        # TODO: This following two lines should become redundant when BODC releases OG1-like datasets
-        conversion_dict = {
-            "CNDC": self.conductivity_unit_conversion_factor,  # Conductivity conversion
-            "PRES": self.pressure_unit_conversion_factor,  # Pressure conversion
-            "LATITUDE": self.latitude_longitude_conversion_factor,  # Latitude conversion
-            "LONGITUDE": self.latitude_longitude_conversion_factor,  # Longitude conversion
-        }
-
-        # Apply conversion factors to each variable
-        for var_name, multiplier in conversion_dict.items():
-            data[var_name][:] *= float(multiplier)
+        to_derive = self.parameters["to_derive"]
 
         # Convert xarray Dataset to Polars DataFrame for efficient numerical processing
         # Extract only the variables needed for GSW calculations
@@ -77,19 +65,6 @@ class DeriveCTDVariables(BaseStep):
             ].to_dataframe(),
             nan_to_null=False,
         )
-
-        # Interpolate missing position data if enabled in parameters
-        # This is useful when GPS data has gaps during CTD casts
-        if self.interpolate_latitude_longitude:
-            df = df.with_columns(
-                # Replace infinite values and NaN with None, then interpolate along TIME dimension
-                *(
-                    pl.col(var_name)
-                    .replace([np.inf, -np.inf, np.nan], None)
-                    .interpolate_by("TIME")
-                    for var_name in ["LATITUDE", "LONGITUDE"]
-                )
-            )
 
         # Define GSW (Gibbs SeaWater) function calls for deriving oceanographic variables
         # Each tuple contains: (output_variable_name, gsw_function, [required_input_variables])
@@ -107,6 +82,9 @@ class DeriveCTDVariables(BaseStep):
 
         # Process each GSW function call to derive new variables
         for var_name, func, args in gsw_function_calls:
+            if var_name not in to_derive:
+                continue
+
             self.log(f"Deriving {var_name}...")
 
             # Use Polars struct operations to efficiently apply GSW functions
@@ -162,6 +140,8 @@ class DeriveCTDVariables(BaseStep):
 
         # Add derived variables back to the xarray Dataset with proper metadata
         for var_name, meta in variable_metadata.items():
+            if var_name not in to_derive:
+                continue
             # Convert Polars column back to numpy array and add to xarray Dataset
             data[var_name] = (("N_MEASUREMENTS",), df[var_name].to_numpy())
             # Attach CF-compliant metadata attributes
