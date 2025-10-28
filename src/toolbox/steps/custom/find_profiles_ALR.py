@@ -80,8 +80,10 @@ def find_profiles(
     backfill_segments : bool, default=False
         If True, extends identified profile and transect segments backwards in time by an amount defined by
         filter_win_sizes[0] * back_fill_mod.
-    back_fill_mod : 
-    
+    back_fill_mod : int64, default = 1
+        Multiplier for the backfill extension duration. filter_win_sizes[0] * back_fill_mod gives the total 
+        backfill duration.
+        
     Returns
     -------
     polars.DataFrame
