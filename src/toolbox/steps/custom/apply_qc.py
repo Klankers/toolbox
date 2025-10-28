@@ -581,7 +581,7 @@ class ApplyQC(BaseStep):
                 qc_history.setdefault(flagged_var, []).append((qc_test.name, percent_flagged))
 
             # Diagnostic plotting
-            if self.parameters["diagnostics"]:
+            if self.diagnostics:
                 qc_test_instance.plot_diagnostics()
                 
             # Once finished, remove the test instance from memory
