@@ -190,7 +190,6 @@ class Pipeline(ConfigMirrorMixin):
         print(f"Pipeline config exported → {output_path}")
         return cfg
 
-    # --- new unified save using mixin ---
     def save_config(self, path="pipeline_config.yaml"):
         """Save the canonical private config (same as manager.save_config)."""
         # ensure _parameters is up to date
