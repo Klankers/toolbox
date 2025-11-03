@@ -62,7 +62,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#toolbox.steps.custom.interpolate_data.InterpolateVariables" title="toolbox.steps.custom.interpolate_data.InterpolateVariables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InterpolateVariables</span></code></a></p></td>
-<td><p>A processing step class for deriving oceanographic variables from CTD data.</p></td>
+<td><p>A processing step for interpolating data.</p></td>
 </tr>
 </tbody>
 </table>
@@ -72,16 +72,40 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="toolbox.steps.custom.interpolate_data.InterpolateVariables">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">toolbox.steps.custom.interpolate_data.</span></span><span class="sig-name descname"><span class="pre">InterpolateVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/interpolate_data.html#InterpolateVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.interpolate_data.InterpolateVariables" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a></p>
-<p>A processing step class for deriving oceanographic variables from CTD data.</p>
-<p>This class processes Conductivity, Temperature, and Depth (CTD) data to derive
-additional oceanographic variables such as salinity, density, and depth using
-the Gibbs SeaWater (GSW) Oceanographic Toolbox functions.</p>
+<dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#toolbox.steps.base_step.BaseStep" title="toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></a>, <a class="reference internal" href="../../../utils/qc_handling/index.html#toolbox.utils.qc_handling.QCHandlingMixin" title="toolbox.utils.qc_handling.QCHandlingMixin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.qc_handling.QCHandlingMixin</span></code></a></p>
+<p>A processing step for interpolating data.</p>
+<p>This class processes data to interpolate missing values and fill gaps in
+variables using time-based interpolation. It supports quality control
+handling and optional diagnostic visualization.</p>
 <p>Inherits from BaseStep and processes data stored in the context dictionary.</p>
+<dl>
+<dt>Example config usage:</dt><dd><ul>
+<li><p>name: “Interpolate Data”
+parameters:</p>
+<blockquote>
+<div><dl>
+<dt>qc_handling_settings: {</dt><dd><dl class="simple">
+<dt>flag_filter_settings: {</dt><dd><p>“PRES”: [3, 4, 9],
+“LATITUDE”: [3, 4, 9],
+“LONGITUDE”: [3, 4, 9]</p>
+</dd>
+</dl>
+<p>},
+reconstruction_behaviour: “replace”,
+flag_mapping: { 3: 8, 4: 8, 9: 8 }</p>
+</dd>
+</dl>
+<p>}</p>
+</div></blockquote>
+<p>diagnostics: false</p>
+</li>
+</ul>
+</dd>
+</dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="toolbox.steps.custom.interpolate_data.InterpolateVariables.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/interpolate_data.html#InterpolateVariables.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.interpolate_data.InterpolateVariables.step_name" title="Link to this definition">¶</a></dt>
-<dd><p>Identifier for this processing step (“Derive CTD”)</p>
+<dd><p>Identifier for this processing step. Set to “Interpolate Data”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
@@ -97,12 +121,32 @@ the Gibbs SeaWater (GSW) Oceanographic Toolbox functions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.custom.interpolate_data.InterpolateVariables.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/interpolate_data.html#InterpolateVariables.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.interpolate_data.InterpolateVariables.run" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Execute the interpolation workflow.</p>
+<p>This method performs the following steps:
+1. Filters data based on quality control flags
+2. Converts xarray data to a Polars DataFrame
+3. Interpolates missing values using time as the reference dimension
+4. QC and data reconstruction based off of user specification
+6. Updates QC flags for interpolated values
+7. Generates diagnostic plots if enabled</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The updated context dictionary containing the interpolated dataset
+under the “data” key.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="toolbox.steps.custom.interpolate_data.InterpolateVariables.generate_diagnostics">
 <span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/toolbox/steps/custom/interpolate_data.html#InterpolateVariables.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#toolbox.steps.custom.interpolate_data.InterpolateVariables.generate_diagnostics" title="Link to this definition">¶</a></dt>
-<dd><p>Hook for diagnostics (optional).</p>
+<dd><p>Generate diagnostic plots comparing original and interpolated data.</p>
+<p>Creates a side-by-side comparison visualization showing the first
+variable in filter_settings before and after interpolation.</p>
+<p>This method uses the Tkinter backend for interactive display.</p>
 </dd></dl>
 
 </dd></dl>

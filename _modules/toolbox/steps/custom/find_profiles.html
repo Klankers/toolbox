@@ -49,6 +49,7 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -180,7 +181,8 @@
 <span class="nd">@register_step</span>
 <div class="viewcode-block" id="FindProfilesStep">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.FindProfilesStep">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">FindProfilesStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FindProfilesStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+
 <div class="viewcode-block" id="FindProfilesStep.step_name">
 <a class="viewcode-back" href="../../../../api/toolbox/steps/custom/find_profiles/index.html#toolbox.steps.custom.find_profiles.FindProfilesStep.step_name">[docs]</a>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Find Profiles&quot;</span></div>
@@ -191,12 +193,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Attempting to designate profile numbers&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Check if the data is in the context</span>
-        <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No data found in context. Please load data first.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;gradient_thresholds&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;filter_window_sizes&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;depth_column&quot;</span><span class="p">]</span>
@@ -224,6 +222,11 @@
             <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
             <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
         <span class="p">}</span>
+
+        <span class="c1"># Generate QC for profile numbers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;TIME_QC&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]},</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
