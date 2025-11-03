@@ -109,19 +109,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
-
-        <span class="c1"># Apply unit conversions to raw sensor measurements</span>
-        <span class="c1"># TODO: This following two lines should become redundant when BODC releases OG1-like datasets</span>
-        <span class="n">conversion_dict</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;CNDC&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">conductivity_unit_conversion_factor</span><span class="p">,</span>  <span class="c1"># Conductivity conversion</span>
-            <span class="s2">&quot;PRES&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pressure_unit_conversion_factor</span><span class="p">,</span>  <span class="c1"># Pressure conversion</span>
-            <span class="s2">&quot;LATITUDE&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">latitude_longitude_conversion_factor</span><span class="p">,</span>  <span class="c1"># Latitude conversion</span>
-            <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">latitude_longitude_conversion_factor</span><span class="p">,</span>  <span class="c1"># Longitude conversion</span>
-        <span class="p">}</span>
-
-        <span class="c1"># Apply conversion factors to each variable</span>
-        <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">multiplier</span> <span class="ow">in</span> <span class="n">conversion_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">][:]</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="n">multiplier</span><span class="p">)</span>
+        <span class="n">to_derive</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;to_derive&quot;</span><span class="p">]</span>
 
         <span class="c1"># Convert xarray Dataset to Polars DataFrame for efficient numerical processing</span>
         <span class="c1"># Extract only the variables needed for GSW calculations</span>
@@ -131,19 +119,6 @@
             <span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span>
             <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="c1"># Interpolate missing position data if enabled in parameters</span>
-        <span class="c1"># This is useful when GPS data has gaps during CTD casts</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_latitude_longitude</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="c1"># Replace infinite values and NaN with None, then interpolate along TIME dimension</span>
-                <span class="o">*</span><span class="p">(</span>
-                    <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">var_name</span><span class="p">)</span>
-                    <span class="o">.</span><span class="n">replace</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
-                    <span class="o">.</span><span class="n">interpolate_by</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
 
         <span class="c1"># Define GSW (Gibbs SeaWater) function calls for deriving oceanographic variables</span>
         <span class="c1"># Each tuple contains: (output_variable_name, gsw_function, [required_input_variables])</span>
@@ -161,6 +136,9 @@
 
         <span class="c1"># Process each GSW function call to derive new variables</span>
         <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">gsw_function_calls</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">var_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">to_derive</span><span class="p">:</span>
+                <span class="k">continue</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deriving </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
 
             <span class="c1"># Use Polars struct operations to efficiently apply GSW functions</span>
@@ -216,6 +194,8 @@
 
         <span class="c1"># Add derived variables back to the xarray Dataset with proper metadata</span>
         <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">variable_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">var_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">to_derive</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="c1"># Convert Polars column back to numpy array and add to xarray Dataset</span>
             <span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">df</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
             <span class="c1"># Attach CF-compliant metadata attributes</span>

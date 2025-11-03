@@ -315,7 +315,7 @@
 
             <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axs</span><span class="p">[:</span><span class="mi">2</span><span class="p">]:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">root</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
         <span class="n">root</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Parameter Adjustment&quot;</span><span class="p">)</span>
@@ -357,8 +357,9 @@
 
         <span class="c1"># Function to handle Cancel button click</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">on_cancel</span><span class="p">():</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="n">root</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">root</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>  <span class="c1"># Stops the mainloop</span>
+            <span class="n">root</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>  <span class="c1"># Destroys the window</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">on_regenerate</span><span class="p">():</span>
             <span class="c1"># Update parameter attributes</span>
@@ -370,7 +371,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span> <span class="o">=</span> <span class="n">entries</span><span class="p">[</span><span class="s2">&quot;depth_column&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
 
             <span class="c1"># Regenerate data and plot it</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
             <span class="n">generate_plot</span><span class="p">()</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">on_save</span><span class="p">():</span>
@@ -380,8 +381,9 @@
                 <span class="sa">f</span><span class="s2">&quot;  Filter Window Sizes: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">win_sizes</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;  Depth column: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="p">)</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="n">root</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="n">root</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>  <span class="c1"># Stops the mainloop</span>
+            <span class="n">root</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>  <span class="c1"># Destroys the window</span>
 
         <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Regenerate&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="n">on_regenerate</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span>
             <span class="n">row</span><span class="o">=</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
