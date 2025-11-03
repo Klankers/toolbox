@@ -16,8 +16,14 @@ class QCHandlingMixin:
         if user_mappings := qc_settings.get("flag_mapping"):
             self.flag_mapping.update(user_mappings)
 
-        # Make a copy of the data for reference
+        # Validate that data exists in the processing context
+        if "data" not in self.context:
+            raise ValueError("No data found in context. Please load data first.")
+        else:
+            self.log(f"Data found in context.")
         self.data = self.context["data"]
+
+        # Make a copy of the data for reference
         self.data_copy = self.data.copy()
 
         # Check that the variables are present for filter execusion
@@ -71,8 +77,10 @@ class QCHandlingMixin:
 
     def update_qc(self):
         for var in self.filter_settings.keys():
-            # Find all values that have changed during processing
-            mask = (self.data[var] == self.data_copy[var])
+            # Find all values that haven't changed during processing
+            is_same = (self.data[var] == self.data_copy[var])
+            both_nan = np.logical_and(self.data[var].isnull(), self.data_copy[var].isnull())  # required because nan == nan is False
+            mask = is_same | both_nan
 
             # Make a refference table for all possible flag updates
             updated_flags = xr.apply_ufunc(lambda x: self.flag_mapping.get(x), self.data[f"{var}_QC"], vectorize=True)
