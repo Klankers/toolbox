@@ -43,6 +43,9 @@ class BaseStep(ConfigMirrorMixin):
         for key, value in self.parameters.items():
             setattr(self, key, value)
 
+        # Continue method resolution order
+        super().__init__()
+
     def run(self):
         """To be implemented by subclasses."""
         raise NotImplementedError(f"Step '{self.name}' must implement a run() method.")

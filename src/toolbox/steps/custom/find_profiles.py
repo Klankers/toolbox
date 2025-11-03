@@ -2,6 +2,7 @@
 
 #### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
+from toolbox.utils.qc_handling import QCHandlingMixin
 import toolbox.utils.diagnostics as diag
 import polars as pl
 import matplotlib.pyplot as plt
@@ -128,18 +129,15 @@ def find_profiles(
 
 
 @register_step
-class FindProfilesStep(BaseStep):
+class FindProfilesStep(BaseStep, QCHandlingMixin):
+
     step_name = "Find Profiles"
 
     def run(self):
         self.log("Attempting to designate profile numbers")
 
-        # Check if the data is in the context
-        if "data" not in self.context:
-            raise ValueError("No data found in context. Please load data first.")
-        else:
-            self.log(f"Data found in context.")
-        self.data = self.context["data"]
+        self.filter_qc()
+
         self.thresholds = self.parameters["gradient_thresholds"]
         self.win_sizes = self.parameters["filter_window_sizes"]
         self.depth_col = self.parameters["depth_column"]
@@ -167,6 +165,11 @@ class FindProfilesStep(BaseStep):
             "valid_min": -1,
             "valid_max": np.inf,
         }
+
+        # Generate QC for profile numbers
+        self.generate_qc(
+            {"PROFILE_NUMBER_QC": ["TIME_QC", f"{self.depth_col}_QC"]},
+        )
 
         self.context["data"] = self.data
         return self.context

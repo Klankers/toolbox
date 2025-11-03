@@ -2,6 +2,7 @@
 
 #### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
+from toolbox.utils.qc_handling import QCHandlingMixin
 import toolbox.utils.diagnostics as diag
 
 #### Custom imports ####
@@ -11,7 +12,7 @@ import gsw
 
 
 @register_step
-class DeriveCTDVariables(BaseStep):
+class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     """
     A processing step class for deriving oceanographic variables from CTD data.
 
@@ -48,19 +49,12 @@ class DeriveCTDVariables(BaseStep):
         """
         self.log(f"Processing CTD...")
 
-        # Validate that data exists in the processing context
-        if "data" not in self.context:
-            raise ValueError("No data found in context. Please load data first.")
-        else:
-            self.log(f"Data found in context.")
-
-        data = self.context["data"]
-        to_derive = self.parameters["to_derive"]
+        self.filter_qc()
 
         # Convert xarray Dataset to Polars DataFrame for efficient numerical processing
         # Extract only the variables needed for GSW calculations
         df = pl.from_pandas(
-            data[
+            self.data[
                 ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
             ].to_dataframe(),
             nan_to_null=False,
@@ -79,25 +73,6 @@ class DeriveCTDVariables(BaseStep):
             ("CONS_TEMP", gsw.CT_from_t, ["ABS_SALINITY", "TEMP", "PRES"]),
             ("DENSITY", gsw.rho, ["ABS_SALINITY", "CONS_TEMP", "PRES"]),
         )
-
-        # Process each GSW function call to derive new variables
-        for var_name, func, args in gsw_function_calls:
-            if var_name not in to_derive:
-                continue
-
-            self.log(f"Deriving {var_name}...")
-
-            # Use Polars struct operations to efficiently apply GSW functions
-            # This approach handles vectorized operations across the entire dataset
-            df = df.with_columns(
-                pl.struct(args)
-                .map_batches(lambda x: func(*(x.struct.field(arg) for arg in args)))
-                .alias(var_name)
-            )
-
-        # self.log diagnostic information if diagnostics are enabled
-        if self.diagnostics:
-            self.log(df.describe(percentiles=[]))
 
         # Define metadata for each derived variable following CF conventions
         variable_metadata = {
@@ -138,15 +113,38 @@ class DeriveCTDVariables(BaseStep):
             },
         }
 
-        # Add derived variables back to the xarray Dataset with proper metadata
-        for var_name, meta in variable_metadata.items():
-            if var_name not in to_derive:
+        # Process each GSW function call to derive new variables
+        for var_name, func, args in gsw_function_calls:
+            if var_name not in self.to_derive:
                 continue
+
+            self.log(f"Deriving {var_name}...")
+
+            # Use Polars struct operations to efficiently apply GSW functions
+            # This approach handles vectorized operations across the entire dataset
+            df = df.with_columns(
+                pl.struct(args)
+                .map_batches(lambda x: func(*(x.struct.field(arg) for arg in args)))
+                .alias(var_name)
+            )
+
             # Convert Polars column back to numpy array and add to xarray Dataset
-            data[var_name] = (("N_MEASUREMENTS",), df[var_name].to_numpy())
+            self.data[var_name] = (("N_MEASUREMENTS",), df[var_name].to_numpy())
             # Attach CF-compliant metadata attributes
-            data[var_name].attrs = meta
+            self.data[var_name].attrs = variable_metadata[var_name]
+
+            # generate QC for the new column
+            self.generate_qc(
+                {f"{var_name}_QC": [f"{arg}_QC" for arg in args]}
+            )
+
+        # self.log diagnostic information if diagnostics are enabled
+        if self.diagnostics:
+            self.log(df.describe(percentiles=[]))
+
+        self.reconstruct_data()
+        self.update_qc()
 
         # Update the context with the enhanced dataset
-        self.context["data"] = data
+        self.context["data"] = self.data
         return self.context
