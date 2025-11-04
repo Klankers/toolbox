@@ -23,24 +23,38 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
     Inherits from BaseStep and processes data stored in the context dictionary.
 
-    Example config usage:
-      - name: "Interpolate Data"
-        parameters:
-          qc_handling_settings: {
-            flag_filter_settings: {
-              "PRES": [3, 4, 9],
-              "LATITUDE": [3, 4, 9],
-              "LONGITUDE": [3, 4, 9]
-            },
-            reconstruction_behaviour: "replace",
-            flag_mapping: { 3: 8, 4: 8, 9: 8 }
-          }
-        diagnostics: false
+    Parameters
+    ----------
+    name : str
+        Name identifier for this step instance.
+    parameters : dict, optional
+        Configuration parameters for the interpolation step.
+    diagnostics : bool, optional
+        Whether to generate diagnostic visualizations. Default is False.
+    context : dict, optional
+        Processing context dictionary.
 
     Attributes
     ----------
     step_name : str
         Identifier for this processing step. Set to "Interpolate Data".
+
+    Examples
+    --------
+    Example config usage::
+
+        - name: "Interpolate Data"
+          parameters:
+            qc_handling_settings: {
+              flag_filter_settings: {
+                "PRES": [3, 4, 9],
+                "LATITUDE": [3, 4, 9],
+                "LONGITUDE": [3, 4, 9]
+              },
+              reconstruction_behaviour: "replace",
+              flag_mapping: { 3: 8, 4: 8, 9: 8 }
+            }
+          diagnostics: false
     """
 
     step_name = "Interpolate Data"
@@ -50,12 +64,13 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         Execute the interpolation workflow.
 
         This method performs the following steps:
+
         1. Filters data based on quality control flags
         2. Converts xarray data to a Polars DataFrame
         3. Interpolates missing values using time as the reference dimension
-        4. QC and data reconstruction based off of user specification
-        6. Updates QC flags for interpolated values
-        7. Generates diagnostic plots if enabled
+        4. QC and data reconstruction based on user specification
+        5. Updates QC flags for interpolated values
+        6. Generates diagnostic plots if enabled
 
         Returns
         -------
@@ -98,6 +113,10 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         variable in filter_settings before and after interpolation.
 
         This method uses the Tkinter backend for interactive display.
+
+        Returns
+        -------
+        None
         """
 
         matplotlib.use("tkagg")

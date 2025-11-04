@@ -10,9 +10,11 @@ import importlib
 import pathlib
 import yaml
 from .base_step import REGISTERED_STEPS
+from .base_test import REGISTERED_QC
 
 # Global registries
 STEP_CLASSES = {}
+QC_CLASSES = {}
 STEP_DEPENDENCIES = {
     "QC: Salinity": ["Load OG1"],
 }
@@ -42,6 +44,10 @@ def discover_steps():
     STEP_CLASSES.update(REGISTERED_STEPS)
     for step_name in STEP_CLASSES:
         print(f"[Discovery] Registered step: {step_name}")
+
+    QC_CLASSES.update(REGISTERED_QC)
+    for test_name in QC_CLASSES:
+        print(f"[Discovery] Registered QC test: {test_name}")
 
 
 # Auto-discover steps when toolbox.steps is imported

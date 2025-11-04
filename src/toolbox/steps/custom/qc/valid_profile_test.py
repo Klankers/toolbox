@@ -1,0 +1,84 @@
+#### Mandatory imports ####
+from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+
+#### Custom imports ####
+import matplotlib.pyplot as plt
+import polars as pl
+import matplotlib
+
+@register_qc
+class valid_profile_test(BaseTest):
+    """
+    Target Variable: PROFILE_NUMEBER
+    Flag Number: 4 (bad data), 3 (potentially bad)
+    Variables Flagged: PROFILE_NUMEBER
+    Checks that each profile is of a certain length (in number of points)
+    and contains points within a specified depth range.
+    """
+
+    test_name = "valid profile test"
+    expected_parameters = {
+        "profile_length": 1000,
+        "depth_range": (-1000, 0),
+    }
+    required_variables = ["PROFILE_NUMBER", "DEPTH"]
+    qc_outputs = ["PROFILE_NUMBER"]
+
+    def return_qc(self):
+
+        # Check profiles are of a given length
+        profile_lengths = self.df.group_by("PROFILE_NUMBER").count()
+        self.df = self.df.join(profile_lengths, on="PROFILE_NUMBER", how="left")
+
+        # Find profiles that have no data between the sepcified depth ranges
+        profile_ranges = self.df.group_by("PROFILE_NUMBER").agg(
+            (pl.col("DEPTH").is_between(*self.depth_range).any()).alias("in_depth_range")
+        )
+        self.df = self.df.join(profile_ranges, on="PROFILE_NUMBER", how="left")
+
+        self.df = self.df.with_columns(
+            pl.when(
+                pl.col("count") < self.profile_length
+            ).then(4)
+            .when(
+                pl.col("in_depth_range").not_()
+            ).then(3)
+            .otherwise(1)
+            .alias("PROFILE_NUMBER_QC")
+        )
+
+        self.flags = self.df.select(pl.col("^.*_QC$"))
+        return self.flags
+
+    def plot_diagnostics(self):
+        matplotlib.use("tkagg")
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=200)
+
+        for i in range(10):
+            # Plot by flag number
+            plot_data = self.df.with_row_index().filter(
+                pl.col("PROFILE_NUMBER_QC") == i
+            )
+            if len(plot_data) == 0:
+                continue
+
+            # Plot the data
+            ax.plot(
+                plot_data["index"],
+                plot_data["DEPTH"],
+                c=flag_cols[i],
+                ls="",
+                marker="o",
+                label=f"{i}",
+            )
+
+        ax.set(
+            xlabel="Index",
+            ylabel="Pressure",
+            title="Valid Profile Test",
+        )
+        ax.legend(title="Flags", loc="upper right")
+
+        fig.tight_layout()
+        plt.show(block=True)
+

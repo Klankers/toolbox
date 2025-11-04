@@ -31,7 +31,7 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
     "nbsphinx",
     "numpydoc",
-    "autoapi.extension",
+    #"autoapi.extension",
     "myst_parser",
     "sphinx_last_updated_by_git",
     "sphinx_codeautolink",
@@ -135,3 +135,18 @@ myst_enable_extensions = [
 
 # Optional: create anchors for h1-h3 automatically
 myst_heading_anchors = 3
+
+# Napoleon configuration for better docstring parsing
+napoleon_include_init_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_preprocess_types = False
+napoleon_type_aliases = None
+napoleon_custom_sections = None
+napoleon_attr_annotations = True

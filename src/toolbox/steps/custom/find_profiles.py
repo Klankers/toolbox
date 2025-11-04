@@ -112,9 +112,8 @@ def find_profiles(
     # This converts the boolean 'is_profile' column into numbered profile segments
     df = df.with_columns(
         (
-            pl.col("is_profile").cast(pl.Int64).diff().replace(-1, 0).cum_sum()
-            * pl.col("is_profile")
-            - 1
+            (pl.col("is_profile").cast(pl.Float64).diff().replace(-1, 0).cum_sum()
+            * pl.col("is_profile")).replace({0: np.nan})
         ).alias("profile_num")
     )
 
