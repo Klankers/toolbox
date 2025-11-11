@@ -188,10 +188,10 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             )
 
             # Split data into profile and non-profile points for plotting
-            profiles = self.profile_outputs.drop_nans().filter(
+            profiles = self.profile_outputs.filter(
                 pl.col("is_profile").cast(pl.Boolean)
             )
-            not_profiles = self.profile_outputs.drop_nans().filter(
+            not_profiles = self.profile_outputs.filter(
                 pl.col("is_profile").cast(pl.Boolean).not_()
             )
 
