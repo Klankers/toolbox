@@ -40,8 +40,8 @@ class BaseTest:
     required_variables = []
     qc_outputs = []
 
-    def __init__(self, df, **kwargs):
-        self.df = df
+    def __init__(self, data, **kwargs):
+        self.data = data.copy()
 
         invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
         if invalid_params:

@@ -23,6 +23,12 @@ class impossible_speed_test(BaseTest):
 
     def return_qc(self):
 
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         self.df = self.df.with_columns((pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt"))
         for label in ["LATITUDE", "LONGITUDE"]:
             self.df = self.df.with_columns(

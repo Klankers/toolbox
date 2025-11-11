@@ -26,6 +26,12 @@ class valid_profile_test(BaseTest):
 
     def return_qc(self):
 
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Check profiles are of a given length
         profile_lengths = self.df.group_by("PROFILE_NUMBER").count()
         self.df = self.df.join(profile_lengths, on="PROFILE_NUMBER", how="left")

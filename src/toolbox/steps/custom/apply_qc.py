@@ -60,9 +60,7 @@ class ApplyQC(BaseStep):
             test_qc_outputs_cols.update(test.qc_outputs)
 
         # Convert data to polars for fast processing
-        if set(all_required_variables).issubset(set(data.keys())):
-            df = pl.from_pandas(data[all_required_variables].to_dataframe(), nan_to_null=False)
-        else:
+        if not set(all_required_variables).issubset(set(data.keys())):
             raise KeyError(
                 f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for QC."
                 f" Make sure that the variables are present in the data, or use remove tests from the order."
@@ -82,7 +80,7 @@ class ApplyQC(BaseStep):
         for qc_test_name, qc_test_params in self.qc_settings.items():
             # Create an instance of this test step
             print(f"[Apply QC] Applying: {qc_test_name}")
-            qc_test_instance = QC_CLASSES[qc_test_name](df, **qc_test_params)
+            qc_test_instance = QC_CLASSES[qc_test_name](data, **qc_test_params)
             returned_flags = qc_test_instance.return_qc()
             self.organise_flags(returned_flags)
 

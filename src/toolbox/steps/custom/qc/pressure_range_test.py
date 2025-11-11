@@ -22,6 +22,12 @@ class pressure_range_test(BaseTest):
 
     def return_qc(self):
 
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Set flags
         self.df = self.df.with_columns(
             pl.when(pl.col("PRES").is_between(-5, -2.4)).then(3)

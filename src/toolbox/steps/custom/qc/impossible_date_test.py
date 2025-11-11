@@ -22,6 +22,13 @@ class impossible_date_test(BaseTest):
     qc_outputs = ["TIME_QC"]
 
     def return_qc(self):
+
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Check if any of the datetime stamps fall outside 1985 and the current datetime
         self.df = self.df.with_columns(
             pl.when(

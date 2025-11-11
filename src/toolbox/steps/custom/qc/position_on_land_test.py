@@ -25,6 +25,12 @@ class position_on_land_test(BaseTest):
 
     def return_qc(self):
 
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Concat the polygons into a MultiPolygon object
         self.world = geopandas.read_file(
             get_path("naturalearth.land")
