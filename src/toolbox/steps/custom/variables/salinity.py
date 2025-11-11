@@ -292,7 +292,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         # Apply the filter
         TEMP_correction = np.full(n_resamples, 0.0)
-        for i in range(2, n_resamples):  # TODO: 2 should probably be a 1? Waiting on Louis
+        for i in range(1, n_resamples):
             TEMP_correction[i] = -b * TEMP_correction[i - 1] + a * (TEMP_1Hz_sampling[i] - TEMP_1Hz_sampling[i - 1])
         corrected_TEMP_1Hz_sampling = TEMP_1Hz_sampling - TEMP_correction
 
