@@ -76,11 +76,11 @@ class BlankStep(BaseStep, QCHandlingMixin):
                 marker="o",
                 label=label
             )
-            ax.set(
-                xlabel="TIME",
-                ylabel="PRES",
-                title="Profile Directions",
-            )
+        ax.set(
+            xlabel="TIME",
+            ylabel="PRES",
+            title="Profile Directions",
+        )
         ax.legend(loc="upper right")
         fig.tight_layout()
         plt.show(block=True)
