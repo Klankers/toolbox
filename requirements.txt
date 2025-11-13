@@ -18,3 +18,4 @@ polars
 geodatasets
 shapely
 geopandas
+pvlib
