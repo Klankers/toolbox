@@ -7,6 +7,8 @@ from toolbox.steps import QC_CLASSES
 
 #### Custom imports ####
 import polars as pl
+import xarray as xr
+import numpy as np
 
 
 @register_step
@@ -16,20 +18,31 @@ class ApplyQC(BaseStep):
 
     def organise_flags(self, new_flags):
         # Method for taking in new flags and cross checking against exiting flags, including upgrading flags when necessary.
+
+        # Define combinatrix for handling flag upgrade behaviour
+        qc_combinatrix = np.array([
+            [0, 0, 0, 3, 4, 0, 0, 0, 0, 9],
+            [0, 1, 2, 3, 4, 5, 1, 1, 8, 9],
+            [0, 2, 2, 3, 4, 5, 2, 2, 8, 9],
+            [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
+            [0, 5, 5, 3, 4, 5, 5, 5, 8, 9],
+            [0, 1, 2, 3, 4, 5, 6, 6, 8, 9],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [0, 8, 8, 3, 4, 8, 8, 8, 8, 9],
+            [9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+        ])
+
         # Update existing flag columns
-        flag_columns_to_update = set(new_flags.columns) & set(self.flag_store.columns)
+        flag_columns_to_update = set(new_flags.data_vars) & set(self.flag_store.data_vars)
         for column_name in flag_columns_to_update:
-            self.flag_store = self.flag_store.with_columns(
-                pl.max_horizontal([pl.col(column_name), new_flags[column_name]]).alias(
-                    f"{column_name}"
-                )
-            )
+            self.flag_store[column_name][:] = qc_combinatrix[self.flag_store[column_name], new_flags[column_name]]
+
         # Add new QC flag columns if they dont already exist
-        flag_columns_to_add = set(new_flags.columns) - set(self.flag_store.columns)
+        flag_columns_to_add = set(new_flags.data_vars) - set(self.flag_store.data_vars)
         if len(flag_columns_to_add) > 0:
-            self.flag_store = self.flag_store.with_columns(
-                new_flags[list(flag_columns_to_add)],
-            )
+            for column_name in flag_columns_to_add:
+                self.flag_store[column_name] = new_flags[column_name]
 
     def run(self):
 
@@ -56,8 +69,15 @@ class ApplyQC(BaseStep):
         all_required_variables = set({})
         test_qc_outputs_cols = set({})
         for test in queued_qc:
-            all_required_variables.update(test.required_variables)
-            test_qc_outputs_cols.update(test.qc_outputs)
+            if hasattr(test, "dynamic"):
+                # Initialise the test to check its dynamic attributes
+                test_instance = test(None, **self.qc_settings[test.test_name])
+                all_required_variables.update(test_instance.required_variables)
+                test_qc_outputs_cols.update(test_instance.qc_outputs)
+                del test_instance
+            else:
+                all_required_variables.update(test.required_variables)
+                test_qc_outputs_cols.update(test.qc_outputs)
 
         # Convert data to polars for fast processing
         if not set(all_required_variables).issubset(set(data.keys())):
@@ -70,11 +90,9 @@ class ApplyQC(BaseStep):
         existing_flags = [
             flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
         ]
-        self.flag_store = pl.DataFrame()
+        self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
-            self.flag_store = pl.from_pandas(
-                data[existing_flags].to_dataframe(), nan_to_null=False
-            )
+            self.flag_store = data[existing_flags]
 
         # Run through all of the QC steps and add the flags to flag_store
         for qc_test_name, qc_test_params in self.qc_settings.items():
@@ -85,7 +103,7 @@ class ApplyQC(BaseStep):
             self.organise_flags(returned_flags)
 
             # Update QC history
-            for flagged_var in returned_flags.columns:
+            for flagged_var in returned_flags.data_vars:
                 percent_flagged = (returned_flags[flagged_var].to_numpy() != 0).sum() / len(returned_flags)
                 qc_history.setdefault(flagged_var, []).append((qc_test_name, percent_flagged))
 
@@ -97,7 +115,7 @@ class ApplyQC(BaseStep):
             del qc_test_instance
 
         # Append the flags from self.flag_store to the xarray data and push back into context
-        for flag_column in self.flag_store.columns:
+        for flag_column in self.flag_store.data_vars:
             data[flag_column] = (
                 ("N_MEASUREMENTS",),
                 self.flag_store[flag_column].to_numpy(),
