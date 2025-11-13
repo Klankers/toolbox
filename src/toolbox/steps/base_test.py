@@ -45,7 +45,7 @@ class BaseTest:
 
         invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
         if invalid_params:
-            raise TypeError(f"Unexpected parameters for {self.test_name}: {invalid}")
+            raise KeyError(f"Unexpected parameters for {self.test_name}: {invalid_params}")
 
         for k, v in kwargs.items():
             self.expected_parameters[k] = v
