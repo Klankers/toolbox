@@ -35,7 +35,7 @@ def running_average_nan(arr: np.ndarray, window_size: int) -> np.ndarray:
     return avg
 
 
-def compute_optimal_lag(profile_data, filter_window_size):
+def compute_optimal_lag(profile_data, filter_window_size, time_col):
     """
     Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
     Mimimize the standard deviation of the difference between a lagged CNDC and a high-pass filtered CNDC.
@@ -64,15 +64,15 @@ def compute_optimal_lag(profile_data, filter_window_size):
 
     # remove any rows where conductivity is bad (nan)
     profile_data = profile_data[
-        ["TIME_CTD",
+        [time_col,
          "CNDC",
          "PRES",
          "TEMP"]
     ].dropna(dim="N_MEASUREMENTS", subset=["CNDC"])
 
     # Find the elapsed time in seconds from the start of the profile
-    t0 = profile_data["TIME_CTD"].values[0]
-    profile_data["ELAPSED_TIME[s]"] = (profile_data["TIME_CTD"] - t0).dt.total_seconds()
+    t0 = profile_data[time_col].values[0]
+    profile_data["ELAPSED_TIME[s]"] = (profile_data[time_col] - t0).dt.total_seconds()
 
     # Creates a callable function that predicts what CNDC would be at any given time
     conductivity_from_time = interpolate.interp1d(
@@ -163,6 +163,12 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         # Required for plotting later
         self.data_copy = self.data.copy()
 
+        # Check if TIME_CTD exists
+        self.time_col = "TIME_CTD"
+        if self.time_col not in self.data:
+            self.log("TIME_CTD cound not be found. Defaulting to TIME instead.")
+            self.time_col = "TIME"
+
         # Filter user-specified flags
         self.filter_qc()
 
@@ -223,8 +229,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         # Loop through all good profiles and store the optimal C-T lag for each.
         for i, profile_number in enumerate(profile_numbers):
             profile = self.data.where((self.data["PROFILE_NUMBER"] == profile_number), drop=True)
-            if len(profile["TIME_CTD"]) > 3 * self.filter_window_size:
-                optimal_lag = compute_optimal_lag(profile, self.filter_window_size)
+            if len(profile[self.time_col]) > 3 * self.filter_window_size:
+                optimal_lag = compute_optimal_lag(profile, self.filter_window_size, self.time_col)
                 self.per_profile_optimal_lag[i, :] = [profile_number, optimal_lag]
 
         # Find median optimal time lag across all profiles
@@ -232,11 +238,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         
         # Get a nanless subset of CNDC data
         nan_mask = self.data["CNDC"].isnull()
-        data_subset = self.data[["TIME_CTD", "CNDC"]].where(~nan_mask, drop=True)
+        data_subset = self.data[[self.time_col, "CNDC"]].where(~nan_mask, drop=True)
 
         # Find the elapsed time in seconds
-        t0 = data_subset["TIME_CTD"].values[0]
-        data_subset["ELAPSED_TIME[s]"] = (data_subset["TIME_CTD"] - t0).dt.total_seconds()
+        t0 = data_subset[self.time_col].values[0]
+        data_subset["ELAPSED_TIME[s]"] = (data_subset[self.time_col] - t0).dt.total_seconds()
         
         # Resample the data using a shifted time
         CNDC_from_TIME = interpolate.interp1d(
@@ -252,11 +258,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     def correct_thermal_lag(self):
 
         nan_mask = self.data["TEMP"].isnull()
-        data_subset = self.data[["TIME_CTD", "TEMP", "PRES"]].where(~nan_mask, drop=True)
+        data_subset = self.data[[self.time_col, "TEMP", "PRES"]].where(~nan_mask, drop=True)
 
         # Find the elapsed time in seconds
-        t0 = data_subset["TIME_CTD"].values[0]
-        data_subset["ELAPSED_TIME[s]"] = (data_subset["TIME_CTD"] - t0).dt.total_seconds()
+        t0 = data_subset[self.time_col].values[0]
+        data_subset["ELAPSED_TIME[s]"] = (data_subset[self.time_col] - t0).dt.total_seconds()
 
         # TODO: Convert to xarray interpolation as interp1d doesn't get updated any more
         # Define a function that can estimate TEMP at any time point
