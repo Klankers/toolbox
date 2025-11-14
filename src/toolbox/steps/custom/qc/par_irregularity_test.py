@@ -1,8 +1,10 @@
 #### Mandatory imports ####
+from IPython.core.pylabtools import figsize
 from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 from scipy.stats import shapiro
 from scipy.interpolate import interp1d
@@ -11,6 +13,7 @@ import warnings
 import xarray as xr
 import pandas as pd
 import pvlib
+from tqdm import tqdm
 
 
 # Functions written and provided by Thomas Ryan-Keogh based off of (https://doi.org/10.1002/lom3.10701)
@@ -172,7 +175,10 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
         seg = seg[np.isfinite(seg)]
         if seg.size >= 3:
             try:
-                _, pvals[i] = shapiro(seg)
+                # TODO: Dev. verbosity to disable warning ignoring. Also below...
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    _, pvals[i] = shapiro(seg)
             except Exception:
                 pvals[i] = np.nan
 
@@ -247,7 +253,8 @@ class par_irregularity_test(BaseTest):
 
     test_name = "PAR irregularity test"
     expected_parameters = {
-        "noise_equivalent_estimate": 3e-2
+        "noise_equivalent_estimate": 3e-2,
+        "plot_profiles": []
     }
     required_variables = ["LATITUDE", "LONGITUDE", "TIME", "PRES", "DOWNWELLING_PAR", "PROFILE_NUMBER"]
     qc_outputs = ["DOWNWELLING_PAR_QC"]
@@ -262,7 +269,7 @@ class par_irregularity_test(BaseTest):
 
         # Apply the checks across individual profiles
         profile_numbers = np.unique(self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS"))
-        for profile_number in profile_numbers:
+        for profile_number in tqdm(profile_numbers, colour="green", desc='\033[97mProgress\033[0m', unit="profile"):
 
             # Subset the data
             profile = self.data.where(self.data["PROFILE_NUMBER"] == profile_number, drop=True)
@@ -296,4 +303,49 @@ class par_irregularity_test(BaseTest):
         return self.flags
 
     def plot_diagnostics(self):
+        mpl.use("tkagg")
+
+        if len(self.plot_profiles) == 0:
+            self.log("To see diagnostics, please specify the plot_profiles setting.")
+            return
+
+        nrows = int(np.ceil(len(self.plot_profiles) / 3))
+        fig, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(12, nrows * 6), dpi=200)
+
+        for profile_number, ax in zip(self.plot_profiles, axs.flatten()):
+            # Select the profile data
+            profile = self.data.where(
+                self.data["PROFILE_NUMBER"] == profile_number,
+                drop=True
+            ).dropna(dim="N_MEASUREMENTS", subset=["DOWNWELLING_PAR", "PRES"])
+
+            if len(profile["DOWNWELLING_PAR"]) == 0:
+                ax.legend(title=f"Prof. {profile_number} (data missing)", loc="upper right")
+                continue
+
+            for flag in range(10):
+                # Get the data for each flag and check it isn't empty
+                plot_data = profile.where(profile["DOWNWELLING_PAR_QC"] == flag, drop=True)
+                if len(plot_data["DOWNWELLING_PAR"]) == 0:
+                    continue
+
+                ax.plot(
+                    plot_data["DOWNWELLING_PAR"],
+                    plot_data["PRES"],
+                    c=flag_cols[flag],
+                    ls="",
+                    marker="o",
+                    label=f"{flag}",
+                )
+
+            ax.set(
+                xlabel="PAR",
+                ylabel="PRES",
+                ylim=(np.nanmax(profile["PRES"]), 0),
+            )
+
+            ax.legend(title=f"Prof. {profile_number} flags", loc="upper right")
+
+        fig.suptitle("PAR irregularity test")
+        fig.tight_layout()
         plt.show(block=True)
