@@ -4,6 +4,7 @@ from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import polars as pl
+import xarray as xr
 import matplotlib
 
 @register_qc
@@ -22,6 +23,12 @@ class pressure_range_test(BaseTest):
 
     def return_qc(self):
 
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Set flags
         self.df = self.df.with_columns(
             pl.when(pl.col("PRES").is_between(-5, -2.4)).then(3)
@@ -36,7 +43,16 @@ class pressure_range_test(BaseTest):
             pl.col("PRES_QC").alias("CNDC_QC"),
         )
 
-        self.flags = self.df.select(pl.col("^.*_QC$"))
+        # Convert back to xarray
+        flags = self.df.select(pl.col("^.*_QC$"))
+        self.flags = xr.Dataset(
+            data_vars={
+                col: ("N_MEASUREMENTS", flags[col].to_numpy())
+                for col in flags.columns
+            },
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+        )
+
         return self.flags
 
     def plot_diagnostics(self):

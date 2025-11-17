@@ -4,6 +4,7 @@ from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import polars as pl
+import xarray as xr
 import numpy as np
 import matplotlib
 
@@ -22,6 +23,12 @@ class impossible_speed_test(BaseTest):
     qc_outputs = ["TIME_QC", "LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
+
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
 
         self.df = self.df.with_columns((pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt"))
         for label in ["LATITUDE", "LONGITUDE"]:
@@ -59,7 +66,16 @@ class impossible_speed_test(BaseTest):
                 .alias(f"{label}_QC")
             )
 
-        self.flags = self.df.select(pl.col("^.*_QC$"))
+        # Convert back to xarray
+        flags = self.df.select(pl.col("^.*_QC$"))
+        self.flags = xr.Dataset(
+            data_vars={
+                col: ("N_MEASUREMENTS", flags[col].to_numpy())
+                for col in flags.columns
+            },
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+        )
+
         return self.flags
 
     def plot_diagnostics(self):

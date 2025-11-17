@@ -3,6 +3,7 @@ from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 
 #### Custom imports ####
 import polars as pl
+import xarray as xr
 from datetime import datetime
 import matplotlib
 import matplotlib.pyplot as plt
@@ -22,6 +23,13 @@ class impossible_date_test(BaseTest):
     qc_outputs = ["TIME_QC"]
 
     def return_qc(self):
+
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Check if any of the datetime stamps fall outside 1985 and the current datetime
         self.df = self.df.with_columns(
             pl.when(
@@ -34,7 +42,17 @@ class impossible_date_test(BaseTest):
             .otherwise(4)
             .alias("TIME_QC")
         )
-        self.flags = self.df.select(pl.col("^.*_QC$"))
+
+        # Convert back to xarray
+        flags = self.df.select(pl.col("^.*_QC$"))
+        self.flags = xr.Dataset(
+            data_vars={
+                col: ("N_MEASUREMENTS", flags[col].to_numpy())
+                for col in flags.columns
+            },
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+        )
+
         return self.flags
 
     def plot_diagnostics(self):

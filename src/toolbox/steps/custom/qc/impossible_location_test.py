@@ -3,6 +3,7 @@ from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 
 #### Custom imports ####
 import polars as pl
+import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -21,6 +22,13 @@ class impossible_location_test(BaseTest):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
+
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
+
         # Check LAT/LONG exist within expected bounds
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
             self.df = self.df.with_columns(
@@ -33,7 +41,16 @@ class impossible_location_test(BaseTest):
                 .otherwise(4).alias(f"{label}_QC")
             )
 
-        self.flags = self.df.select(pl.col("^.*_QC$"))
+        # Convert back to xarray
+        flags = self.df.select(pl.col("^.*_QC$"))
+        self.flags = xr.Dataset(
+            data_vars={
+                col: ("N_MEASUREMENTS", flags[col].to_numpy())
+                for col in flags.columns
+            },
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+        )
+
         return self.flags
 
     def plot_diagnostics(self):

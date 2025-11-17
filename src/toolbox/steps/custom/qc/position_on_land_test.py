@@ -6,6 +6,7 @@ from geodatasets import get_path
 import matplotlib.pyplot as plt
 import shapely as sh
 import polars as pl
+import xarray as xr
 import matplotlib
 import geopandas
 
@@ -24,6 +25,12 @@ class position_on_land_test(BaseTest):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
+
+        # Convert to polars
+        self.df = pl.from_pandas(
+            self.data[self.required_variables].to_dataframe(),
+            nan_to_null=False
+        )
 
         # Concat the polygons into a MultiPolygon object
         self.world = geopandas.read_file(
@@ -49,7 +56,16 @@ class position_on_land_test(BaseTest):
         # Add the flags to LATITUDE as well.
         self.df = self.df.with_columns(pl.col("LONGITUDE_QC").alias("LATITUDE_QC"))
 
-        self.flags = self.df.select(pl.col("^.*_QC$"))
+        # Convert back to xarray
+        flags = self.df.select(pl.col("^.*_QC$"))
+        self.flags = xr.Dataset(
+            data_vars={
+                col: ("N_MEASUREMENTS", flags[col].to_numpy())
+                for col in flags.columns
+            },
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+        )
+
         return self.flags
 
     def plot_diagnostics(self):

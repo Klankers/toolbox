@@ -21,7 +21,7 @@ class QCHandlingMixin:
             raise ValueError("No data found in context. Please load data first.")
         else:
             self.log(f"Data found in context.")
-        self.data = self.context["data"]
+        self.data = self.context["data"].copy()
 
         # Make a copy of the data for reference
         self.data_copy = self.data.copy()

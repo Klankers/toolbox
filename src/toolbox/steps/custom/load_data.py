@@ -70,13 +70,6 @@ class LoadOG1(BaseStep):
         This is a placeholder for future development.
         """
         self.log("Adding missing columns for development purposes...")
-        # look for TIME_CTD
-        if "TIME_CTD" not in self.data:
-            # copy TIME to TIME_CTD
-            self.data["TIME_CTD"] = self.data["TIME"].copy()
-            self.data.TIME_CTD.attrs = self.data.TIME.attrs.copy()
-            self.data.TIME_CTD.attrs["long_name"] = "CTD Time"
-            self.log("Added TIME_CTD column to dataset. Derived from TIME.")
 
     def generate_diagnostics(self):
         self.log(f"Generating diagnostics...")
