@@ -1,4 +1,6 @@
 from toolbox.utils.config_mirror import ConfigMirrorMixin
+import warnings
+warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
 
 # Registry of explicitly registered step classes
 REGISTERED_STEPS = {}
@@ -58,6 +60,11 @@ class BaseStep(ConfigMirrorMixin):
     def log(self, message):
         """Log messages with step name."""
         print(f"[{self.name}] {message}")
+
+    def log_warn(self, message, warning_type=UserWarning):
+        warnings.warn(f"[{self.name}] WARNING: {message}", warning_type)
+
+    # ----------- Config Handling -----------
 
     def update_parameters(self, **kwargs):
         """
