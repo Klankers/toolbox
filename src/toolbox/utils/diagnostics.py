@@ -259,6 +259,7 @@ def plot_distance_time_grid(
             comp_df = summaries[g_b_id]
 
             paired_df = find_closest_prof(ref_df, comp_df)
+            # TODO: ------- Rename column headers and add glider name labels to PROFILE_NUMBER -------
             combined_summaries.append(paired_df)
 
             ax = axes[i, j]
@@ -367,13 +368,13 @@ def find_candidate_glider_pairs(
         df_cross["median_LONGITUDE_b"],
     )
 
-    # Filter by distance threshold
+    # Filter by distance threshold TODO: ---------- SAVE THIS --------------
     df_cross = df_cross[df_cross["dist_km"] <= dist_thresh_km]
 
     if df_cross.empty:
         return pd.DataFrame()
 
-    # Keep only best match (min dist) per PROFILE_NUMBER_a
+    # Keep only best match (min dist) per PROFILE_NUMBER_a TODO: ------------ CHECK IF NECESSARY ------------
     best_matches = df_cross.loc[
         df_cross.groupby("PROFILE_NUMBER_a")["dist_km"].idxmin()
     ].copy()
@@ -381,18 +382,19 @@ def find_candidate_glider_pairs(
     # Return clean structure
     best_matches = best_matches.rename(
         columns={
+            "glider_name": "glider_a_name",
             "PROFILE_NUMBER_a": "glider_a_PROFILE_NUMBER",
             "PROFILE_NUMBER_b": "glider_b_PROFILE_NUMBER",
         }
     )
 
-    best_matches["glider_name"] = glider_a_name
+    best_matches["glider_a_name"] = glider_a_name
     best_matches["glider_b_name"] = glider_b_name
 
     return best_matches[
         [
             "glider_a_PROFILE_NUMBER",
-            "glider_name",
+            "glider_a_name",
             "glider_b_PROFILE_NUMBER",
             "glider_b_name",
             "time_diff_hr",

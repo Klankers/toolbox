@@ -1,12 +1,12 @@
 pipelines:
   - name: Churchill
-    config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_churchill.yaml"
+    config: "../../examples/configs/example_config_churchill.yaml"
   - name: Doombar
-    config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_doombar.yaml"
+    config: "../../examples/configs/example_config_doombar.yaml"
   - name: Nelson
-    config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_nelson.yaml"
+    config: "../../examples/configs/example_config_nelson.yaml"
   - name: Cabot
-    config: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/configs/example_config_cabot.yaml"
+    config: "../../examples/configs/example_config_cabot.yaml"
 
 alignment:
   variables:
@@ -25,10 +25,10 @@ alignment:
 
 settings:
   saving:
-    save_raw: true               # write {pipeline}_raw.nc
-    save_processed: true         # write {pipeline}_processed_agg.nc
-    save_combined_target: true   # write {target}_combined_agg.nc
-    save_lite: true              # write {target}_combined_agg_lite.nc
+    save_raw: false               # write {pipeline}_raw.nc
+    save_processed: false         # write {pipeline}_processed_agg.nc
+    save_combined_target: false   # write {target}_combined_agg.nc
+    save_lite: false              # write {target}_combined_agg_lite.nc
     output_dir: ""               # optional; if empty/missing, a timestamped folder is created
   
   diagnostics:
@@ -54,7 +54,7 @@ settings:
     aliases:
       CNDC: cond
       TEMP: temp
-    folder_path: "/home/adamwa/Ocean Informatics/Projects/toolbox/examples/data/OG1/ctd_2db"
+    folder_path: "C:/Users/ddab1n24/OneDrive - University of Southampton/Documents/PhD/RISC/toolbox/examples/data/CTD/ctd_2db"
     max_time_threshold: 12
     max_distance_threshold: 10
     bin_size: 2

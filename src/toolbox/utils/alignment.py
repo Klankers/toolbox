@@ -69,12 +69,12 @@ def interpolate_DEPTH(
     if "PROFILE_NUMBER" not in ds:
         raise ValueError("Dataset must contain 'PROFILE_NUMBER'.")
 
-    # Filter out surfacing/invalid profiles (PROFILE_NUMBER > 0)
-    mask = ds["PROFILE_NUMBER"] > 0
-    ds = ds.sel(N_MEASUREMENTS=mask)
-
-    # Ensure int dtype and set as coord
-    ds["PROFILE_NUMBER"] = ds["PROFILE_NUMBER"].astype(np.int32)
+    # # Filter out surfacing/invalid profiles (PROFILE_NUMBER > 0)
+    # mask = ds["PROFILE_NUMBER"] > 0
+    # ds = ds.sel(N_MEASUREMENTS=mask)
+    #
+    # # Ensure int dtype and set as coord
+    # ds["PROFILE_NUMBER"] = ds["PROFILE_NUMBER"].astype(np.int32)
     if "PROFILE_NUMBER" not in ds.coords:
         ds = ds.set_coords("PROFILE_NUMBER")
 
@@ -471,10 +471,10 @@ def merge_pairs_from_filtered_aggregates(
 
     # pre-cast ids for safe selection
     agg_target = agg_target.assign_coords(
-        PROFILE_NUMBER=agg_target.PROFILE_NUMBER.astype("int32")
+        PROFILE_NUMBER=agg_target.PROFILE_NUMBER
     )
     agg_anc = agg_anc.assign_coords(
-        PROFILE_NUMBER=agg_anc.PROFILE_NUMBER.astype("int32")
+        PROFILE_NUMBER=agg_anc.PROFILE_NUMBER
     )
 
     out = []
@@ -483,8 +483,8 @@ def merge_pairs_from_filtered_aggregates(
     pairs = paired_df[[tgt_id_col, anc_id_col, "time_diff_hr", "dist_km"]]
 
     for pair_idx, row in pairs.reset_index(drop=True).iterrows():
-        pid_t = int(row[tgt_id_col])
-        pid_a = int(row[anc_id_col])
+        pid_t = row[tgt_id_col]
+        pid_a = row[anc_id_col]
 
         # skip if either profile missing
         if (
