@@ -1,5 +1,3 @@
-"""Class definition for deriving CTD variables."""
-
 #### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
 from toolbox.utils.qc_handling import QCHandlingMixin
