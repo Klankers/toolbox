@@ -8,6 +8,7 @@ import toolbox.utils.diagnostics as diag
 import xarray as xr
 import pandas as pd
 import numpy as np
+import warnings
 
 
 @register_step
@@ -29,11 +30,25 @@ class LoadOG1(BaseStep):
 
     def run(self):
 
-        source = self.parameters["file_path"]
-        self.log(f"Params: {self.parameters}")
-        self.log(f"Loading {source} OG1")
         # load data from xarray
-        self.data = xr.open_dataset(source)
+        self.data = xr.open_dataset(self.file_path)
+
+        # Check that the "TIME" variable is monotonic and nanless - then make it a coordinate
+        if "TIME" not in self.data.data_vars:
+            raise ValueError(
+                "\n'TIME' could not be found in the dataset. Pipelines cannot be run without this variable.\n"
+                "If TIME is listed under another name, please rename it to conform to the OG1 format."
+            )
+        if np.any(np.isnan(self.data["TIME"])):
+            raise ValueError(
+                "\n'TIME' has nan values. Pipelines cannot be run without a continuous monotonic time coordinate.\n"
+                "Please remove these values (and their concurrent measurements) from the input."
+            )
+        if not np.all(np.diff(self.data["TIME"]) >= 0):
+            self.log_warn(
+                "'TIME' is not monotonically increasing. This may cause fatal issues in processing. "
+                "Please check the quality of your input data."
+            )
 
         # TODO: Remove QC column resetting when BODC has properly implemented QC outputs
         # Reset all data variable flags. Set unchecked data flags to 0 and missing data flags to 9
@@ -46,89 +61,15 @@ class LoadOG1(BaseStep):
         masks = masks.rename({var: f"{var}_QC" for var in cols_to_qc})
         self.data.update(masks)
 
-        if self.add_meta:
-            self.f_addMeta()
-
-        if self.add_elapsed_time:
-            self.f_addElapsedTime()
-
         # Generate diagnostics if enabled
-        self.log(f"Diagnostics: {self.diagnostics}")
         if self.diagnostics:
             self.generate_diagnostics()
-
-        if self.add_dev_cols:
-            self.add_missing_columns_dev()
 
         # add data to context
         self.context["data"] = self.data
         return self.context
 
-    def add_missing_columns_dev(self):
-        """
-        Adds missing columns to the dataset for development purposes.
-        This is a placeholder for future development.
-        """
-        self.log("Adding missing columns for development purposes...")
-
     def generate_diagnostics(self):
         self.log(f"Generating diagnostics...")
         # self.log summary stats
         diag.generate_info(self.data)
-
-    def f_addMeta(self):
-        self.log(f"Adding metadata...")
-        # Add Length
-        self.data.attrs["N_MEASUREMENTS_Length"] = int(
-            (len(self.data.N_MEASUREMENTS.values))
-        )
-        # Add Variable Meta
-        self.data.attrs["Variable Information"] = pd.DataFrame(
-            index=self.data.keys(),
-            columns=["Is Numeric", "Length", "# NaNs", "NaNless Length"],
-        )
-        for k, v in self.data.items():
-            # Check if the variable is numeric
-            b_is_numeric = (
-                np.issubdtype(v.dtype, np.number)
-                | np.issubdtype(v.dtype, np.datetime64)
-            ) & (v.ndim != 0)
-            self.data.attrs["Variable Information"].loc[k] = [
-                b_is_numeric,
-                len(v.values) if b_is_numeric else v.values,
-                np.sum(np.isnan(v.values)) if b_is_numeric else None,
-                len(v.values) - np.sum(np.isnan(v.values)) if b_is_numeric else None,
-            ]
-
-    def f_addElapsedTime(self):
-        """
-        Appends epoch and elapsed time to the dataset
-        """
-        try:
-            epoch_time = self.data.TIME.values.astype("float")
-            elapsed_time = (epoch_time - epoch_time[0]) * 1e-9
-            self.data["EPOCH_TIME"] = (("N_MEASUREMENTS",), epoch_time)
-            self.data.EPOCH_TIME.attrs = {
-                "long_name": "Time in nanoseconds since 01/01/1970",
-                "units": "ns",
-                "standard_name": "Epoch time",
-                "valid_min": -np.inf,
-                "valid_max": np.inf,
-            }
-
-            self.data["ELAPSED_TIME"] = (("N_MEASUREMENTS",), elapsed_time)
-            self.data.ELAPSED_TIME.attrs = {
-                "long_name": "Elapsed time in seconds since deployment",
-                "units": "s",
-                "standard_name": "Elapsed time",
-                "valid_min": 0,
-                "valid_max": np.inf,
-            }
-        except Exception as e:
-            if type(e) == AttributeError:
-                self.log(
-                    "ERROR: The TIME variable does not appear in the netCDF file. These functions are only intended"
-                    " for use with OG1 format netCDF files."
-                )
-            else:
-                self.log(f"{type(e)}: Something unexpected happened: \n {e}")

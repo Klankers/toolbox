@@ -1,6 +1,7 @@
 
 # Data Files
 *.nc
+\data
 
 # Development
 \testing

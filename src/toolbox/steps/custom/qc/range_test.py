@@ -25,6 +25,7 @@ class range_test(BaseTest):
               "variable_ranges": {"PRES": {3: [-2, 0], 4: [-999, -2]}, "LATITUDE": {4: [-90, 90]}},
               "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
               "plot": ["PRES", "LATITUDE"]
+              "test_depth_range": [-100, 0]  # OPTIONAL
             }
         }
       diagnostics: true
@@ -44,13 +45,18 @@ class range_test(BaseTest):
         # Specify the tests paramters from kwargs (config)
         self.expected_parameters = {k: v for k, v in kwargs.items() if k in required_kwargs}
         self.required_variables = list(set(self.expected_parameters["variable_ranges"].keys()))
+        self.tested_variables = self.required_variables.copy()
+        if "test_depth_range" in kwargs.keys():
+            self.required_variables.append("DEPTH")
+            self.test_depth_range = kwargs["test_depth_range"]
+
         self.qc_outputs = list(
-            set(f"{var}_QC" for var in self.required_variables) |
+            set(f"{var}_QC" for var in self.tested_variables) |
             set(f"{var}_QC" for var in sum(self.expected_parameters["also_flag"].values(), []))
         )
 
         if data is not None:
-            self.data = data.copy()
+            self.data = data.copy(deep=True)
 
         for k, v in self.expected_parameters.items():
             setattr(self, k, v)
@@ -61,7 +67,19 @@ class range_test(BaseTest):
 
         # Subset the data
         self.data = self.data[self.required_variables]
-        for var in self.required_variables:
+
+        # If the user specified a depth range, limit the checks to that range
+        if hasattr(self, "test_depth_range"):
+            # TODO: -DEPTH
+            depth_range_mask = (
+                    (self.data["DEPTH"] >= self.test_depth_range[0]) &
+                    (self.data["DEPTH"] <= self.test_depth_range[1])
+            )
+        else:
+            depth_range_mask = True
+
+        # Make the empty QC columns
+        for var in self.tested_variables:
             self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], np.full(len(self.data[var]), 0))
 
         # Generate the variable-specific flags
@@ -69,6 +87,7 @@ class range_test(BaseTest):
             for flag, bounds in meta.items():
                 self.data[f"{var}_QC"] = xr.where(
                     (
+                        depth_range_mask &
                         (self.data[var] > bounds[0]) &
                         (self.data[var] < bounds[1]) &
                         (self.data[f"{var}_QC"] == 0)
@@ -79,7 +98,8 @@ class range_test(BaseTest):
 
             # Replace all remaining 0s (unchecked) with 1s (good)
             self.data[f"{var}_QC"] = xr.where(
-                self.data[f"{var}_QC"] == 0,
+                depth_range_mask &
+                (self.data[f"{var}_QC"] == 0),
                 1,
                 self.data[f"{var}_QC"]
             )

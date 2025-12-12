@@ -1,14 +1,9 @@
-"""Class definition for deriving CTD variables."""
-
 #### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
 from toolbox.utils.qc_handling import QCHandlingMixin
 import toolbox.utils.diagnostics as diag
 
 #### Custom imports ####
-import polars as pl
-import numpy as np
-import gsw
 
 
 @register_step

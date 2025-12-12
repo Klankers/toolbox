@@ -8,18 +8,18 @@ steps:
   - name: "Load OG1"
     parameters:
       file_path: "../../examples/data/OG1/Cabot_645_R.nc" # Path to the input NetCDF file
-      add_meta: false # Add metadata to the data
-      add_elapsed_time: false
-      add_dev_cols: false 
     diagnostics: false  # Enable diagnostics
 
   - name: "Derive CTD"
     parameters:
-      conductivity_unit_conversion_factor: 1
-      pressure_unit_conversion_factor: 1
-      latitude_longitude_conversion_factor: 1
-      interpolate_latitude_longitude: true
-    diagnostics: true
+      to_derive: [
+        "DEPTH",
+        "PRAC_SALINITY",
+        "ABS_SALINITY",
+        "CONS_TEMP",
+        "DENSITY"
+      ]
+    diagnostics: false
   
   - name: "Find Profiles"
     parameters:
@@ -28,15 +28,8 @@ steps:
       depth_column: "DEPTH"
     diagnostics: false
 
-  # - name: "ADJ: Salinity"
-  #   parameters:
-  #     CTLag: True
-  #     ThermalLag: True
-  #     windowLength: 21 # Length of the window for QC
-  #   diagnostics: true  # Enable diagnostics for QC step
-
-  - name: "Data Export"
-    parameters:
-      export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
-      output_path: "../../examples/data/OG1/exported_Cabot_645.nc"
-    diagnostics: false  # Disable diagnostics for export step
+#  - name: "Data Export"
+#    parameters:
+#      export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
+#      output_path: "../../examples/data/OG1/exported_Cabot_645.nc"
+#    diagnostics: false  # Disable diagnostics for export step

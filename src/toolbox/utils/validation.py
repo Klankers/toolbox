@@ -19,6 +19,8 @@ from toolbox.utils.alignment import (
     filter_xarray_by_profile_ids,
 )
 
+from testing.sandbox import target_ds_raw
+
 
 def load_device_folder_to_xarray(
     path_or_glob,
@@ -138,9 +140,6 @@ def validate(pmanager, target="None"):
       - plot heatmaps per variable using plot_r2_heatmaps_per_pair
     """
     # --- config ---
-    if target not in pmanager.pipelines or target not in pmanager._contexts:
-        raise ValueError(f"Target '{target}' not available.")
-
     vcfg = pmanager.settings.get("validation", {}) or {}
     device_name = vcfg.get("device_name", "DEVICE")
     variables = vcfg.get("variable_names", list(pmanager.alignment_map.keys()))
@@ -155,14 +154,46 @@ def validate(pmanager, target="None"):
     out_path = vcfg.get("output_path", "")
 
     # ---- Target: prefer cached aggregated medians from preview_alignment() ----
-    target_ds_raw = pmanager._contexts[target]["data"]
+    # Check the target(s) exist
+    if type(target) is not list:
+        target_name = target
+        target = [target]
+    else:
+        target_name = "_".join(target)
+    for platform in target:
+        if platform not in pmanager.pipelines or platform not in pmanager._contexts:
+            raise ValueError(f"Target '{platform}' not available.")
 
-    # Build alias->std map for this target
-    rename_map = {
-        alias: std
-        for std, alias_map in pmanager.alignment_map.items()
-        if (alias := alias_map.get(target)) and alias in target_ds_raw
-    }
+
+    # Make merged dataset from all of the targets
+    to_merge = []
+    for platform in target:
+        # Append the target name to the profile number
+        raw_ds = pmanager._contexts[platform]["data"][
+            ["PROFILE_NUMBER", "DEPTH", "TIME", "LATITUDE", "LONGITUDE"] + variables
+        ]
+        raw_ds["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), raw_ds["PROFILE_NUMBER"].values.astype("str") + f"_{platform}")
+
+        # Remap the variable names if specified
+        rename_map = {
+            alias: std
+            for std, alias_map in pmanager.alignment_map.items()
+            if (alias := alias_map.get(platform)) and alias in raw_ds
+        }
+        raw_ds.rename(rename_map)
+
+        to_merge.append(raw_ds)
+
+    target_ds_raw = to_merge[0]
+    target_ds_raw = target_ds_raw.assign_coords({"N_MEASUREMENTS": target_ds_raw["N_MEASUREMENTS"]})
+    if len(to_merge) > 1:
+        for ds in to_merge[1:]:
+            offset = len(target_ds_raw["N_MEASUREMENTS"])
+            ds = ds.assign_coords(
+                N_MEASUREMENTS=ds["N_MEASUREMENTS"] + offset
+            )
+            target_ds_raw = xr.concat([target_ds_raw, ds], dim="N_MEASUREMENTS")
+
 
     # Create caches if not present
     if not hasattr(pmanager, "processed_per_glider"):
@@ -172,22 +203,20 @@ def validate(pmanager, target="None"):
 
     # Use cached medians if available, else compute once and cache
     if (
-        target in pmanager.processed_per_glider
-        and "agg" in pmanager.processed_per_glider[target]
+        target_name in pmanager.processed_per_glider
+        and "agg" in pmanager.processed_per_glider[target_name]
     ):
-        t_med = pmanager.processed_per_glider[target]["agg"]
+        t_med = pmanager.processed_per_glider[target_name]["agg"]
     else:
         # standardize names → interpolate → aggregate → cache + export handle
-        target_std = target_ds_raw.rename(rename_map) if rename_map else target_ds_raw
-        t_interp = interpolate_DEPTH(target_std)
+        t_interp = interpolate_DEPTH(target_ds_raw)
         t_med = aggregate_vars(t_interp, variables)  # dims: PROFILE_NUMBER, DEPTH_bin
-        pmanager.processed_per_glider[target] = {
-            "renamed": target_std,
+        pmanager.processed_per_glider[target_name] = {
             "interp": t_interp,
             "agg": t_med,
         }
-        pmanager._exportables["raw"][target] = target_ds_raw
-        pmanager._exportables["processed"][target] = t_med
+        pmanager._exportables["raw"][target_name] = target_ds_raw
+        pmanager._exportables["processed"][target_name] = t_med
 
     # ---- Device: load & aggregate (external; not part of pipelines) ----
     device_alias = vcfg.get("aliases", None)  # {STD: device_col}
@@ -198,7 +227,7 @@ def validate(pmanager, target="None"):
     device_ds_raw = load_device_folder_to_xarray(folder_path, alias_map=dev_to_std)
 
     # Summaries (for pairing)
-    target_summary = summarising_profiles(target_ds_raw, target).reset_index(drop=True)
+    target_summary = summarising_profiles(target_ds_raw, target_name).reset_index(drop=True)
     device_summary = summarising_profiles(device_ds_raw, device_name).reset_index(
         drop=True
     )
@@ -207,7 +236,7 @@ def validate(pmanager, target="None"):
     paired_df = find_profile_pair_metadata(
         df_target=target_summary,
         df_ancillary=device_summary,
-        target_name=target,
+        target_name=target_name,
         ancillary_name=device_name,
         time_thresh_hr=max_time_hr,
         dist_thresh_km=max_dist_km,
@@ -223,7 +252,7 @@ def validate(pmanager, target="None"):
     d_med = aggregate_vars(d_interp, variables)  # dims: PROFILE_NUMBER, DEPTH_bin
 
     # IDs from the pairs
-    t_ids = paired_df[f"{target}_PROFILE_NUMBER"].values
+    t_ids = paired_df[f"{target_name}_PROFILE_NUMBER"].values
     d_ids = paired_df[f"{device_name}_PROFILE_NUMBER"].values
 
     # filter to just those profiles (works on aggregated 2-D medians)
@@ -234,7 +263,7 @@ def validate(pmanager, target="None"):
     t_present = set(t_med["PROFILE_NUMBER"].values.tolist())
     d_present = set(d_med["PROFILE_NUMBER"].values.tolist())
 
-    mask_pairs = paired_df[f"{target}_PROFILE_NUMBER"].isin(t_present) & paired_df[
+    mask_pairs = paired_df[f"{target_name}_PROFILE_NUMBER"].isin(t_present) & paired_df[
         f"{device_name}_PROFILE_NUMBER"
     ].isin(d_present)
     paired_df = paired_df.loc[mask_pairs].reset_index(drop=True)
@@ -256,7 +285,7 @@ def validate(pmanager, target="None"):
         paired_df=paired_df,
         agg_target=t_med,
         agg_anc=d_med,
-        target_name=target,
+        target_name=target_name,
         ancillary_name=device_name,
         variables=variables,
         bin_dim="DEPTH_bin",
@@ -267,7 +296,7 @@ def validate(pmanager, target="None"):
 
     # R² per pair
     r2_ds = compute_r2_for_merged_profiles_xr(
-        merged, variables=variables, target_name=target, ancillary_name=device_name
+        merged, variables=variables, target_name=target_name, ancillary_name=device_name
     )
 
     # Plot heatmaps with the shared helper
@@ -280,7 +309,7 @@ def validate(pmanager, target="None"):
     plot_r2_heatmaps_per_pair(
         r2_datasets=r2_datasets_for_plot,
         variables=variables,
-        target_name=target,
+        target_name=target_name,
         r2_thresholds=r2_thresholds,
         time_thresh_hr=max_time_hr,
         dist_thresh_km=max_dist_km,

@@ -50,7 +50,7 @@ class stuck_value_test(BaseTest):
         )
 
         if data is not None:
-            self.data = data.copy()
+            self.data = data.copy(deep=True)
 
         for k, v in self.expected_parameters.items():
             setattr(self, k, v)

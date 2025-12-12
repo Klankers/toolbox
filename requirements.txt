@@ -20,3 +20,4 @@ shapely
 geopandas
 pvlib
 tqdm
+glidertools

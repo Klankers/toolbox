@@ -45,6 +45,9 @@ class valid_profile_test(BaseTest):
 
         self.df = self.df.with_columns(
             pl.when(
+                pl.col("PROFILE_NUMBER").is_nan()
+            ).then(9)
+            .when(
                 pl.col("count") < self.profile_length
             ).then(4)
             .when(
