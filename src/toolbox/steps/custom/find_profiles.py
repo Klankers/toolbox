@@ -307,7 +307,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             # Update parameter attributes
             self.thresholds = [float(entries["+ve"].get()), float(entries["-ve"].get())]
             self.win_sizes = [
-                entries["Mean Filter"].get(),
+                entries["Median Filter"].get(),
                 entries["Mean Filter"].get(),
             ]
             self.depth_col = entries["depth_column"].get()
