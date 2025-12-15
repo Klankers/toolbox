@@ -1,66 +1,178 @@
 # All step configs
+# The general structure of a step follows:
+#
+# - name:
+#   parameters:
+#     ...
+#   diagnostics:
+#
+# Parameters is used to specify user inputs that are required to run the step
+# If diagnostics is true, the majority of steps will ouput a basic plot
+
 steps:
-# Importing/Generating data
+# ----------------- Importing/Generating data -----------------
+
+# Generate Data (src/toolbox/steps/custom/gen_data.py):
+#   Generates random data for pipeline input. Typically used for testing
   - name: "Generate Data"
     parameters:
-      sampling_info: ["2025-01-01", "2025-01-02", 20]  # [start_date (y-m-d), end_date (y-m-d), sample_period (s)]
+      # [sampling info]:
+      #   [start_date (y-m-d), end_date (y-m-d), sample_period (s)]
+      sampling_info: ["2025-01-01", "2025-01-02", 20]
+      # [additional_variables]:
+      #   By default, TIME, GPS and raw CTD data are generated ("LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC")
+      #   Variables listed in "additional_variables" will be added to the defaults
       additional_variables: ["DENSITY", "ABS_SALINITY"]
-      value_limits: {
-        "DENSITY": [1028, 1032],
-      }
-      diagnostics: true
+      # [value_limits]:
+      #   Random sampling range for specified variables
+      value_limits:
+        "DENSITY": [1028, 1032]
+    # [diagnostics]:
+    #   No diagnostic output defined
+    diagnostics: false
 
+# Load OG1 (src/toolbox/steps/custom/load_data.py):
+#   Loads netCDF (*.nc) data files into the pipeline
   - name: "Load OG1"
     parameters:
-      file_path: "../../examples/data/OG1/Cabot_645_R.nc" # Path to the input NetCDF file
-      add_meta: false # Add metadata to the data
-      add_elapsed_time: false  # Add ELAPSED_TIME in seconds to the data
-      add_dev_cols: false  # Add dev columns such as CTD_TIME (for testing)
-    diagnostics: false  # Enable diagnostics
+      # [file_path]:
+      #   Path to the input NetCDF file
+      file_path: "../examples/data/OG1/Cabot_645.nc"
+    # [diagnostics]:
+    #   Prints a summary of dataset variables and attributes
+    diagnostics: false
 
-# Processing
+
+# ---------------------------- QC -----------------------------
+# All QC tests are called through the "Apply QC" step with individual test settings nested in its config.
+# This updates the QC columns (<var>_QC) of the data depending on the test output. If Apply QC is called
+# then qc_history will be added to the pipeline context which tracks which variables have been tested by
+# which tests. Apply QC can be called multiple times, so any test can be run multiple times at different
+# stages in the processing. All QC test src can be found in: * = src/toolbox/steps/custom/qc
+
+# Apply QC (src/toolbox/steps/custom/apply_qc.py)
   - name: "Apply QC"
     parameters:
-      QC_order: [  # Applies the following tests in the written order. You may choose to rearange or remove tests.
-        "impossible date test",
-        "impossible location test",
-        "position on land test",
-        "impossible speed test",
-        "pressure range test"
-      ]
-      diagnostics: true  # Generates plots for each test (currently very slow)
+      # [qc_settings]:
+      #   test name: settings pairs. The order of application runs top-down.
+      qc_settings:
+        # impossible date test (*/impossible_date_test.py):
+        #   Flag: 4 (bad)
+        #   Checks that the TIME variable has values between 1985 and now.
+        impossible date test: {},
 
-  - name: "Interpolate Data"
-    parameters:
-      variables_to_interpolate: [  # List of all variables you would like to interpolate
-          "LATITUDE",
-          "LONGITUDE",
-          "PRES"
-      ]
-      target_flags: [3, 4, 9]  # Flags that will be interpolated over
-    diagnostics: true
+        # impossible location test (*/impossible_location_test.py):
+        #   Flag: 4 (bad)
+        #   Check that LATITUDE and LONGITUDE are between (-90, 90) and (-180, 180) degress respectively.
+        impossible location test: {},
 
-  - name: "Derive CTD"
-    parameters:
-      to_derive: [  # Derives the variables listed below. You may choose to use a subset
-        "DEPTH",  # Reccomended as Find Profiles is designed to use DEPTH, but will work with PRES as well
-        "PRAC_SALINITY",
-        "ABS_SALINITY",
-        "CONS_TEMP",
-        "DENSITY"
-      ]
-    diagnostics: true  # Prints a sample of the dataset
+        # position on land test (*/position_on_land_test.py):
+        #   Flag: 4 (bad)
+        #   Checks if the GPS coords are on land.
+        position on land test: {},
 
-  - name: "Find Profiles"
-    parameters:
-      gradient_thresholds: [ 0.02, -0.02 ]  # Thresholds on vertical velocity to determine profile end points
-      filter_window_sizes: [ "10s", "20s" ]  # Window sizes for [median, mean] filtering the vertical velocity signal (helps with bumpy profiles)
-      depth_column: "DEPTH"  # Variable used to calculate "vertical velocity (W)" (can be anything in theory, it just wont be W)
-    diagnostics: false  # If true, the user can adjust the filters and thresholds to optimise the profiling
+        # impossible speed test (*/impossible_speed_test.py):
+        #   Flag: 4 (bad)
+        #   Checks if the horizontal speed derived from LATITUDE, LONGITUDE and TIME is valid.
+        impossible speed test: {},
 
-# Data export
-  - name: "Data Export"
-    parameters:
-      export_format: "hdf5"  # Define the export format (e.g., OG1, CSV, etc.)
-      output_path: "../../examples/data/OG1/exported_Cabot_645.nc"  # Export path
-    diagnostics: false  # Disable diagnostics for export step
+        # range test (*/range_test.py):
+        #   Flag: User-specified
+        #   Flags values that lie within the user-specified limits with the user-specified flag.
+        #   The results from one variable can be propagated onto other variables using "also_flag".
+        #   This test can also be limited to specific depth ranges if DEPTH is in the dataset vars.
+        range test:
+          # [variable_ranges]:
+          #   variable: {flag: value range} pairs indicating what value ranges should be flagged.
+          #   Multiple variables can be specified - the flag updates are applied top-down.
+          variable_ranges:
+            PRES:
+              3: [-5, -2.4]
+              4: [-.inf, -5]
+          # [also_flag]:
+          #   Alows the QC result from one variable to be applied to others. eg. Often if PRES fails a
+          #   range test, it is assumed that all CTD variables are no longer trustworthy.
+          also_flag:
+            PRES: [CNDC, TEMP]
+          # [plot]:
+          #   Plots data coloured by flag for the variables listed.
+          plot: [PRES]
+
+        # stuck value test (*/stuck_value_test.py):
+        #   Flag: 4 (bad)
+        #   Checks for stuck values defined by N repeats of the same value.
+        stuck value test:
+          # [variables]:
+          #   {variable: N} pairs with N being the number of repeats of a value to make it stuck
+          variables:
+            PRES: 2
+          # [also_flag]:
+          #   Alows the QC result from one variable to be applied to others.
+          also_flag:
+            PRES: [CNDC, TEMP]
+          # [plot]:
+          #   Plots data coloured by flag for the variables listed.
+          plot: [PRES]
+
+        # spike test (*/spike_test.py):
+        #   Flag: 4 (bad)
+        #   Checks for spiking using deviation from the local median of specified variables.
+        spike test:
+          # [variables]:
+          #   {variable: N} specifying which variables to apply the test to and the outlier threshold multiplier
+          #   N, values are flagged if their values exceed (locally) median +- N * standard deviation.
+          variables:
+            PRES: 2,
+            LATITUDE: 1
+          # [window_size]:
+          #   The window size for the running median and standard deviation caluclations
+          window_size: 10
+          # [also_flag]:
+          #   Alows the QC result from one variable to be applied to others.
+          also_flag:
+            PRES: [CNDC, TEMP],
+            LATITUDE: [LONGITUDE]
+          # [plot]:
+          #   Plots data coloured by flag for the variables listed.
+          plot: [PRES, LATITUDE]
+
+        # valid_profile_test (*/valid_profile_test.py):
+        #   Flag: 4 (bad), 3 (probably bad)
+        #   Checks if profiles have at least N datapoints and contain data in a specific depth range
+        valid profile test:
+          # [profile_length]:
+          #   Number of datapoints per profile below which the entire profile will be flagged 4
+          profile_length: 1000,
+          # [depth_range]:
+          #   DEPTH range that a profile must have at least one point in, otherwise it is flagged 3
+          depth_range: [-.inf, 0]
+
+        # flag_full_profile (*/flag_full_profile.py):
+        #   Flag: 4 (bad)
+        #   flags a whole profile if a user-specified limit of bad (4) flags are found.
+        flag_full_profile:
+          # [check_vars]:
+          #   {variable: N} pairs where if >N bad values are found, the whole profile is flagged
+          check_vars:
+            PRES: 10
+            CHLA: 20
+
+        # PAR irregularity test (*/par_irregularity_test.py):
+        #   Flag: 4 (bad), 3 (probably bad)
+        #   Flags each PAR measurement according to the statistical shape of the irradiance profile and
+        #   solar elevation. Based on La Forgia & Organelli (2025, L&O Methods, 23:526–542).
+        PAR irregularity test:
+          # [noise_equivalent_estimate]:
+          #   The PAR noise floor. If values are found below this they are flagged as probably bad (3).
+          noise_equivalent_estimate: 3e-2
+          # [plot_profiles]:
+          #   List of profile numbers to be plotted
+          plot_profiles: [100, 200]
+    # [diagnostics]:
+    #   If diagnostics is true, every specified test in this Apply QC call will generate plots
+    diagnostics: false
+
+
+# -------------- Filtering & Interpolation --------------------
+
+# Under construction...

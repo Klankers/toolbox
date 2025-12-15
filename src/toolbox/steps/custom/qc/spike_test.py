@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 
 @register_qc
-class stuck_value_test(BaseTest):
+class spike_test(BaseTest):
     """
     Target Variable: Any
     Flag Number: 4 (bad)

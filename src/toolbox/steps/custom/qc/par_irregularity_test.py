@@ -245,10 +245,6 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
 @register_qc
 class par_irregularity_test(BaseTest):
     """
-    Target Variable: TIME
-    Flag Number: 4 (bad data)
-    Variables Flagged: TIME
-    Checks that the datetime of each point is valid.
     """
 
     test_name = "PAR irregularity test"
