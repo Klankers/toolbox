@@ -408,7 +408,7 @@ steps:
 
 # The oxygen processing steps are currently being developed. While you are welcome to use these,
 # there is no guarantee that they will produce a useful output. Comments for this section will
-# follow one testing is complete.
+# follow once testing is complete.
 
   - name: "Derive Uncalibrated Phase"
     parameters:
