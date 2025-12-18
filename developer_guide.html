@@ -39,82 +39,93 @@
 <div class="body" role="main">
 <section id="developer-guide">
 <h1>Developer Guide<a class="headerlink" href="#developer-guide" title="Link to this heading">¶</a></h1>
-<p>This page explains how to add a new <strong>step</strong> to the Toolbox (e.g., a new
-processing stage, validation routine, or export).</p>
+<p>This page explains how to add new <strong>steps</strong> and <strong>tests</strong> to the Toolbox.</p>
 <section id="what-is-a-step">
 <h2>What is a “step”?<a class="headerlink" href="#what-is-a-step" title="Link to this heading">¶</a></h2>
 <p>A step is a stage in the pipeline that can be defined via Python, and configured via the Pipelines Config file. Examples of steps include:</p>
 <ul class="simple">
-<li><p>I/O Steps (e.g., reading from a <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/load_data/index.html">load_data.py</a>, containing <code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">OG1</span></code>, or <code class="docutils literal notranslate"><span class="pre">export.py</span></code>, containing <code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Export</span></code>)</p></li>
-<li><p>Variable Processing Steps (e.g., <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/variables/salinity/index.html">salinity.py</a>, containing <code class="docutils literal notranslate"><span class="pre">QC:</span> <span class="pre">Salinity</span></code> and <code class="docutils literal notranslate"><span class="pre">ADJ:</span> <span class="pre">Salinity</span></code>)</p></li>
-<li><p>Data Processing Steps (e.g., <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/derive_ctd/index.html">derive_ctd.py</a>, containing <code class="docutils literal notranslate"><span class="pre">Find</span> <span class="pre">Profiles</span></code>)</p></li>
+<li><p>I/O Steps (e.g. reading in data using <code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">OG1</span></code>-&gt;<a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/load_data/index.html">load_data.py</a>)</p></li>
+<li><p>Variable Processing Steps (e.g. Adjusting existing salinity measurements using <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code>-&gt;<a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/variables/salinity/index.html">salinity.py</a>)</p></li>
 </ul>
-<p>Steps are not limited to one per file - in fact, a single file can contain multiple steps. For example, the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/variables/salinity/index.html">salinity.py</a> file contains both a QC and an ADJ step.</p>
+<p>Steps are not limited to one per file - in fact, a single file can contain multiple steps. This also is true for configs. Any step can be called multiple
+times in a single config.</p>
+<p>As some users may want to filter out bad data before individual processing steps, this feature has been implemented through the <code class="docutils literal notranslate"><span class="pre">QCHandlerMixin</span></code>-&gt;<a class="reference internal" href="#"><span class="xref myst">qc_handling.py</span></a>.
+The pipeline conserves the initial dataset dimensions so the filtered data is either replaced or reinserted after the step is complete.</p>
+</section>
+<section id="what-is-a-test">
+<h2>What is a “test”?<a class="headerlink" href="#what-is-a-test" title="Link to this heading">¶</a></h2>
+<p>A test is a sub-stage in the pipeline which strictly generates data QC. Tests are called through the <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> step <a class="reference internal" href="#"><span class="xref myst">apply_qc.py</span></a> which handles QC updating.
+Examples of tests include:</p>
+<ul class="simple">
+<li><p>Static tests which always check the same variables (eg. <code class="docutils literal notranslate"><span class="pre">impossible</span> <span class="pre">date</span> <span class="pre">test</span></code>-&gt;<a class="reference internal" href="#"><span class="xref myst">impossible_date_test.py</span></a> which checks that the TIME variable is between 1985 and now)</p></li>
+<li><p>Dynamic tests which can be applied to any variable (eg. <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">test</span></code>-&gt;<a class="reference internal" href="#"><span class="xref myst">range_test.py</span></a> which check that a variable exists withing a specified range)</p></li>
+</ul>
+<p>Whilst a test can only be called once per <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code>, multiple of this step can be present in a single config.
+See <a class="reference internal" href="#"><span class="xref myst">all_step_config.yaml</span></a> to see in more detail how the config for tests is defined.</p>
 </section>
 <section id="how-to-add-a-new-step">
 <h2>How to add a new step<a class="headerlink" href="#how-to-add-a-new-step" title="Link to this heading">¶</a></h2>
+<p>A template for new data processing steps can be found in <a class="reference internal" href="#"><span class="xref myst">blank_step.py</span></a> however it is reccomended that you read the following steps to avoid implementation issues.</p>
 <ol class="arabic">
 <li><p>Create a new Python file in the appropriate directory under <code class="docutils literal notranslate"><span class="pre">src/toolbox/steps/custom/</span></code>.<br/>
-<strong>NOTE</strong>: if you are creating a step for specific vairables - such as a salinity QC step - then it should go in the <code class="docutils literal notranslate"><span class="pre">variables</span></code> subdirectory.</p></li>
-<li><p>Define a new class for your step, inheriting from <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> (or another appropriate base class, such as <code class="docutils literal notranslate"><span class="pre">VariableStep</span></code> or <code class="docutils literal notranslate"><span class="pre">DataStep</span></code>).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
- <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-     <span class="o">...</span>
+<strong>NOTE</strong>: if you are creating a step for specific vairables then it should go in the <code class="docutils literal notranslate"><span class="pre">variables</span></code> subdirectory.</p></li>
+<li><p>Define a new class for your step, inheriting from <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> and adding the @register_step decorator. This ensures that the step is discoverable by the Pipeline Manager,
+as well as allowing you do define other classes in the same file without registering them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+    <span class="o">...</span>
 </pre></div>
 </div>
 </li>
 <li><p>Define the step_name attribute, which is the name that will be used in the Pipelines Config file to refer to this step.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span>
- <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
-     <span class="o">...</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
 </pre></div>
 </div>
-</li>
-<li><p>Register the step using the <code class="docutils literal notranslate"><span class="pre">@register_step</span></code> decorator.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
- <span class="nd">@register_step</span>
- <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
-     <span class="o">...</span>
-</pre></div>
-</div>
-<p>This ensures that the step is discoverable by the Pipeline Manager, as well as allowing you do define other classes in the same file without registering them.</p>
 </li>
 <li><p>Implement the <code class="docutils literal notranslate"><span class="pre">run</span></code> method, which contains the logic for your step. This method should take no arguments other than <code class="docutils literal notranslate"><span class="pre">self</span></code>, and should return a <code class="docutils literal notranslate"><span class="pre">self.context</span></code> object.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+
 <span class="nd">@register_step</span>
- <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
      
-     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-         <span class="c1"># Your processing logic here</span>
-         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>        
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Your processing logic here</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>        
 </pre></div>
 </div>
 </li>
 <li><p>Optionally, implement the <code class="docutils literal notranslate"><span class="pre">generate_diagnostics</span></code> method if your step produces any diagnostic plots or outputs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+
 <span class="nd">@register_step</span>
- <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
      
-     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-         <span class="c1"># Your processing logic here</span>
-         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Your processing logic here</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
      
-     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-         <span class="c1"># Your diagnostics logic here</span>
-         <span class="k">pass</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Your diagnostics logic here</span>
+        <span class="k">pass</span>
 </pre></div>
 </div>
-<p>There are already default methods for generating common diagnostics, such as time series plots and scatter plots. See the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/utils/diagnostics/index.html">utils.diagnostics documentation</a> for more information.</p>
+<p>There are already default methods for generating common diagnostics, such as time series plots and scatter plots. See the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/utils/diagnostics/index.html">diagnostics documentation</a> for more information.</p>
 </li>
 <li><p>Add the step to your Pipelines Config file, using the <code class="docutils literal notranslate"><span class="pre">step_name</span></code> you defined in step 3.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="c1"># Pipeline Configuration</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="c1"># Pipeline Configuration &lt;- This section is only needed once at the top of the yaml file</span>
 <span class="w"> </span><span class="nt">pipeline</span><span class="p">:</span>
 <span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"My</span><span class="nv"> </span><span class="s">Pipeline"</span>
 <span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"A</span><span class="nv"> </span><span class="s">pipeline</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">demonstration</span><span class="nv"> </span><span class="s">purposes"</span>
+
 <span class="w"> </span><span class="c1"># Steps in the pipeline</span>
 <span class="w"> </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"My</span><span class="nv"> </span><span class="s">New</span><span class="nv"> </span><span class="s">Step"</span>
@@ -128,6 +139,73 @@ processing stage, validation routine, or export).</p>
 <strong>NOTE</strong> This is handled automatically by the <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> class. More information can be found in the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/_modules/toolbox/steps.html">BaseStep documentation</a>.</p></li>
 </ol>
 </section>
+<section id="adding-qc-handling-to-a-step">
+<h2>Adding QC handling to a step<a class="headerlink" href="#adding-qc-handling-to-a-step" title="Link to this heading">¶</a></h2>
+<p>If you would like your step to have QC handling (pre-step filtering) then add the <code class="docutils literal notranslate"><span class="pre">QCHandlerMixin</span></code> from <a class="reference internal" href="#"><span class="xref myst">qc_handling.py</span></a> to your step class inheritance. Additionally you
+will have to include the <code class="docutils literal notranslate"><span class="pre">self.filter_qc()</span></code>, <code class="docutils literal notranslate"><span class="pre">self.reconstruct_data()</span></code>, <code class="docutils literal notranslate"><span class="pre">self.update_qc()</span></code> and <code class="docutils literal notranslate"><span class="pre">self.generate_qc({&lt;QC_child&gt;:</span> <span class="pre">[*&lt;QC_parents&gt;]})</span></code> methods as follows.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
+
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
+     
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Before any processing happens:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span> <span class="c1"># This filters specified QC out of this steps instance of self.data and stores them separately</span>
+        
+        <span class="c1"># Your processing logic here. Always use self.data to access your processing inputs as this is what has been filtered</span>
+        <span class="c1"># --------- EXAMPLE ---------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"C"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"B"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="c1"># ---------------------------</span>
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span> <span class="c1"># Add the filtered-out data back in, or retain their replacements depending on user config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span> <span class="c1"># Update the flags of the filtered data</span>
+        
+        <span class="c1"># If a new variable was added, we need to make sure it gets it's own QC column derived from its parents QC.</span>
+        <span class="c1"># Use self.generate_qc() to do this. If no new variables were added then this is not necessary.</span>
+        <span class="c1"># --------- EXAMPLE ---------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"C_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"A_QC"</span><span class="p">,</span> <span class="s2">"B_QC"</span><span class="p">]})</span>
+        <span class="c1"># ---------------------------</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Your diagnostics logic here</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<p>To utilize QC filtering, the step config must specify <code class="docutils literal notranslate"><span class="pre">qc_handling_settings</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steps in the pipeline</span>
+<span class="w"> </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"My</span><span class="nv"> </span><span class="s">New</span><span class="nv"> </span><span class="s">Step"</span>
+<span class="w">   </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">     </span><span class="nt">param1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value1</span>
+<span class="w">     </span><span class="nt">param2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value2</span>
+<span class="w">     </span><span class="c1"># [qc_handling_settings]:</span>
+<span class="w">     </span><span class="c1">#   Can be specified in any step that has the QC filtering functionality</span>
+<span class="w">     </span><span class="nt">qc_handling_settings</span><span class="p">:</span>
+<span class="w">       </span><span class="c1"># [flag_filter_settings]:</span>
+<span class="w">       </span><span class="c1">#   {variable: flags to filter} pairs. Data that is flagged with any of the specified flags is replaced</span>
+<span class="w">       </span><span class="c1">#   with a nan internally. All steps should be designed to operate with nans.</span>
+<span class="w">       </span><span class="nt">flag_filter_settings</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">PRES</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">]</span>
+<span class="w">       </span><span class="c1"># [reconstruction_behaviour]:</span>
+<span class="w">       </span><span class="c1">#   Specifies how the data will be reconstructed after processing has occured. There are two options (defaults to reinsert):</span>
+<span class="w">       </span><span class="c1">#   "replace":  Indices where data was filtered retain their post-processing value and the original "bad data" is deleted.</span>
+<span class="w">       </span><span class="c1">#   "reinsert": The filtered "bad data" is reinserted back into the post-processed data.</span>
+<span class="w">       </span><span class="nt">reconstruction_behaviour</span><span class="p">:</span><span class="w"> </span><span class="s">"replace"</span><span class="err">,</span>
+<span class="w">       </span><span class="c1"># [flag_mapping]:</span>
+<span class="w">       </span><span class="c1">#   Tells the QC handler how flags should change for "bad data" indices if the pre- &amp; postprocessing data are different.</span>
+<span class="w">       </span><span class="c1">#   Eg. Interpolation would replace bad and missing values (3, 4, 9) with interpolated values (8).</span>
+<span class="w">       </span><span class="nt">flag_mapping</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">         </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">         </span><span class="nt">9</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+</pre></div>
+</div>
+</section>
 </section>
 <div class="clearer"></div>
 </div>
@@ -140,7 +218,9 @@ processing stage, validation routine, or export).</p>
 <ul>
 <li><a class="reference internal" href="#">Developer Guide</a><ul>
 <li><a class="reference internal" href="#what-is-a-step">What is a “step”?</a></li>
+<li><a class="reference internal" href="#what-is-a-test">What is a “test”?</a></li>
 <li><a class="reference internal" href="#how-to-add-a-new-step">How to add a new step</a></li>
+<li><a class="reference internal" href="#adding-qc-handling-to-a-step">Adding QC handling to a step</a></li>
 </ul>
 </li>
 </ul>

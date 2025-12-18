@@ -1,7 +1,7 @@
 {
   "developer_guide": [
     {
-      "source": " from toolbox.steps.base import BaseStep\n class MyNewStep(BaseStep):\n     ...\n",
+      "source": "from toolbox.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    ...\n",
       "names": [],
       "example": {
         "document": "developer_guide",
@@ -11,36 +11,10 @@
           "How to add a new step"
         ]
       },
-      "doc_lineno": 18
+      "doc_lineno": 32
     },
     {
-      "source": "from toolbox.steps.base import BaseStep\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     ...\n",
-      "names": [],
-      "example": {
-        "document": "developer_guide",
-        "ref_id": "how-to-add-a-new-step",
-        "headings": [
-          "Developer Guide",
-          "How to add a new step"
-        ]
-      },
-      "doc_lineno": 24
-    },
-    {
-      "source": " from toolbox.steps import BaseStep, register_step\n @register_step\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     ...\n",
-      "names": [],
-      "example": {
-        "document": "developer_guide",
-        "ref_id": "how-to-add-a-new-step",
-        "headings": [
-          "Developer Guide",
-          "How to add a new step"
-        ]
-      },
-      "doc_lineno": 31
-    },
-    {
-      "source": "from toolbox.steps.base import BaseStep, register_step\n@register_step\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context        \n",
+      "source": "from toolbox.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n\n    step_name = \"My New Step\"\n",
       "names": [],
       "example": {
         "document": "developer_guide",
@@ -53,7 +27,7 @@
       "doc_lineno": 40
     },
     {
-      "source": "from toolbox.steps.base import BaseStep, register_step\n@register_step\n class MyNewStep(BaseStep):\n     step_name = \"My New Step\"\n     \n     def run(self):\n         # Your processing logic here\n         return self.context\n     \n     def generate_diagnostics(self):\n         # Your diagnostics logic here\n         pass\n",
+      "source": "from toolbox.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n     \n    def run(self):\n        # Your processing logic here\n        return self.context        \n",
       "names": [],
       "example": {
         "document": "developer_guide",
@@ -63,7 +37,33 @@
           "How to add a new step"
         ]
       },
-      "doc_lineno": 51
+      "doc_lineno": 49
+    },
+    {
+      "source": "from toolbox.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n     \n    def run(self):\n        # Your processing logic here\n        return self.context\n     \n    def generate_diagnostics(self):\n        # Your diagnostics logic here\n        pass\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-step",
+        "headings": [
+          "Developer Guide",
+          "How to add a new step"
+        ]
+      },
+      "doc_lineno": 61
+    },
+    {
+      "source": "from toolbox.steps.base_step import BaseStep, register_step\nfrom toolbox.utils.qc_handling import QCHandlingMixin\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n     \n    def run(self):\n        # Before any processing happens:\n        self.filter_qc() # This filters specified QC out of this steps instance of self.data and stores them separately\n        \n        # Your processing logic here. Always use self.data to access your processing inputs as this is what has been filtered\n        # --------- EXAMPLE ---------\n        self.data[\"C\"] = self.data[\"A\"] * self.data[\"B\"]\n        self.context[\"data\"] = self.data\n        # ---------------------------\n        \n        return self.context\n        \n        self.reconstruct_data() # Add the filtered-out data back in, or retain their replacements depending on user config\n        self.update_qc() # Update the flags of the filtered data\n        \n        # If a new variable was added, we need to make sure it gets it's own QC column derived from its parents QC.\n        # Use self.generate_qc() to do this. If no new variables were added then this is not necessary.\n        # --------- EXAMPLE ---------\n        self.generate_qc({\"C_QC\": [\"A_QC\", \"B_QC\"]})\n        # ---------------------------\n    \n    def generate_diagnostics(self):\n        # Your diagnostics logic here\n        pass\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "adding-qc-handling-to-a-step",
+        "headings": [
+          "Developer Guide",
+          "Adding QC handling to a step"
+        ]
+      },
+      "doc_lineno": 98
     }
   ],
   "index": []
