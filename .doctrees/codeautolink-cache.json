@@ -60,10 +60,50 @@
         "ref_id": "adding-qc-handling-to-a-step",
         "headings": [
           "Developer Guide",
+          "How to add a new step",
           "Adding QC handling to a step"
         ]
       },
       "doc_lineno": 98
+    },
+    {
+      "source": "from toolbox.steps.base_test import BaseTest, register_qc, flag_cols\n\n@register_qc\nclass MyNewTest(BaseTest):\n    ...\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-qc-test",
+        "headings": [
+          "Developer Guide",
+          "How to add a new QC test"
+        ]
+      },
+      "doc_lineno": 179
+    },
+    {
+      "source": "from toolbox.steps.base_test import BaseTest, register_qc, flag_cols\n\n@register_qc\nclass MyNewTest(BaseTest):\n    test_name = \"my new test\"  # This is how you should call the test in config. See below...\n    expected_parameters = {'A_cutoff': 1}  # These are the test parameters that we may expect from the user. The value for each key is the default.\n    required_variables = ['A']  # These are the variables that are required for test execution. This is cross-referenced against the data vars in context\n    qc_outputs = ['A_QC'] # These are the QC outputs. These are references that help \"Apply QC\" update existing QC in the data\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-qc-test",
+        "headings": [
+          "Developer Guide",
+          "How to add a new QC test"
+        ]
+      },
+      "doc_lineno": 187
+    },
+    {
+      "source": "from toolbox.steps.base_test import BaseTest, register_qc, flag_cols\n\n@register_qc\nclass MyNewTest(BaseTest):\n    test_name = \"my new test\"\n    expected_parameters = {'A_cutoff': 1}\n    required_variables = ['A']\n    qc_outputs = ['A_QC']\n\n    def return_qc(self):\n        # IMPORTANT: Make sure you access the data with self.data\n        # self.flags should be an xarray Dataset with data_vars that hold the \"{variable}_QC\" columns produced by the test\n        return self.flags\n\n    def plot_diagnostics(self):\n        # Add your diagnostic plotting here\n        ...\n",
+      "names": [],
+      "example": {
+        "document": "developer_guide",
+        "ref_id": "how-to-add-a-new-qc-test",
+        "headings": [
+          "Developer Guide",
+          "How to add a new QC test"
+        ]
+      },
+      "doc_lineno": 199
     }
   ],
   "index": []
