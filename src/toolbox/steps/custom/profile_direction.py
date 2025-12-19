@@ -1,3 +1,5 @@
+"""Step for determining glider profile direction."""
+
 #### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
 from toolbox.utils.qc_handling import QCHandlingMixin
@@ -11,18 +13,88 @@ import matplotlib.pyplot as plt
 
 
 @register_step
-class BlankStep(BaseStep, QCHandlingMixin):
+class ProfileDirection(BaseStep, QCHandlingMixin):
+
+    """
+    Determine whether water profiles are ascending or descending.
+
+    This step calculates the direction of movement through the water column
+    by analysing the rate of change of pressure with respect to time. The
+    median direction is computed for each profile and stored in a new
+    PROFILE_DIRECTION variable.
+
+    Attributes
+    ----------
+    step_name : str
+        The name of this processing step: "Find Profile Direction".
+    data : xarray.Dataset
+        The dataset being processed, updated with PROFILE_DIRECTION and
+        PROFILE_DIRECTION_QC variables.
+    context : dict
+        Processing context containing metadata and previous step outputs.
+
+    Notes
+    -----
+    The profile direction is determined by computing the sign of the pressure
+    gradient (dPRES/dTIME). Negative gradients indicate ascending profiles
+    (pressure decreasing), while positive gradients indicate descending profiles
+    (pressure increasing).
+
+    The direction is calculated as::
+
+        direction = -1 * sign(dPRES/dTIME)
+
+    - direction = 1: Ascending profile (pressure decreasing)
+    - direction = -1: Descending profile (pressure increasing)
+
+    Examples
+    --------
+    In a processing configuration file, use this step as follows:
+
+    .. code-block:: yaml
+
+        steps:
+          - name: "Find Profile Direction"
+            parameters:
+            diagnostics: false
+    """
+
 
     step_name = "Find Profile Direction"
+
 
     def run(self):
 
         """
-        Config Example
-        --------------
-        - name: "Find Profile Direction"
-            parameters:
-            diagnostics: false
+        Execute the profile direction detection algorithm.
+
+        Processes the input data to determine whether each measurement point
+        belongs to an ascending or descending profile, then propagates the
+        direction classification to all measurements in each profile.
+
+        Returns
+        -------
+        dict
+            The updated context dictionary with the processed data containing
+            new PROFILE_DIRECTION and PROFILE_DIRECTION_QC variables.
+
+        Raises
+        ------
+        ValueError
+            If required variables (PROFILE_NUMBER, PRES, TIME) are missing
+            from the input dataset.
+
+        Notes
+        -----
+        This method:
+
+        1. Optionally filters QC flags from the data
+        2. Subsets data to remove NaN values in key variables
+        3. Computes pressure gradient with respect to time
+        4. Calculates median direction per profile
+        5. Propagates direction to all measurements
+        6. Updates QC flags
+        7. Generates diagnostics if enabled
         """
 
         self.filter_qc()
@@ -61,6 +133,19 @@ class BlankStep(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
+        """
+        Create diagnostic plots of ascending and descending profiles.
+
+        Generates a scatter plot showing all measurements coloured by profile
+        direction. Ascending profiles are shown in blue, descending profiles
+        in red. Pressure is plotted against time.
+
+        Notes
+        -----
+        This method uses Tkinter as the matplotlib backend and requires a
+        display environment. It blocks continued pipeline execution until the 
+        plot window is closed.
+        """
         mpl.use("tkagg")
         fig, ax = plt.subplots()
 
