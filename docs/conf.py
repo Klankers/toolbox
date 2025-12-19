@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Toolbox"
-copyright = "2025, Adam Ward, National Oceanography Centre"
-author = "Adam Ward, National Oceanography Centre"
+copyright = "2025, National Oceanography Centre"
+author = "Adam Ward & Daniel Bangay, National Oceanography Centre"
 version = "0.0.0"
 release = version + "a"
 
@@ -31,7 +31,7 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
     "nbsphinx",
     "numpydoc",
-    #"autoapi.extension",
+    "autoapi.extension",
     "myst_parser",
     "sphinx_last_updated_by_git",
     "sphinx_codeautolink",
@@ -48,6 +48,18 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
+
+# -- Napoleon configuration for NumPy-style docstrings -------------------
+
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_param = True
+napoleon_use_rtype = True
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
@@ -75,7 +87,7 @@ autoapi_options = [
 # a list of builtin themes.
 #
 # html_theme = "sphinx_rtd_theme"
-html_theme = "groundwork"
+html_theme = "pydata_sphinx_theme"
 
 html_baseurl = "https://noc-obg-autonomy.github.io/toolbox/"
 html_static_path = ["_static"]
@@ -135,18 +147,3 @@ myst_enable_extensions = [
 
 # Optional: create anchors for h1-h3 automatically
 myst_heading_anchors = 3
-
-# Napoleon configuration for better docstring parsing
-napoleon_include_init_doc = True
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = True
-napoleon_use_admonition_for_notes = True
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = True
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
-napoleon_custom_sections = None
-napoleon_attr_annotations = True
