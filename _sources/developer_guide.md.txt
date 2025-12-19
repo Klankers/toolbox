@@ -148,7 +148,7 @@ To utilize QC filtering, the step config must specify `qc_handling_settings`.
           #   Specifies how the data will be reconstructed after processing has occured. There are two options (defaults to reinsert):
           #   "replace":  Indices where data was filtered retain their post-processing value and the original "bad data" is deleted.
           #   "reinsert": The filtered "bad data" is reinserted back into the post-processed data.
-          reconstruction_behaviour: "replace",
+          reconstruction_behaviour: "replace"
           # [flag_mapping]:
           #   Tells the QC handler how flags should change for "bad data" indices if the pre- & postprocessing data are different.
           #   Eg. Interpolation would replace bad and missing values (3, 4, 9) with interpolated values (8).
@@ -175,58 +175,58 @@ An example template for a static test can be found in [blank_test.py](), however
 
 1. create your test file in the `src/toolbox/steps/custom/qc`.
 2. Import the necessary parent classes and define your test class. Make sure it inherits from `BaseTest` and have the `@register_qc` decorator. This will allow the
-pipeline to find and register the test.
-```python
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+    pipeline to find and register the test.
+    ```python
+    from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 
-@register_qc
-class MyNewTest(BaseTest):
-    ...
-```
-3. Specify the following attributes:
-```python
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
-
-@register_qc
-class MyNewTest(BaseTest):
-    test_name = "my new test"  # This is how you should call the test in config. See below...
-    expected_parameters = {'A_cutoff': 1}  # These are the test parameters that we may expect from the user. The value for each key is the default.
-    required_variables = ['A']  # These are the variables that are required for test execution. This is cross-referenced against the data vars in context
-    qc_outputs = ['A_QC'] # These are the QC outputs. These are references that help "Apply QC" update existing QC in the data
-```
-4. Add the `return_qc()` method which is where you will implement your test algorithm. Optionally add the `plot_diagnostics()` method if you would like the test 
-to generate plots when diagnostics is true in the config.
-```python
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
-
-@register_qc
-class MyNewTest(BaseTest):
-    test_name = "my new test"
-    expected_parameters = {'A_cutoff': 1}
-    required_variables = ['A']
-    qc_outputs = ['A_QC']
-
-    def return_qc(self):
-        # IMPORTANT: Make sure you access the data with self.data
-        # self.flags should be an xarray Dataset with data_vars that hold the "{variable}_QC" columns produced by the test
-        return self.flags
-
-    def plot_diagnostics(self):
-        # Add your diagnostic plotting here
+    @register_qc
+    class MyNewTest(BaseTest):
         ...
-```
-Please note the comments in return_qc() - the data for QC should be accessed using self.data which is a xarray Dataset object. The method should also return an xarray
-Dataset (self.flags) which can contain any number of data variables, but those with the `_QC` suffix must be specified in the `qc_outputs` attribute. 
+    ```
+3. Specify the following attributes:
+    ```python
+    from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+
+    @register_qc
+    class MyNewTest(BaseTest):
+        test_name = "my new test"  # This is how you should call the test in config. See below...
+        expected_parameters = {'A_cutoff': 1}  # These are the test parameters that we may expect from the user. The value for each key is the default.
+        required_variables = ['A']  # These are the variables that are required for test execution. This is cross-referenced against the data vars in context
+        qc_outputs = ['A_QC'] # These are the QC outputs. These are references that help "Apply QC" update existing QC in the data
+    ```
+4. Add the `return_qc()` method which is where you will implement your test algorithm. Optionally add the `plot_diagnostics()` method if you would like the test 
+    to generate plots when diagnostics is true in the config.
+    ```python
+    from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+
+    @register_qc
+    class MyNewTest(BaseTest):
+        test_name = "my new test"
+        expected_parameters = {'A_cutoff': 1}
+        required_variables = ['A']
+        qc_outputs = ['A_QC']
+
+        def return_qc(self):
+            # IMPORTANT: Make sure you access the data with self.data
+            # self.flags should be an xarray Dataset with data_vars that hold the "{variable}_QC" columns produced by the test
+            return self.flags
+
+        def plot_diagnostics(self):
+            # Add your diagnostic plotting here
+            ...
+    ```
+    Please note the comments in return_qc() - the data for QC should be accessed using self.data which is a xarray Dataset object. The method should also return an xarray
+    Dataset (self.flags) which can contain any number of data variables, but those with the `_QC` suffix must be specified in the `qc_outputs` attribute. 
 5. Finally, we just have to add our new test to the config.
-```yaml
-  - name: "Apply QC"
-    parameters:
-      # qc_settings can have multiple tests listed in it
-      qc_settings:
-        # The test name
-        my new test:
-           # Specify the A_cutoff setting
-           A_cutoff: 100
-    # If you want plotting:
-    diagnostics: true
-```
+    ```yaml
+    - name: "Apply QC"
+        parameters:
+        # qc_settings can have multiple tests listed in it
+        qc_settings:
+            # The test name
+            my new test:
+            # Specify the A_cutoff setting
+            A_cutoff: 100
+        # If you want plotting:
+        diagnostics: true
+    ```
