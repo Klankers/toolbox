@@ -6,11 +6,11 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Toolbox"
+project = "NOCAT"
 copyright = "2025, National Oceanography Centre"
 author = "Adam Ward & Daniel Bangay, National Oceanography Centre"
 version = "0.0.0"
-release = version + "a"
+release = version
 
 # -- General configuration ------------------------------------------------
 
