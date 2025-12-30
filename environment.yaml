@@ -3,29 +3,37 @@ channels:
   - conda-forge
 dependencies:
   # Core environment
-  - python=3.10
+  - python
   - pip
-  - numpy=1.26
-  - pandas=2.2
-  - scipy=1.15
-  - xarray=2025.3
-  - netcdf4=1.7
-  - h5py=3.13
-  - h5netcdf=1.6
-  - zarr=2.18
-  - numcodecs=0.13
-  - gsw=3.6
-  - geopy=2.4
-  - scikit-learn=1.7
-  - matplotlib=3.10
-  - seaborn=0.13
-  - requests=2.32
+  - numpy
+  - pandas
+  - scipy
+  - xarray
+  - netcdf4
+  - h5py
+  - h5netcdf
+  - zarr
+  - numcodecs
+  - gsw
+  - geopy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - requests
+  - python-graphviz
+  - polars
+  - geodatasets
+  - shapely
+  - geopandas
+  - pvlib
+  - tqdm
+  - glidertools
 
   # Documentation and development tools
   - ipykernel
   - jupyterlab
-  - sphinx=8.1
-  - sphinx-autoapi=3.6
+  - sphinx
+  - sphinx-autoapi
   - sphinx-rtd-theme
   - sphinxcontrib-napoleon
   - sphinxcontrib-serializinghtml
@@ -33,4 +41,3 @@ dependencies:
   - pytest
   - black
   - pre-commit
-
