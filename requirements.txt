@@ -21,3 +21,4 @@ geopandas
 pvlib
 tqdm
 glidertools
+ipykernel
