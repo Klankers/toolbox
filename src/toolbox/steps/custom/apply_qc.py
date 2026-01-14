@@ -97,7 +97,8 @@ class ApplyQC(BaseStep):
         # Run through all of the QC steps and add the flags to flag_store
         for qc_test_name, qc_test_params in self.qc_settings.items():
             # Create an instance of this test step
-            print(f"[Apply QC] Applying: {qc_test_name}")
+            # print(f"[Apply QC] Applying: {qc_test_name}")
+            self.log(f"Applying: {qc_test_name}")
             qc_test_instance = QC_CLASSES[qc_test_name](data, **qc_test_params)
             returned_flags = qc_test_instance.return_qc()
             self.organise_flags(returned_flags)

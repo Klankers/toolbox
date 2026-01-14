@@ -1,10 +1,13 @@
 from toolbox.utils.config_mirror import ConfigMirrorMixin
 import warnings
+import logging
+import os
 warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
 
 # Registry of explicitly registered step classes
 REGISTERED_STEPS = {}
-
+_PIPELINE_LOGGER_NAME = "toolbox.pipeline"
+_LOGGER_INITIALIZED = False # When this module is loaded, logger is off
 
 def register_step(cls):
     """Decorator to mark a step class for inclusion in the pipeline."""
@@ -23,12 +26,53 @@ class BaseStep(ConfigMirrorMixin):
     Every concrete subclass (registered via @register_step) inherits this.
     """
 
+    def _init_logger(self):
+        """
+        Initialize the step logger for all steps.
+        """
+        global _LOGGER_INITIALIZED
+
+        logger = logging.getLogger(_PIPELINE_LOGGER_NAME)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False  # do not leak to root
+
+        if _LOGGER_INITIALIZED:
+            self.logger = logger
+            return
+
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s",
+            "%Y-%m-%d %H:%M:%S",
+        )
+
+        # Console handler (always)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+        # Optional file handler if log_file is provided
+        log_file = self.parameters.get("log_file")
+        if log_file:
+            log_file = os.path.abspath(log_file)
+            os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
+
+            fh = logging.FileHandler(log_file)
+            fh.setLevel(logging.INFO)
+            fh.setFormatter(formatter)
+            logger.addHandler(fh)
+
+        _LOGGER_INITIALISED = True
+        self.logger = logger
+
     def __init__(self, name, parameters=None, diagnostics=False, context=None):
         # === Core behaviour (same as before) ===
         self.name = name
         self.parameters = parameters or {}
         self.diagnostics = diagnostics
         self.context = context or {}
+
+        self._init_logger()
 
         # === Initialise config mirror system ===
         self._init_config_mirror()
@@ -58,10 +102,12 @@ class BaseStep(ConfigMirrorMixin):
         pass
 
     def log(self, message):
-        """Log messages with step name."""
-        print(f"[{self.name}] {message}")
+        """Log an info-level message with step name prefix."""
+        self.logger.info("[%s] %s", self.name, message)
 
     def log_warn(self, message, warning_type=UserWarning):
+        """Log a warning-level message with step name prefix."""
+        self.logger.warning("[%s] %s", self.name, message)
         warnings.warn(f"[{self.name}] WARNING: {message}", warning_type)
 
     # ----------- Config Handling -----------
