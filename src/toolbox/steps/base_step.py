@@ -2,10 +2,12 @@ from toolbox.utils.config_mirror import ConfigMirrorMixin
 import warnings
 import logging
 import os
-warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
+
+warnings.formatwarning = lambda msg, *args, **kwargs: f"{msg}\n"
 
 # Registry of explicitly registered step classes
 REGISTERED_STEPS = {}
+
 
 def register_step(cls):
     """Decorator to mark a step class for inclusion in the pipeline."""

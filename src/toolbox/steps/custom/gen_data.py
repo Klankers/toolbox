@@ -1,3 +1,5 @@
+"""Step for generating synthetic data for testing pipelines"""
+
 import polars as pl
 import xarray as xr
 import numpy as np
@@ -9,12 +11,12 @@ from datetime import date, timedelta
 class GenerateData(BaseStep):
     """
     Example config setup:
-        
+
     """
+
     step_name = "Generate Data"
 
     def run(self):
-
         # Check if the data is already in the context
         if "data" in self.context:
             raise ValueError(
@@ -24,14 +26,20 @@ class GenerateData(BaseStep):
         if self.gen_fixed_data:
             self.log("Generating fixed data")
             import itertools
+
             ncols = 2
             column_names = ["A", "B", "C"][:ncols]
             qc_values = np.array(list(itertools.product(range(10), repeat=ncols)))
-            values = [[i] * int(10 ** ncols) for i in range(1, ncols+1)]
-            df = pl.DataFrame({
-                **{col: values[i] for i, col in enumerate(column_names)},
-                **{f"{col}_QC": qc_values[:, i] for i, col in enumerate(column_names)}
-            })
+            values = [[i] * int(10**ncols) for i in range(1, ncols + 1)]
+            df = pl.DataFrame(
+                {
+                    **{col: values[i] for i, col in enumerate(column_names)},
+                    **{
+                        f"{col}_QC": qc_values[:, i]
+                        for i, col in enumerate(column_names)
+                    },
+                }
+            )
 
         else:
             self.log("Generating random data")
