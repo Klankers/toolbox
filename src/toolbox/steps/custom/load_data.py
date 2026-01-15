@@ -34,6 +34,10 @@ class LoadOG1(BaseStep):
         self.data = xr.open_dataset(self.file_path)
 
         # Check that the "TIME" variable is monotonic and nanless - then make it a coordinate
+        if "TIME" in self.data.coords:  #   Temporary fix for BODC OG1 files where TIME is a coord
+            self.data = self.data.reset_coords("TIME", drop=False)
+            self.data = self.data.reset_coords("LATITUDE", drop=False)
+            self.data = self.data.reset_coords("LONGITUDE", drop=False)
         if "TIME" not in self.data.data_vars:
             raise ValueError(
                 "\n'TIME' could not be found in the dataset. Pipelines cannot be run without this variable.\n"
