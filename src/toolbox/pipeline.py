@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import os
+import logging
 import datetime as _dt
 from graphviz import Digraph
 
@@ -15,6 +16,40 @@ from toolbox.steps import (
     STEP_CLASSES,
     STEP_DEPENDENCIES
 )
+
+_PIPELINE_LOGGER_NAME = "toolbox.pipeline"
+
+def _setup_logging(log_file=None, level=logging.INFO):
+    """Set up logging for the entire pipeline."""
+    logger = logging.getLogger(_PIPELINE_LOGGER_NAME)
+    logger.setLevel(level)
+    logger.propagate = False
+
+    if logger.handlers:
+        return logger  # already configured
+
+    formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        "%Y-%m-%d %H:%M:%S",
+    )
+
+    # Console handler
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    # File handler if specified
+    if log_file:
+        log_file = os.path.abspath(log_file)        # absolute path
+        os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
+        fh = logging.FileHandler(log_file)
+        fh.setLevel(level)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+        logger.info("Logging to file: %s", log_file)
+
+    return logger
 
 class Pipeline(ConfigMirrorMixin):
     """
@@ -39,7 +74,9 @@ class Pipeline(ConfigMirrorMixin):
             # set convenience alias for user-facing access
             self.global_parameters = self._parameters.get("pipeline", {})
             # build steps from loaded config
+            self.logger = _setup_logging(self.global_parameters.get("log_file"))
             self.build_steps(self._parameters.get("steps", []))
+            self.logger.info("Pipeline initialised")
 
     def build_steps(self, steps_config, parent_name=None):
         """Recursively build steps from configuration"""
@@ -90,10 +127,10 @@ class Pipeline(ConfigMirrorMixin):
         else:
             self.steps.append(step_config)
 
-        print(f"Step '{step_name}' added successfully!")
+        self.logger.info(f"Step '{step_name}' added successfully!")
 
         if run_immediately:
-            print(f"Running step '{step_name}' immediately.")
+            self.logger.info(f"Running step '{step_name}' immediately.")
             self._context = self.execute_step(step_config, self._context)
 
     def _find_step(self, steps_list, step_name):
@@ -109,16 +146,16 @@ class Pipeline(ConfigMirrorMixin):
     def execute_step(self, step_config, _context):
         """Executes a single step"""
         step = create_step(step_config, _context)
-        print(f"Executing: {step.name}")
+        self.logger.info(f"Executing: {step.name}")
         return step.run()
 
     def run_last_step(self):
         """Runs only the most recently added step"""
         if not self.steps:
-            print("No steps to run.")
+            self.logger.info("No steps to run.")
             return
         last_step = self.steps[-1]
-        print(f"Running last step: {last_step['name']}")
+        self.logger.info(f"Running last step: {last_step['name']}")
         self._context = self.execute_step(last_step, self._context)
 
     def run(self):
@@ -174,7 +211,7 @@ class Pipeline(ConfigMirrorMixin):
         cfg = self.generate_config()
         with open(output_path, "w") as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
-        print(f"Pipeline config exported → {output_path}")
+        self.logger.info(f"Pipeline config exported → {output_path}")
         return cfg
 
     def save_config(self, path="pipeline_config.yaml"):

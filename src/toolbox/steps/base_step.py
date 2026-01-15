@@ -1,6 +1,9 @@
 from toolbox.utils.config_mirror import ConfigMirrorMixin
 import warnings
-warnings.formatwarning = lambda msg, *args, **kwargs: f'{msg}\n'
+import logging
+import os
+
+warnings.formatwarning = lambda msg, *args, **kwargs: f"{msg}\n"
 
 # Registry of explicitly registered step classes
 REGISTERED_STEPS = {}
@@ -30,6 +33,9 @@ class BaseStep(ConfigMirrorMixin):
         self.diagnostics = diagnostics
         self.context = context or {}
 
+        # Get child logger initialized in pipeline.py
+        self.logger = logging.getLogger(f"toolbox.pipeline.step.{self.name}")
+
         # === Initialise config mirror system ===
         self._init_config_mirror()
         # canonical parameters go in private store
@@ -58,10 +64,12 @@ class BaseStep(ConfigMirrorMixin):
         pass
 
     def log(self, message):
-        """Log messages with step name."""
-        print(f"[{self.name}] {message}")
+        """Log an info-level message with step name prefix."""
+        self.logger.info("[%s] %s", self.name, message)
 
     def log_warn(self, message, warning_type=UserWarning):
+        """Log a warning-level message with step name prefix."""
+        self.logger.warning("[%s] %s", self.name, message)
         warnings.warn(f"[{self.name}] WARNING: {message}", warning_type)
 
     # ----------- Config Handling -----------
