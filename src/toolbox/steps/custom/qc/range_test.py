@@ -14,7 +14,7 @@ class range_test(BaseTest):
     Target Variable: Any
     Flag Number: Any
     Variables Flagged: Any
-    Checks that a meausrement is within a reasonable range.
+    Checks that a meausurement is within a reasonable range.
 
     EXAMPLE
     -------
