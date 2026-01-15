@@ -7,6 +7,9 @@ import toolbox.utils.diagnostics as diag
 
 @register_step
 class ExportStep(BaseStep):
+    """
+    Step to export data in various formats.
+    """
     step_name = "Data Export"
 
     def run(self):
@@ -49,7 +52,9 @@ class ExportStep(BaseStep):
         return self.context
 
     def generate_diagnostics(self):
-        """Generate diagnostics for the export step."""
+        """
+        Generate diagnostics for the export step.
+        """
         self.log(f"Generating diagnostics for {self.step_name}")
         diag.generate_diagnostics(self.context, self.step_name)
         self.log(f"Diagnostics generated successfully.")

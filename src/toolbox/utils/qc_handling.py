@@ -61,7 +61,12 @@ class QCHandlingMixin:
 
     def reconstruct_data(self):
         """
-        Reconstruct data by replacing flagged values with original values
+        Reconstruct data by replacing flagged values with original values.
+
+        raises
+        ------
+        KeyError
+            If the specified behaviour is not specified in this method.
         """
         if self.behaviour == "replace":
             pass
@@ -103,7 +108,12 @@ class QCHandlingMixin:
 
     def generate_qc(self, qc_constituents: dict):
         """
-        Generate QC flags for child variables based on parent variables' QC flags
+        Generate QC flags for child variables based on parent variables' QC flags.
+
+        parameters
+        ----------
+        qc_constituents : dict
+            A dictionary mapping child QC variable names to lists of parent QC variable names.
         """
         # Unpack the parent qc
         for qc_child, qc_parents in qc_constituents.items():

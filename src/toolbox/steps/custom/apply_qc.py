@@ -41,6 +41,11 @@ class ApplyQC(BaseStep):
         As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.
         2 (probably good data) + 4 (bad data) -> 4 (bad data)
         3 (probably bad data) + 5 (value changed) -> 3 (probably bad data)
+
+        parameters
+        ----------
+        new_flags : xarray.Dataset
+            Dataset containing new QC flag variables to be merged into the existing flag store.
         """
 
         # Define combinatrix for handling flag upgrade behaviour
@@ -75,8 +80,16 @@ class ApplyQC(BaseStep):
                 self.flag_store[column_name] = new_flags[column_name]
 
     def run(self):
-        """Run the Apply QC step."""
+        """
+        Run the Apply QC step.
 
+        raises
+        ------
+        KeyError
+            If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.
+        ValueError
+            If no data is found in context.
+       """
         # Defining the order of operations
         if len(self.qc_settings.keys()) == 0:
             raise KeyError(
