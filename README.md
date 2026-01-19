@@ -19,7 +19,7 @@ For a local, editable version of the toolbox
 git clone https://github.com/NOC-OBG-Autonomy/toolbox.git
 cd toolbox
 # create/activate a virtual environment
-pip install -e. 
+pip install -e . 
 ```
 
 # About
