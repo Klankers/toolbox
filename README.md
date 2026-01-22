@@ -1,6 +1,8 @@
 # toolbox
 All references to 'toolbox' are subject to change upon appropriate package naming.
 
+Copyright 2025-2026 The National Oceanography Centre and The Contributors
+
 ## Documentation
 The documentation for this package is available [here](https://noc-obg-autonomy.github.io/toolbox/)
 > Please note that the documentation is still under construction.
@@ -146,3 +148,8 @@ TL;DR:
 - Extensible design: Add new steps without modifying core code.
 - Integrated diagnostics: Flag and visualise data quality issues inline.
 - Portable & reproducible: YAML configurations make it easy to rerun or share pipelines.
+
+
+# License
+
+[Apache 2.0 License](license)
