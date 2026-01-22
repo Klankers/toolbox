@@ -152,4 +152,4 @@ TL;DR:
 
 # License
 
-[Apache 2.0 License](license)
+[Apache 2.0 License](LICENSE)
