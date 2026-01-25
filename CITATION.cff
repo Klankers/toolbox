@@ -1,0 +1,51 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Autonomy Toolbox
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Adam
+    family-names: Ward
+    affiliation: National Oceanography Centre
+    orcid: 'https://orcid.org/0009-0008-3463-2694'
+  - given-names: Daniel
+    family-names: Bangay
+    affiliation: National Oceanography Centre
+    orcid: 'https://orcid.org/0009-0000-4285-1952'
+  - given-names: Louis
+    family-names: Clement
+    orcid: 'https://orcid.org/0000-0002-6935-9455'
+    affiliation: National Oceanography Centre
+  - given-names: Colin
+    family-names: Sauze
+    affiliation: National Oceanography Centre
+    orcid: 'https://orcid.org/0000-0001-5368-9217'
+  - given-names: Filipa
+    family-names: Carvalho
+    orcid: 'https://orcid.org/0000-0002-8355-4329'
+    affiliation: National Oceanography Centre
+  - given-names: Flavien
+    family-names: Petit
+    orcid: 'https://orcid.org/0000-0002-2068-7933'
+    affiliation: National Oceanography Centre
+  - given-names: Hans
+    family-names: Hilder
+    orcid: 'https://orcid.org/0009-0008-8882-0754'
+    affiliation: National Oceanography Centre
+  - given-names: Nathan
+    family-names: Briggs
+    orcid: 'https://orcid.org/0000-0003-1549-1386'
+    affiliation: National Oceanography Centre
+  - given-names: Callum
+    family-names: Rollo
+    affiliation: ' Voice of the Ocean Foundation'
+    orcid: 'https://orcid.org/0000-0002-5134-7886'
+  - given-names: Aaron
+    family-names: Mau
+    affiliation: Voice of the Ocean Foundation
+repository-code: 'https://github.com/NOC-OBG-Autonomy/toolbox'
+license: Apache-2.0
