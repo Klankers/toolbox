@@ -1,6 +1,8 @@
 # toolbox
 All references to 'toolbox' are subject to change upon appropriate package naming.
 
+Copyright 2025-2026 The National Oceanography Centre and The Contributors
+
 ## Documentation
 The documentation for this package is available [here](https://noc-obg-autonomy.github.io/toolbox/)
 > Please note that the documentation is still under construction.
@@ -9,7 +11,18 @@ The documentation for this package is available [here](https://noc-obg-autonomy.
 [Click here](https://noc-obg-autonomy.github.io/toolbox/developer_guide.html) for a guide on how to build your own steps.
 
 ## Development Information
-Python = 3.10
+Python >= 3.10
+
+### Installation
+
+For a local, editable version of the toolbox
+
+```bash
+git clone https://github.com/NOC-OBG-Autonomy/toolbox.git
+cd toolbox
+# create/activate a virtual environment
+pip install -e . 
+```
 
 # About
 ## 🧭 Pipeline Architecture
@@ -135,3 +148,8 @@ TL;DR:
 - Extensible design: Add new steps without modifying core code.
 - Integrated diagnostics: Flag and visualise data quality issues inline.
 - Portable & reproducible: YAML configurations make it easy to rerun or share pipelines.
+
+
+# License
+
+[Apache 2.0 License](LICENSE)
