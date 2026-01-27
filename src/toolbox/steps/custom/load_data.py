@@ -48,6 +48,7 @@ class LoadOG1(BaseStep):
 
         # load data from xarray
         self.data = xr.open_dataset(self.file_path)
+        self.log(f"Loaded data from {self.file_path}")
 
         # Check that the "TIME" variable is monotonic and nanless - then make it a coordinate
         if "TIME" in self.data.coords:  #   Temporary fix for BODC OG1 files where TIME is a coord
