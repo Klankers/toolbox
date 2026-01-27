@@ -171,9 +171,14 @@ class ApplyQC(BaseStep):
 
             # Update QC history
             for flagged_var in returned_flags.data_vars:
+                #   Track percent of flags no longer 0 (following ARGO convention)
                 percent_flagged = (
                     returned_flags[flagged_var].to_numpy() != 0
-                ).sum() / len(returned_flags)
+                ).sum() / len(returned_flags[flagged_var])
+                if percent_flagged == 0:
+                    self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_test_name}")
+                else:
+                    self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_test_name}")
                 qc_history.setdefault(flagged_var, []).append(
                     (qc_test_name, percent_flagged)
                 )
