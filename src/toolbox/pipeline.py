@@ -33,7 +33,8 @@ from toolbox.steps import (
     STEP_DEPENDENCIES
 )
 
-_PIPELINE_LOGGER_NAME = "toolbox.pipeline"  #   Global logger name for the pipeline
+_PIPELINE_LOGGER_NAME = "toolbox.pipeline"
+"""Global logger name for the pipeline. Used to create child loggers for steps."""
 
 def _setup_logging(log_file=None, level=logging.INFO):
     """
@@ -272,6 +273,7 @@ class Pipeline(ConfigMirrorMixin):
         self.graph.clear()
 
         def add_to_graph(step_config, parent_name=None, step_order=None):
+            """Add a step to the graph, intended for recursive use."""
             step_name = step_config["name"]
             diagnostics = step_config.get("diagnostics", False)
             color = "red" if diagnostics else "black"
