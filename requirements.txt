@@ -22,3 +22,4 @@ pvlib
 tqdm
 glidertools
 ipykernel
+pytest
