@@ -30,10 +30,13 @@ from .base_test import REGISTERED_QC
 
 # Global registries
 STEP_CLASSES = {}
+"""Dictionary mapping step names to their implementing classes."""
 QC_CLASSES = {}
+"""Dictionary mapping QC test names to their implementing classes."""
 STEP_DEPENDENCIES = {
     "QC: Salinity": ["Load OG1"],
 }
+"""Dictionary of explicit dependencies between steps by name."""
 
 
 def discover_steps():
