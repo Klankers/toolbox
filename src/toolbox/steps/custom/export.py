@@ -19,7 +19,7 @@
 #### Mandatory imports ####
 from ..base_step import BaseStep, register_step
 import toolbox.utils.diagnostics as diag
-
+import json
 
 @register_step
 class ExportStep(BaseStep):
@@ -39,6 +39,11 @@ class ExportStep(BaseStep):
         else:
             self.log(f"Data found in context.")
         data = self.context["data"]
+        # Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute
+        if "qc_history" in self.context:
+            self.log(f"QC history found in context.")
+            data.attrs["delayed_qc_history"] = json.dumps(self.context["qc_history"])
+
         export_format = self.parameters["export_format"]
         output_path = self.parameters["output_path"]
 
