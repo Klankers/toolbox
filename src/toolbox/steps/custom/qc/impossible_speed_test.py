@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""QC test to identify impossible speeds in glider data."""
+
 #### Mandatory imports ####
 from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 
@@ -23,6 +25,7 @@ import polars as pl
 import xarray as xr
 import numpy as np
 import matplotlib
+
 
 @register_qc
 class impossible_speed_test(BaseTest):
@@ -39,14 +42,14 @@ class impossible_speed_test(BaseTest):
     qc_outputs = ["TIME_QC", "LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-
         # Convert to polars
         self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(),
-            nan_to_null=False
+            self.data[self.required_variables].to_dataframe(), nan_to_null=False
         )
 
-        self.df = self.df.with_columns((pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt"))
+        self.df = self.df.with_columns(
+            (pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt")
+        )
         for label in ["LATITUDE", "LONGITUDE"]:
             self.df = self.df.with_columns(
                 pl.col(label)
@@ -58,16 +61,17 @@ class impossible_speed_test(BaseTest):
             self.df = self.df.with_columns(
                 (pl.col(f"delta_{label}") / pl.col("dt")).alias(f"{label}_speed")
             )
+        # Define absolute speed
         self.df = self.df.with_columns(
-            ((pl.col("LATITUDE_speed") ** 2 + pl.col("LONGITUDE_speed") ** 2) ** 0.5).alias(
-                "absolute_speed"
-            )
+            (
+                (pl.col("LATITUDE_speed") ** 2 + pl.col("LONGITUDE_speed") ** 2) ** 0.5
+            ).alias("absolute_speed")
         )
 
         # TODO: Does this need a flag for potentially bad data for cases where speed is inf?
         self.df = self.df.with_columns(
             (
-                (pl.col("absolute_speed") < 3)
+                (pl.col("absolute_speed") < 3)  #  Speed threshold
                 & pl.col("absolute_speed").is_not_null()
                 & pl.col("absolute_speed").is_finite()
             ).alias("speed_is_valid")
@@ -75,9 +79,8 @@ class impossible_speed_test(BaseTest):
 
         for label in ["LATITUDE", "LONGITUDE", "TIME"]:
             self.df = self.df.with_columns(
-                pl.when(
-                    pl.col("speed_is_valid")
-                ).then(1)
+                pl.when(pl.col("speed_is_valid"))
+                .then(1)
                 .otherwise(4)
                 .alias(f"{label}_QC")
             )
@@ -86,10 +89,9 @@ class impossible_speed_test(BaseTest):
         flags = self.df.select(pl.col("^.*_QC$"))
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy())
-                for col in flags.columns
+                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
             },
-            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
 
         return self.flags
@@ -100,9 +102,7 @@ class impossible_speed_test(BaseTest):
 
         for i in range(10):
             # Plot by flag number
-            plot_data = self.df.filter(
-                pl.col("LATITUDE_QC") == i
-            )
+            plot_data = self.df.filter(pl.col("LATITUDE_QC") == i)
             if len(plot_data) == 0:
                 continue
 
@@ -120,7 +120,7 @@ class impossible_speed_test(BaseTest):
             title="Impossible Speed Test",
             xlabel="Time (s)",
             ylabel="Absolute Horizontal Speed (m/s)",
-            ylim=(0, 4)
+            ylim=(0, 4),
         )
         ax.axhline(3, ls="--", c="k")
         ax.legend(title="Flags", loc="upper right")

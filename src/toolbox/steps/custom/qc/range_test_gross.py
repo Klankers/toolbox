@@ -10,6 +10,7 @@ import xarray as xr
 import matplotlib
 
 
+# TODO: Could be registered within range_test.py
 @register_qc
 class gross_range_test(BaseTest):
     """

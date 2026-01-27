@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""QC test(s) for flagging based on value ranges."""
+
 #### Mandatory imports ####
 import numpy as np
 from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
@@ -46,29 +48,38 @@ class range_test(BaseTest):
         }
       diagnostics: true
     """
+
     test_name = "range test"
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
     def __init__(self, data, **kwargs):
-
         # Check the necessary kwargs are available
         required_kwargs = {"variable_ranges", "also_flag", "plot"}
         if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings")
+            raise KeyError(
+                f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings"
+            )
 
         # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {k: v for k, v in kwargs.items() if k in required_kwargs}
-        self.required_variables = list(set(self.expected_parameters["variable_ranges"].keys()))
+        self.expected_parameters = {
+            k: v for k, v in kwargs.items() if k in required_kwargs
+        }
+        self.required_variables = list(
+            set(self.expected_parameters["variable_ranges"].keys())
+        )
         self.tested_variables = self.required_variables.copy()
         if "test_depth_range" in kwargs.keys():
             self.required_variables.append("DEPTH")
             self.test_depth_range = kwargs["test_depth_range"]
 
         self.qc_outputs = list(
-            set(f"{var}_QC" for var in self.tested_variables) |
-            set(f"{var}_QC" for var in sum(self.expected_parameters["also_flag"].values(), []))
+            set(f"{var}_QC" for var in self.tested_variables)
+            | set(
+                f"{var}_QC"
+                for var in sum(self.expected_parameters["also_flag"].values(), [])
+            )
         )
 
         if data is not None:
@@ -80,44 +91,44 @@ class range_test(BaseTest):
         self.flags = None
 
     def return_qc(self):
-
         # Subset the data
         self.data = self.data[self.required_variables]
 
         # If the user specified a depth range, limit the checks to that range
         if hasattr(self, "test_depth_range"):
             # TODO: -DEPTH
-            depth_range_mask = (
-                    (self.data["DEPTH"] >= self.test_depth_range[0]) &
-                    (self.data["DEPTH"] <= self.test_depth_range[1])
+            depth_range_mask = (self.data["DEPTH"] >= self.test_depth_range[0]) & (
+                self.data["DEPTH"] <= self.test_depth_range[1]
             )
         else:
             depth_range_mask = True
 
         # Make the empty QC columns
         for var in self.tested_variables:
-            self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], np.full(len(self.data[var]), 0))
+            self.data[f"{var}_QC"] = (
+                ["N_MEASUREMENTS"],
+                np.full(len(self.data[var]), 0),
+            )
 
         # Generate the variable-specific flags
         for var, meta in self.variable_ranges.items():
             for flag, bounds in meta.items():
                 self.data[f"{var}_QC"] = xr.where(
                     (
-                        depth_range_mask &
-                        (self.data[var] > bounds[0]) &
-                        (self.data[var] < bounds[1]) &
-                        (self.data[f"{var}_QC"] == 0)
+                        depth_range_mask
+                        & (self.data[var] > bounds[0])
+                        & (self.data[var] < bounds[1])
+                        & (self.data[f"{var}_QC"] == 0)
                     ),
                     flag,
-                    0
+                    0,
                 )
 
             # Replace all remaining 0s (unchecked) with 1s (good)
             self.data[f"{var}_QC"] = xr.where(
-                depth_range_mask &
-                (self.data[f"{var}_QC"] == 0),
+                depth_range_mask & (self.data[f"{var}_QC"] == 0),
                 1,
-                self.data[f"{var}_QC"]
+                self.data[f"{var}_QC"],
             )
 
             # Broadcast the QC found for var into variables specified by "also_flag"
@@ -126,7 +137,9 @@ class range_test(BaseTest):
                     self.data[f"{extra_var}_QC"] = self.data[f"{var}_QC"]
 
         # Select just the flags
-        self.flags = self.data[[var_qc for var_qc in self.data.data_vars if "_QC" in var_qc]]
+        self.flags = self.data[
+            [var_qc for var_qc in self.data.data_vars if "_QC" in var_qc]
+        ]
 
         return self.flags
 
@@ -135,7 +148,9 @@ class range_test(BaseTest):
 
         # If not plots were specified
         if len(self.plot) == 0:
-            print("WARNING: In 'range test' diagnostics were called but no plots were specified.")
+            print(
+                "WARNING: In 'range test' diagnostics were called but no plots were specified."
+            )
             return
 
         # Plot the QC output
@@ -144,17 +159,18 @@ class range_test(BaseTest):
             axs = [axs]
 
         for ax, var in zip(axs, self.plot):
-
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
-                print(f"WARNING: Cannot plot {var}_QC as it was not included in this test.")
+                print(
+                    f"WARNING: Cannot plot {var}_QC as it was not included in this test."
+                )
                 continue
 
             for i in range(10):
                 # Plot by flag number
-                plot_data = self.data[
-                    [var, "N_MEASUREMENTS"]
-                ].where(self.data[f"{var}_QC"] == i, drop=True)
+                plot_data = self.data[[var, "N_MEASUREMENTS"]].where(
+                    self.data[f"{var}_QC"] == i, drop=True
+                )
 
                 if len(plot_data[var]) == 0:
                     continue

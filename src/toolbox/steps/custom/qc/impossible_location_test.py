@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""QC test to identify impossible locations in LATITUDE and LONGITUDE variables."""
+
 #### Mandatory imports ####
 from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
 
@@ -22,6 +24,7 @@ import polars as pl
 import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
+
 
 @register_qc
 class impossible_location_test(BaseTest):
@@ -38,33 +41,30 @@ class impossible_location_test(BaseTest):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-
         # Convert to polars
         self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(),
-            nan_to_null=False
+            self.data[self.required_variables].to_dataframe(), nan_to_null=False
         )
 
         # Check LAT/LONG exist within expected bounds
+        # TODO: Add optional bounds via parameters (such as Southern Hemisphere, for example)
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
             self.df = self.df.with_columns(
-                pl.when(
-                    pl.col(label).is_nan()
-                ).then(9)
-                .when(
-                    (pl.col(label) > bounds[0]) & (pl.col(label) < bounds[1])
-                ).then(1)
-                .otherwise(4).alias(f"{label}_QC")
+                pl.when(pl.col(label).is_nan())
+                .then(9)
+                .when((pl.col(label) > bounds[0]) & (pl.col(label) < bounds[1]))
+                .then(1)
+                .otherwise(4)
+                .alias(f"{label}_QC")
             )
 
         # Convert back to xarray
         flags = self.df.select(pl.col("^.*_QC$"))
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy())
-                for col in flags.columns
+                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
             },
-            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]}
+            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
 
         return self.flags
@@ -78,9 +78,7 @@ class impossible_location_test(BaseTest):
         ):
             for i in range(10):
                 # Plot by flag number
-                plot_data = self.df.with_row_index().filter(
-                    pl.col(f"{var}_QC") == i
-                )
+                plot_data = self.df.with_row_index().filter(pl.col(f"{var}_QC") == i)
                 if len(plot_data) == 0:
                     continue
 

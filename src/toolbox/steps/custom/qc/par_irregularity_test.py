@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+QC tests to identify irregularities in PAR profiles based on La Forgia & Organelli (2025).
+* Shapiro–Wilk test
+* Day and night sequences
+"""
+
 #### Mandatory imports ####
 from IPython.core.pylabtools import figsize
 from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
@@ -61,9 +67,12 @@ def calculate_solar_elevation(latitude, longitude, datetime):
     time_utc = pd.to_datetime(datetime).tz_localize("UTC")
 
     # Compute solar position
-    solar_position = pvlib.solarposition.get_solarposition(time_utc, latitude, longitude)
+    solar_position = pvlib.solarposition.get_solarposition(
+        time_utc, latitude, longitude
+    )
 
     return solar_position["elevation"].values
+
 
 def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     """
@@ -249,10 +258,13 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     n_bad = np.sum(np.isin(flags, [4, 9]))
     n_prob_bad = np.sum(flags == 3)
     profile_flag = (
-        4 if n_bad >= n_good + n_prob_bad else
-        1 if n_good / N >= 0.25 else
-        2 if np.sum(flags == 2) >= np.sum(flags == 3) else
-        3
+        4
+        if n_bad >= n_good + n_prob_bad
+        else 1
+        if n_good / N >= 0.25
+        else 2
+        if np.sum(flags == 2) >= np.sum(flags == 3)
+        else 3
     )
 
     return flags.astype(int), profile_flag, pa
@@ -261,18 +273,22 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
 @register_qc
 class par_irregularity_test(BaseTest):
     """
+    Wrapper for qc_par_flagging, defining solar_elevation if it is not provided.
     """
 
     test_name = "PAR irregularity test"
-    expected_parameters = {
-        "noise_equivalent_estimate": 3e-2,
-        "plot_profiles": []
-    }
-    required_variables = ["LATITUDE", "LONGITUDE", "TIME", "PRES", "DOWNWELLING_PAR", "PROFILE_NUMBER"]
+    expected_parameters = {"noise_equivalent_estimate": 3e-2, "plot_profiles": []}
+    required_variables = [
+        "LATITUDE",
+        "LONGITUDE",
+        "TIME",
+        "PRES",
+        "DOWNWELLING_PAR",
+        "PROFILE_NUMBER",
+    ]
     qc_outputs = ["DOWNWELLING_PAR_QC"]
 
     def return_qc(self):
-
         # Subset the data
         self.data = self.data[self.required_variables]
 
@@ -280,17 +296,25 @@ class par_irregularity_test(BaseTest):
         par_qc = np.full(len(self.data["DOWNWELLING_PAR"]), 0)
 
         # Apply the checks across individual profiles
-        profile_numbers = np.unique(self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS"))
-        for profile_number in tqdm(profile_numbers, colour="green", desc='\033[97mProgress\033[0m', unit="profile"):
-
+        profile_numbers = np.unique(
+            self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
+        )
+        for profile_number in tqdm(
+            profile_numbers,
+            colour="green",
+            desc="\033[97mProgress\033[0m",
+            unit="profile",
+        ):
             # Subset the data
-            profile = self.data.where(self.data["PROFILE_NUMBER"] == profile_number, drop=True)
+            profile = self.data.where(
+                self.data["PROFILE_NUMBER"] == profile_number, drop=True
+            )
 
             # Find the solar elevation
             solar_elevation = calculate_solar_elevation(
                 profile["LATITUDE"][0].values,
                 profile["LONGITUDE"][0].values,
-                profile["TIME"][0].values
+                profile["TIME"][0].values,
             )
 
             # Apply the QC opperation
@@ -298,11 +322,13 @@ class par_irregularity_test(BaseTest):
                 profile["PRES"],
                 profile["DOWNWELLING_PAR"],
                 solar_elevation,
-                self.noise_equivalent_estimate
+                self.noise_equivalent_estimate,
             )
 
             # Stitch the QC results back into the QC container
-            profile_element_indices = np.where(self.data["PROFILE_NUMBER"] == profile_number)
+            profile_element_indices = np.where(
+                self.data["PROFILE_NUMBER"] == profile_number
+            )
             par_qc[profile_element_indices] = profile_element_qc
 
         # any remaining flags that are 0 (unchecked) are updated to 1 (good)
@@ -327,17 +353,20 @@ class par_irregularity_test(BaseTest):
         for profile_number, ax in zip(self.plot_profiles, axs.flatten()):
             # Select the profile data
             profile = self.data.where(
-                self.data["PROFILE_NUMBER"] == profile_number,
-                drop=True
+                self.data["PROFILE_NUMBER"] == profile_number, drop=True
             ).dropna(dim="N_MEASUREMENTS", subset=["DOWNWELLING_PAR", "PRES"])
 
             if len(profile["DOWNWELLING_PAR"]) == 0:
-                ax.legend(title=f"Prof. {profile_number} (data missing)", loc="upper right")
+                ax.legend(
+                    title=f"Prof. {profile_number} (data missing)", loc="upper right"
+                )
                 continue
 
             for flag in range(10):
                 # Get the data for each flag and check it isn't empty
-                plot_data = profile.where(profile["DOWNWELLING_PAR_QC"] == flag, drop=True)
+                plot_data = profile.where(
+                    profile["DOWNWELLING_PAR_QC"] == flag, drop=True
+                )
                 if len(plot_data["DOWNWELLING_PAR"]) == 0:
                     continue
 
