@@ -177,8 +177,8 @@ class ApplyQC(BaseStep):
                 ).sum() / len(returned_flags[flagged_var])
                 if percent_flagged == 0:
                     self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_test_name}")
-                else:
-                    self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_test_name}")
+                # else: #   TODO: Add 'verbose' log option if needed. Might not need to happen at this point.
+                #     self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_test_name}")
                 qc_history.setdefault(flagged_var, []).append(
                     (qc_test_name, percent_flagged)
                 )
