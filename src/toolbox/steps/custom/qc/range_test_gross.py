@@ -61,6 +61,7 @@ class gross_range_test(BaseTest):
             self.data = data.copy(deep=True)
 
     def return_qc(self):
+        """Select data outside of the ranges and flag accordingly."""
         # Subset the data
         self.data = self.data[self.required_variables]
 
@@ -90,12 +91,13 @@ class gross_range_test(BaseTest):
         return self.flags
 
     def plot_diagnostics(self):
+        """Visualise the QC results in a similar manner to range_test"""
         matplotlib.use("tkagg")
 
         # If not plots were specified
         if len(self.plot) == 0:
             self.log_warn(
-                "WARNING: In 'range test' diagnostics were called but no plots were specified."
+                "WARNING: In 'range test gross' diagnostics were called but no plots were specified."
             )
             return
 
