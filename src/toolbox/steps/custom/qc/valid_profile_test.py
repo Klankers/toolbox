@@ -26,9 +26,9 @@ import matplotlib
 @register_qc
 class valid_profile_test(BaseTest):
     """
-    Target Variable: PROFILE_NUMEBER
+    Target Variable: PROFILE_NUMBER
     Flag Number: 4 (bad data), 3 (potentially bad)
-    Variables Flagged: PROFILE_NUMEBER
+    Variables Flagged: PROFILE_NUMBER
     Checks that each profile is of a certain length (in number of points)
     and contains points within a specified depth range.
     """
