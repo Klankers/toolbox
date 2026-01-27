@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This module defines the base class for pipeline steps and configurations."""
 
 from toolbox.utils.config_mirror import ConfigMirrorMixin
 import warnings
@@ -21,8 +22,8 @@ import os
 
 warnings.formatwarning = lambda msg, *args, **kwargs: f"{msg}\n"
 
-# Registry of explicitly registered step classes
 REGISTERED_STEPS = {}
+"""Registry of explicitly registered step classes."""
 
 
 def register_step(cls):
