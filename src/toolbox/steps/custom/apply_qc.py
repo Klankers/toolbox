@@ -57,6 +57,11 @@ class ApplyQC(BaseStep):
         As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.
         2 (probably good data) + 4 (bad data) -> 4 (bad data)
         3 (probably bad data) + 5 (value changed) -> 3 (probably bad data)
+
+        parameters
+        ----------
+        new_flags : xarray.Dataset
+            Dataset containing new QC flag variables to be merged into the existing flag store.
         """
 
         # Define combinatrix for handling flag upgrade behaviour
@@ -91,8 +96,16 @@ class ApplyQC(BaseStep):
                 self.flag_store[column_name] = new_flags[column_name]
 
     def run(self):
-        """Run the Apply QC step."""
+        """
+        Run the Apply QC step.
 
+        raises
+        ------
+        KeyError
+            If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.
+        ValueError
+            If no data is found in context.
+       """
         # Defining the order of operations
         if len(self.qc_settings.keys()) == 0:
             raise KeyError(
@@ -158,9 +171,14 @@ class ApplyQC(BaseStep):
 
             # Update QC history
             for flagged_var in returned_flags.data_vars:
+                #   Track percent of flags no longer 0 (following ARGO convention)
                 percent_flagged = (
                     returned_flags[flagged_var].to_numpy() != 0
-                ).sum() / len(returned_flags)
+                ).sum() / len(returned_flags[flagged_var])
+                if percent_flagged == 0:
+                    self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_test_name}")
+                # else: #   TODO: Add 'verbose' log option if needed. Might not need to happen at this point.
+                #     self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_test_name}")
                 qc_history.setdefault(flagged_var, []).append(
                     (qc_test_name, percent_flagged)
                 )

@@ -14,13 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Example QC test template, using parts of impossible_date_test as a skeleton."""
+
 #### Mandatory imports ####
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+# from toolbox.steps.base_test import BaseTest, register_qc, flag_cols # Uncomment when implementing
+from toolbox.steps.base_test import BaseTest
 
 #### Custom imports ####
+# any additional imports required for the test go here
 
 
-@register_qc
+# @register_qc  # Uncomment when implementing
 class impossible_date_test(BaseTest):
     """
     Target Variable: TIME
@@ -40,4 +44,5 @@ class impossible_date_test(BaseTest):
         return self.flags
 
     def plot_diagnostics(self):
-        plt.show(block=True)
+        # plt.show(block=True)
+        pass

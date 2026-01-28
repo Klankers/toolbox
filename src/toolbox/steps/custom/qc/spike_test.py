@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""QC test for flagging using spike/despike detection methods."""
+
 #### Mandatory imports ####
 import numpy as np
 from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
@@ -48,24 +50,33 @@ class spike_test(BaseTest):
         }
       diagnostics: true
     """
+
     test_name = "spike test"
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
     def __init__(self, data, **kwargs):
-
         # Check the necessary kwargs are available
         required_kwargs = {"variables", "also_flag", "plot"}
         if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings")
+            raise KeyError(
+                f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings"
+            )
 
         # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {k: v for k, v in kwargs.items() if k in required_kwargs}
-        self.required_variables = list(set(self.expected_parameters["variables"].keys())) + ["PROFILE_NUMBER"]
+        self.expected_parameters = {
+            k: v for k, v in kwargs.items() if k in required_kwargs
+        }
+        self.required_variables = list(
+            set(self.expected_parameters["variables"].keys())
+        ) + ["PROFILE_NUMBER"]
         self.qc_outputs = list(
-            set(f"{var}_QC" for var in self.required_variables) |
-            set(f"{var}_QC" for var in sum(self.expected_parameters["also_flag"].values(), []))
+            set(f"{var}_QC" for var in self.required_variables)
+            | set(
+                f"{var}_QC"
+                for var in sum(self.expected_parameters["also_flag"].values(), [])
+            )
         )
 
         if data is not None:
@@ -79,21 +90,27 @@ class spike_test(BaseTest):
         self.flags = None
 
     def return_qc(self):
-
         # Subset the data
         self.data = self.data[self.required_variables]
 
         # Generate the variable-specific flags
         for var, sensitivity in self.variables.items():
-
             spike_qc = np.full(len(self.data[var]), 0)
 
             # Apply the checks across individual profiles
-            profile_numbers = np.unique(self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS"))
-            for profile_number in tqdm(profile_numbers, colour="green", desc=f'\033[97mProgress [{var}]\033[0m', unit="prof"):
-
+            profile_numbers = np.unique(
+                self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
+            )
+            for profile_number in tqdm(
+                profile_numbers,
+                colour="green",
+                desc=f"\033[97mProgress [{var}]\033[0m",
+                unit="prof",
+            ):
                 # Subset the data
-                profile = self.data.where(self.data["PROFILE_NUMBER"] == profile_number, drop=True)
+                profile = self.data.where(
+                    self.data["PROFILE_NUMBER"] == profile_number, drop=True
+                )
 
                 # remove nans
                 var_data = profile[var].dropna(dim="N_MEASUREMENTS")
@@ -101,10 +118,12 @@ class spike_test(BaseTest):
                     continue
 
                 # Calculate the residules from the running median of the data
-                rolling_median = var_data.to_pandas().rolling(
-                    window=self.window_size,
-                    center=True
-                ).median().to_numpy()
+                rolling_median = (
+                    var_data.to_pandas()
+                    .rolling(window=self.window_size, center=True)
+                    .median()
+                    .to_numpy()
+                )
                 residules = var_data - rolling_median
 
                 # Define the residule threshold
@@ -119,7 +138,9 @@ class spike_test(BaseTest):
                 profile_flags[np.where(~nan_mask)] = spike_flags
 
                 # Stitch the QC results back into the QC container
-                profile_indices = np.where(self.data["PROFILE_NUMBER"] == profile_number)
+                profile_indices = np.where(
+                    self.data["PROFILE_NUMBER"] == profile_number
+                )
                 spike_qc[profile_indices] = profile_flags
 
             # Add the flags to the data
@@ -131,7 +152,9 @@ class spike_test(BaseTest):
                     self.data[f"{extra_var}_QC"] = self.data[f"{var}_QC"]
 
         # Select just the flags
-        self.flags = self.data[[var_qc for var_qc in self.data.data_vars if "_QC" in var_qc]]
+        self.flags = self.data[
+            [var_qc for var_qc in self.data.data_vars if "_QC" in var_qc]
+        ]
 
         return self.flags
 
@@ -140,26 +163,31 @@ class spike_test(BaseTest):
 
         # If not plots were specified
         if len(self.plot) == 0:
-            print(f"WARNING: In '{self.test_name}', diagnostics were called but no variables were specified for plotting.")
+            print(
+                f"WARNING: In '{self.test_name}', diagnostics were called but no variables were specified for plotting."
+            )
             return
 
         # Plot the QC output
-        fig, axs = plt.subplots(nrows=len(self.plot), figsize=(8, 6), sharex=True, dpi=200)
+        fig, axs = plt.subplots(
+            nrows=len(self.plot), figsize=(8, 6), sharex=True, dpi=200
+        )
         if len(self.plot) == 1:
             axs = [axs]
 
         for ax, var in zip(axs, self.plot):
-
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
-                print(f"WARNING: Cannot plot {var}_QC as it was not included in this test.")
+                print(
+                    f"WARNING: Cannot plot {var}_QC as it was not included in this test."
+                )
                 continue
 
             for i in range(10):
                 # Plot by flag number
-                plot_data = self.data[
-                    [var, "N_MEASUREMENTS"]
-                ].where(self.data[f"{var}_QC"] == i, drop=True)
+                plot_data = self.data[[var, "N_MEASUREMENTS"]].where(
+                    self.data[f"{var}_QC"] == i, drop=True
+                )
 
                 if len(plot_data[var]) == 0:
                     continue

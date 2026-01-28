@@ -13,9 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This module defines the base class for QC tests and a registry for QC test classes."""
 
-# Registry of explicitly registered step classes
 REGISTERED_QC = {}
+"""Registry of explicitly registered QC test classes."""
+
 flag_cols = {
     0: "gray",
     1: "blue",
@@ -28,6 +30,7 @@ flag_cols = {
     8: "cyan",
     9: "black",
 }
+"""Map of QC flag values to colors for diagnostics plotting."""
 
 
 def register_qc(cls):
@@ -43,10 +46,19 @@ def register_qc(cls):
 
 class BaseTest:
     """
+    Initializes a base class for quality control, to be further tweaked when inherited.
+
+    Follow the docstring format below when creating new QC tests.
+    
+    Target Variable: "Any" or a specific variable names (see impossible_location_test.py)
+    Flag Number: "Any" or a specific ARGO flag number
+    Variables Flagged: "Any" or specific variable names, possibly external to the target variable (see valid_profile_test.py)
+    Your description follows here.
+
     Target Variable:
     Flag Number:
     Variables Flagged:
-    ? description ?
+    
     """
 
     test_name = None
@@ -72,9 +84,17 @@ class BaseTest:
         self.flags = None
 
     def return_qc(self):
+        """Representative of QC processing, to be overridden by subclasses.
+
+        Returns
+        -------
+        flags : array-like
+            Output QC flags for the data specific to the test.
+        """
         self.flags = None  # replace with processing of some kind
         return self.flags
 
     def plot_diagnostics(self):
-        # Any relevant diagnostic
+        """Representative of diagnostic plotting (optional)."""
+        # Any relevant diagnostic is generated or written out here
         pass

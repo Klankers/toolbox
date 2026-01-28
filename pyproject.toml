@@ -70,3 +70,9 @@ exclude = [
 verbose = 1
 quiet = false
 color = true
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]

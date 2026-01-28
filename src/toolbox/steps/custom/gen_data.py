@@ -26,6 +26,8 @@ from datetime import date, timedelta
 @register_step
 class GenerateData(BaseStep):
     """
+    Step for generating synthetic data for testing pipelines.
+    
     Example config setup:
 
     """
