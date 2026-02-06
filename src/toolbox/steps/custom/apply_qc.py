@@ -25,6 +25,8 @@ from toolbox.steps import QC_CLASSES
 import polars as pl
 import xarray as xr
 import numpy as np
+import pandas as pd
+import json
 
 
 @register_step
@@ -94,6 +96,7 @@ class ApplyQC(BaseStep):
         if len(flag_columns_to_add) > 0:
             for column_name in flag_columns_to_add:
                 self.flag_store[column_name] = new_flags[column_name]
+
 
     def run(self):
         """
@@ -182,6 +185,10 @@ class ApplyQC(BaseStep):
                 qc_history.setdefault(flagged_var, []).append(
                     (qc_test_name, percent_flagged)
                 )
+                attr_name = qc_test_name.replace(" ", "_").lower()
+                attrs = self.flag_store[flagged_var].attrs
+                attrs[f"{attr_name}_stats"] = json.dumps(returned_flags[flagged_var].to_series().describe().to_dict())
+                attrs[f"{attr_name}_params"] = json.dumps(qc_test_params)
 
             # Diagnostic plotting
             if self.diagnostics:
@@ -196,6 +203,7 @@ class ApplyQC(BaseStep):
                 ("N_MEASUREMENTS",),
                 self.flag_store[flag_column].to_numpy(),
             )
+            data[flag_column].attrs = self.flag_store[flag_column].attrs.copy()
         self.context["data"] = data
         self.context["qc_history"] = qc_history
         return self.context
