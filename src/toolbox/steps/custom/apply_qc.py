@@ -25,7 +25,6 @@ from toolbox.steps import QC_CLASSES
 import polars as pl
 import xarray as xr
 import numpy as np
-import pandas as pd
 import json
 
 
@@ -175,9 +174,10 @@ class ApplyQC(BaseStep):
             # Update QC history
             for flagged_var in returned_flags.data_vars:
                 #   Track percent of flags no longer 0 (following ARGO convention)
+                var_flags = returned_flags[flagged_var]
                 percent_flagged = (
-                    returned_flags[flagged_var].to_numpy() != 0
-                ).sum() / len(returned_flags[flagged_var])
+                    var_flags.to_numpy() != 0
+                ).sum() / len(var_flags)
                 if percent_flagged == 0:
                     self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_test_name}")
                 # else: #   TODO: Add 'verbose' log option if needed. Might not need to happen at this point.
@@ -185,10 +185,23 @@ class ApplyQC(BaseStep):
                 qc_history.setdefault(flagged_var, []).append(
                     (qc_test_name, percent_flagged)
                 )
-                attr_name = qc_test_name.replace(" ", "_").lower()
+
+                # Write additional QC details to _QC variable attributes
+                # TODO: Find where columns are initialized
+                parent_attrs = data[flagged_var[:-3]].attrs                
                 attrs = self.flag_store[flagged_var].attrs
-                attrs[f"{attr_name}_stats"] = json.dumps(returned_flags[flagged_var].to_series().describe().to_dict())
-                attrs[f"{attr_name}_params"] = json.dumps(qc_test_params)
+                attrs["quality_control_conventions"] = "Argo standard flags"
+                attrs["valid_min"] = 0
+                attrs["valid_max"] = 9
+                attrs["flag_values"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+                attrs["flag_meanings"] = "NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING"
+                attrs["long_name"] = f"{parent_attrs['long_name']} quality flag"
+                attrs["standard_name"] = f"{parent_attrs['standard_name']}_flag"
+                attr_test = qc_test_name.replace(" ", "_").lower()
+                attrs[f"{attr_test}_flag_cts"] = json.dumps({i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)})
+                attrs[f"{attr_test}_stats"] = json.dumps(var_flags.to_series().describe().to_dict())
+                attrs[f"{attr_test}_params"] = json.dumps(qc_test_params)
+                # Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference
 
             # Diagnostic plotting
             if self.diagnostics:
