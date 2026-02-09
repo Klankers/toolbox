@@ -238,7 +238,9 @@ class Pipeline(ConfigMirrorMixin):
         _context : dict
             Current context to pass to the step.
         """
-        step = create_step(step_config, _context)
+        step_context = _context.copy() if _context else {}
+        step_context["global_parameters"] = self.global_parameters
+        step = create_step(step_config, step_context)
         self.logger.info(f"Executing: {step.name}")
         return step.run()
 
