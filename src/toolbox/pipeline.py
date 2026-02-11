@@ -36,7 +36,7 @@ from toolbox.steps import (
 _PIPELINE_LOGGER_NAME = "toolbox.pipeline"
 """Global logger name for the pipeline. Used to create child loggers for steps."""
 
-def _setup_logging(log_file=None, level=logging.INFO):
+def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
     """
     Set up logging for the entire pipeline.
 
@@ -72,7 +72,7 @@ def _setup_logging(log_file=None, level=logging.INFO):
 
     # File handler if specified
     if log_file:
-        log_file = os.path.abspath(log_file)        # absolute path
+        log_file = os.path.abspath(os.path.join(out_dir or ".", log_file))        # absolute path
         os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
         fh = logging.FileHandler(log_file)
         fh.setLevel(level)
@@ -120,7 +120,8 @@ class Pipeline(ConfigMirrorMixin):
             # set convenience alias for user-facing access
             self.global_parameters = self._parameters.get("pipeline", {})
             # build steps from loaded config
-            self.logger = _setup_logging(self.global_parameters.get("log_file"))
+            self.logger = _setup_logging(self.global_parameters.get("out_directory"),
+                                         self.global_parameters.get("log_file"))
             self.build_steps(self._parameters.get("steps", []))
             self.logger.info("Pipeline initialised")
 
