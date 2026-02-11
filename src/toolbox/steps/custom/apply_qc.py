@@ -161,7 +161,15 @@ class ApplyQC(BaseStep):
         ]
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
-            self.flag_store = data[existing_flags]
+            self.flag_store = data[existing_flags].astype(int)
+
+        # Initialize the missing flag columns
+        mia_qc = test_qc_outputs_cols - set(data.data_vars)
+        base = [var[:-3] for var in mia_qc]
+        data_subset = data[base]
+        masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
+        masks = masks.rename({var: f"{var}_QC" for var in base})
+        self.flag_store.update(masks)
 
         # Run through all of the QC steps and add the flags to flag_store
         for qc_test_name, qc_test_params in self.qc_settings.items():
@@ -199,7 +207,7 @@ class ApplyQC(BaseStep):
                 attrs["standard_name"] = f"{parent_attrs['standard_name']}_flag"
                 attr_test = qc_test_name.replace(" ", "_").lower()
                 attrs[f"{attr_test}_flag_cts"] = json.dumps({i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)})
-                attrs[f"{attr_test}_stats"] = json.dumps(var_flags.to_series().describe().to_dict())
+                attrs[f"{attr_test}_stats"] = json.dumps(var_flags.to_series().describe().round(5).to_dict())
                 attrs[f"{attr_test}_params"] = json.dumps(qc_test_params)
                 # Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference
 
