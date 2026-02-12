@@ -129,6 +129,9 @@ class Pipeline(ConfigMirrorMixin):
         """
         Recursively build steps from configuration.
 
+        Individual steps, including parameters and diagnostics, are saved to self.steps using add_step() for other functions.
+        If "substeps" is a part of the defined step, it recursively builds that child step as a field of the parent.
+
         Parameters
         ----------
         steps_config : list of dict
@@ -136,6 +139,7 @@ class Pipeline(ConfigMirrorMixin):
         parent_name : str, optional
             Name of the parent step, if any.
         """
+        self.logger.info("Assembling steps to run from config.")
         for step in steps_config:
             REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
             for required_step in REQUIRED_STEPS:
