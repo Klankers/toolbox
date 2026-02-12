@@ -270,7 +270,7 @@ steps:
       #   Window sizes to adjust smoothing of the vertical velocities. The values apply to ["median filter", "mean filter"]
       filter_window_sizes: ["20s", "20s"]
       # [depth_column]:
-      #   Name of the column used to derive vertical valocies
+      #   Name of the column used to derive vertical velocities
       depth_column: DEPTH
     # [diagnostics]:
     #   If true, the pipeline will plot the profiling result and launch a tkinter window that will let the user adjust the
