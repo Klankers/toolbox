@@ -134,7 +134,7 @@ class ApplyQC(BaseStep):
         # Try and fetch the qc history from context and update it
         qc_history = self.context.setdefault("qc_history", {})
 
-        # Collect all of the required varible names and qc outputs
+        # Collect all of the required varible names and qc outputs for each test
         all_required_variables = set({})
         test_qc_outputs_cols = set({})
         for test in queued_qc:
@@ -147,25 +147,30 @@ class ApplyQC(BaseStep):
             else:
                 all_required_variables.update(test.required_variables)
                 test_qc_outputs_cols.update(test.qc_outputs)
-
+            #   Check that the required variables for the test are in the dataset
+            if not set(all_required_variables).issubset(set(data.keys())):
+                raise KeyError(
+                    f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for running QC '{test.test_name}'."
+                    f" Make sure that the variables are present in the data, or use remove tests from the order."
+                )
         # Convert data to polars for fast processing
-        if not set(all_required_variables).issubset(set(data.keys())):
-            raise KeyError(
-                f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for QC."
-                f" Make sure that the variables are present in the data, or use remove tests from the order."
-            )
-
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [
             flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
         ]
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
-            self.flag_store = data[existing_flags].astype(int)
-
+            self.log(f"Found existing flags columns {set(existing_flags)} in data.")
+            self.flag_store = data[existing_flags].fillna(9).astype(int)
+        
         # Initialize the missing flag columns
         mia_qc = test_qc_outputs_cols - set(data.data_vars)
         base = [var[:-3] for var in mia_qc]
+        if not set(base).issubset(set(data.keys())):    #   Confirm that the required QC columns exist
+            raise KeyError(
+                f"[Apply QC] The data is missing: ({set(base) - set(data.keys())}), which is/are defined in the config as a variable to flag or use during one of the tests."
+                f" Double check the configuration file and make sure all variable parameters (like 'also flag' [CHLA]) are present in the data."
+            )
         data_subset = data[base]
         masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
         masks = masks.rename({var: f"{var}_QC" for var in base})
@@ -176,7 +181,7 @@ class ApplyQC(BaseStep):
             # Create an instance of this test step
             self.log(f"Applying: {qc_test_name}")   # print(f"[Apply QC] Applying: {qc_test_name}")
             qc_test_instance = QC_CLASSES[qc_test_name](data, **qc_test_params)
-            returned_flags = qc_test_instance.return_qc()
+            returned_flags = qc_test_instance.return_qc()   #   Runs the test, returns the flags
             self.organise_flags(returned_flags)
 
             # Update QC history
@@ -195,7 +200,7 @@ class ApplyQC(BaseStep):
                 )
 
                 # Write additional QC details to _QC variable attributes
-                # TODO: Find where columns are initialized
+                # TODO: Find where columns are initialized, or just run on non-QC'd datasets
                 parent_attrs = data[flagged_var[:-3]].attrs                
                 attrs = self.flag_store[flagged_var].attrs
                 attrs["quality_control_conventions"] = "Argo standard flags"
@@ -227,4 +232,6 @@ class ApplyQC(BaseStep):
             data[flag_column].attrs = self.flag_store[flag_column].attrs.copy()
         self.context["data"] = data
         self.context["qc_history"] = qc_history
+        
+        #   TODO: Append _QC == 0 warning
         return self.context
