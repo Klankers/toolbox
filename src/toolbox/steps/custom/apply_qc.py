@@ -225,6 +225,12 @@ class ApplyQC(BaseStep):
 
         # Append the flags from self.flag_store to the xarray data and push back into context
         for flag_column in self.flag_store.data_vars:
+            if (self.flag_store[flag_column] == 0).all():
+                self.log_warn(f"{flag_column} is all 0 after running all QC steps. Check intended QC variables and test requirements.")
+            elif (self.flag_store[flag_column] == 0).any():
+                n_zero = int((self.flag_store[flag_column] == 0).sum())
+                self.log_warn(f"{flag_column} (length={len(self.flag_store[flag_column])}) has {n_zero} zero QC values following all QC steps.")
+
             data[flag_column] = (
                 ("N_MEASUREMENTS",),
                 self.flag_store[flag_column].to_numpy(),
@@ -232,6 +238,5 @@ class ApplyQC(BaseStep):
             data[flag_column].attrs = self.flag_store[flag_column].attrs.copy()
         self.context["data"] = data
         self.context["qc_history"] = qc_history
-        
-        #   TODO: Append _QC == 0 warning
+
         return self.context
