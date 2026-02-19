@@ -24,3 +24,4 @@ glidertools
 ipykernel
 pytest
 rstcloth
+cartopy
