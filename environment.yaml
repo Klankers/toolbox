@@ -41,3 +41,5 @@ dependencies:
   - pytest
   - black
   - pre-commit
+  - cartopy
+  - rstcloth
