@@ -16,7 +16,9 @@ def test_flatten_qc_dict():
         "temperature": {
             "range_test": {
                 "stats": {"min": 0, "max": 30},
-                "flag_counts": {1: 10, 2: 0, 3: 2500},
+                "flag_counts": {
+                    0:0, 1:2212921, 2:0, 3:0,
+                    4:0, 5:0, 6:0, 7:0, 8:0, 9:0},
             }
         },
         "salinity": {},  # should be skipped entirely
@@ -25,8 +27,8 @@ def test_flatten_qc_dict():
     result = write_report.flatten_qc_dict(qc_dict)
 
     expected = [
-        ["temperature", "range_test", 1, "10"],
-        ["temperature", "range_test", 3, "2,500"],
+        ["temperature", "range_test", 1, "2212921"],
+        ["temperature", "range_test", 3, "0"],
     ]
 
     assert result == expected
@@ -56,3 +58,5 @@ def test_current_info():
     }
 
     assert result == expected
+
+
