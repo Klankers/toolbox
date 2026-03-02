@@ -598,16 +598,17 @@ def qc_hist(
     var_source = var[:-3]  #   TEMP_QC --> TEMP
 
     fig, axs = plt.subplots(ncols=2, figsize=(8, 4), layout="constrained")
-    #   Plot the source variable using xarray.plot for speed
-    data[var_source].plot(ax=axs[0])
-    axs[0].set_title(f"{var_source}: n={len(data[var_source])}", ha="right")
-
+    
     #   Prepare the histogram
     ylims = [1, len(data[var])]  #   Log axis cannot be 0
     if any(y < 1 for y in ylims):
         raise ValueError
     if bins == None:  #   If not specified, center the bins around each flag integer
         bins = np.arange(len(hislim)) - 0.5
+
+    #   Plot the source variable using xarray.plot for speed
+    data[var_source].plot(ax=axs[0])
+    axs[0].set_title(f"{var_source}: n={len(data[var_source])}", ha="right")
 
     data[var].plot.hist(
         yscale="log", bins=bins, xticks=hislim, xlim=xlims, ylim=ylims, ax=axs[1]
