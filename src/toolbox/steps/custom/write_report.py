@@ -674,6 +674,7 @@ def make_plots(
     doc,
     data: xr.Dataset,
     outdir: str,
+    extent:list = [7, 25, 54, 65],
 ) -> None:
     """
     Wrapper for plotting glider QC variables quickly.
@@ -700,7 +701,7 @@ def make_plots(
 
     # Basic geographic plot
     # basic_geo(doc, data, g_extent, ext, outdir)
-    inset_geo(doc, data, outdir, scale="50m")
+    inset_geo(doc, data, outdir, extent, scale="50m")
 
     qc_vars = [var for var in data.data_vars if "_QC" in var]
     for var in tqdm(
@@ -754,7 +755,7 @@ class WriteDataReport(BaseStep):
             qc_section(doc, data)
 
             self.log("Generating images.")
-            make_plots(doc, data, outdir=odir)
+            make_plots(doc, data, outdir=odir, extent=self.parameters.get("extent"))
 
             run_info_page(
                 doc, self.context["global_parameters"], self.context["data"].attrs

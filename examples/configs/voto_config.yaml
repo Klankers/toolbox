@@ -94,6 +94,7 @@ steps:
       title: "VOTO Glider Data Pipeline Report" # Goes on the title page
       fname: "voto_data_report.rst" # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory"
       build: true   #  Whether to run sphinx
+      extent: [7, 25, 54, 65] # Min Max longitude and Min Max latitude for geographic plotting
       # ext_format: pdf   # Something to eventually support - singletext, html
       # overwrite: True   # Delete _build from within the "out_directory", if it exists
       # template: None  # Could define conf.py or report generation orders different from the current base one

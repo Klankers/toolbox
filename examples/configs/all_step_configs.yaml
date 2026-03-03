@@ -528,6 +528,10 @@ steps:
       # [build]: true/false
       # Whether to run Sphinx on the .rst at the end and generate the specified PDF
       build: false
+      # [extent]: list of lat/lon
+      # This is for use on the geographic extent of the inset figure. Helpful for providing
+      # context to each glider mission, which can vary. Defaults to the Baltic Sea.
+      extent: [min_lon max_lon min_lat max_lon]
 
       ### Below are additional reporting parameters for the future
       # ext_format: pdf   # Something to eventually support - singletext, html
