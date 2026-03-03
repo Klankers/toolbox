@@ -123,12 +123,7 @@ class ApplyQC(BaseStep):
         queued_qc = [QC_CLASSES.get(key) for key in self.qc_settings.keys()]
 
         # Check if the data is in the context
-        if "data" not in self.context:
-            raise ValueError(
-                "[Apply QC] No data found in context. Please load data first."
-            )
-        else:
-            self.log("Data found in context.")
+        self.check_data()
         data = self.context["data"].copy(deep=True)
 
         # Try and fetch the qc history from context and update it
