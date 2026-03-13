@@ -1,5 +1,4 @@
-# toolbox
-
+# Pelagos-py
 Copyright 2025-2026 The National Oceanography Centre and The Contributors
 
 ## Documentation
