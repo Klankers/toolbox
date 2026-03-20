@@ -26,6 +26,7 @@ import datetime as _dt
 from graphviz import Digraph
 
 from toolbox.utils.config_mirror import ConfigMirrorMixin
+from toolbox.utils.valid_config_check import check_pipeline_variables
 
 from toolbox.steps import (
     create_step,
@@ -123,6 +124,7 @@ class Pipeline(ConfigMirrorMixin):
             self.logger = _setup_logging(self.global_parameters.get("out_directory"),
                                          self.global_parameters.get("log_file"))
             self.build_steps(self._parameters.get("steps", []))
+            check_pipeline_variables(self.steps, self.logger)
             self.logger.info("Pipeline initialised")
 
     def build_steps(self, steps_config, parent_name=None):
