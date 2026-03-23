@@ -47,7 +47,7 @@ def current_info() -> dict:
         "timestamp_utc": now.isoformat(),
         "user": getpass.getuser(),
         "toolbox_version": version(
-            "NOCAT"
+            "pelagos-py"
         ),  #   Normally done with __version__. "NOCAT" placeholder until name is known.
         "python_version": platform.python_version(),
         "system": f"{platform.system()}: {platform.release()}",
