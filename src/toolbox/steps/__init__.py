@@ -26,7 +26,7 @@ import importlib
 import pathlib
 import yaml
 from .base_step import REGISTERED_STEPS
-from .base_test import REGISTERED_QC
+from .base_qc import REGISTERED_QC
 
 # Global registries
 STEP_CLASSES = {}

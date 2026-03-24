@@ -14,34 +14,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QC test that identifies glider positions not located on land and flags accordingly."""
+"""QC test to identify impossible dates in TIME variable."""
 
 #### Mandatory imports ####
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseTest, register_qc, flag_cols
 
 #### Custom imports ####
-from geodatasets import get_path
-import matplotlib.pyplot as plt
-import shapely as sh
 import polars as pl
 import xarray as xr
+from datetime import datetime
 import matplotlib
-import geopandas
+import matplotlib.pyplot as plt
 
 
 @register_qc
-class position_on_land_test(BaseTest):
+class impossible_date_qc(BaseTest):
     """
-    Target Variable: LATITUDE, LONGITUDE
+    Target Variable: TIME
     Flag Number: 4 (bad data)
-    Variables Flagged: LATITUDE, LONGITUDE
-    Checks that the measurement location is not on land.
+    Variables Flagged: TIME
+    Checks that the datetime of each point is valid.
     """
 
-    test_name = "position on land test"
+    test_name = "impossible date qc"
     expected_parameters = {}
-    required_variables = ["LATITUDE", "LONGITUDE"]
-    qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
+    required_variables = ["TIME"]
+    qc_outputs = ["TIME_QC"]
 
     def return_qc(self):
         # Convert to polars
@@ -49,26 +47,21 @@ class position_on_land_test(BaseTest):
             self.data[self.required_variables].to_dataframe(), nan_to_null=False
         )
 
-        # Concat the polygons into a MultiPolygon object
-        self.world = geopandas.read_file(get_path("naturalearth.land"))
-        land_polygons = sh.ops.unary_union(self.world.geometry)
-
-        # Check if lat, long coords fall within the area of the land polygons
+        # Check if any of the datetime stamps fall outside 1985 and the current datetime
+        # TODO: Add optional bounds via parameters (such as known deployment dates, for example)
         self.df = self.df.with_columns(
-            pl.struct("LONGITUDE", "LATITUDE")
-            .map_batches(
-                lambda x: sh.contains_xy(
-                    land_polygons,
-                    x.struct.field("LONGITUDE").to_numpy(),
-                    x.struct.field("LATITUDE").to_numpy(),
+            pl.when(pl.col("TIME").is_null())
+            .then(9)
+            .when(
+                (
+                    (pl.col("TIME") > datetime(1985, 1, 1))
+                    & (pl.col("TIME") < datetime.now())
                 )
-                * 4
             )
-            .replace({0: 1})
-            .alias("LONGITUDE_QC")
+            .then(1)
+            .otherwise(4)
+            .alias("TIME_QC")
         )
-        # Add the flags to LATITUDE as well.
-        self.df = self.df.with_columns(pl.col("LONGITUDE_QC").alias("LATITUDE_QC"))
 
         # Convert back to xarray
         flags = self.df.select(pl.col("^.*_QC$"))
@@ -83,31 +76,26 @@ class position_on_land_test(BaseTest):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        fig, ax = plt.subplots(figsize=(12, 8), dpi=200)
-
-        # Plot land boundaries
-        self.world.plot(ax=ax, facecolor="lightgray", edgecolor="black", alpha=0.3)
-
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=200)
         for i in range(10):
             # Plot by flag number
-            plot_data = self.df.filter(pl.col("LATITUDE_QC") == i)
+            plot_data = self.df.with_row_index().filter(pl.col("TIME_QC") == i)
             if len(plot_data) == 0:
                 continue
 
             # Plot the data
             ax.plot(
-                plot_data["LONGITUDE"],
-                plot_data["LATITUDE"],
+                plot_data["index"],
+                plot_data["TIME"],
                 c=flag_cols[i],
                 ls="",
                 marker="o",
                 label=f"{i}",
             )
-
         ax.set(
-            xlabel="Longitude",
-            ylabel="Latitude",
-            title="Position On Land Test",
+            title="Impossible Date Test",
+            xlabel="Index",
+            ylabel="TIME",
         )
         ax.legend(title="Flags", loc="upper right")
         fig.tight_layout()
