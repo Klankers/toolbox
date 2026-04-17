@@ -50,7 +50,13 @@ class FormatCheck(BaseStep):
 
         #   If ran after loading data, the filename stem should be saved in the global pipeline params
         fname = self.context.get("global_parameters", {}).get("filename_core") or Path(src.strip("*.nc")).stem
-        f_out = self.context["global_parameters"]["out_directory"] + fname + "_check.rst"
+        ext   = self.parameters.get("output_type")
+        f_out = self.context["global_parameters"]["out_directory"] + fname + "_check." + ext
+        self.context["global_parameters"]["cc_file"] = f_out    #   Save in case of reporting.
+
+        #   After naming the file accordingly, change to "text" for ASCII formats
+        if ext != "json":
+            ext = "text"
 
         #   return_value: True if passes specified checks. errors: True if there were any errors running the CC.
         return_value, errors = ComplianceChecker.run_checker(
@@ -59,7 +65,7 @@ class FormatCheck(BaseStep):
             verbose = True,
             criteria = "lenient",
             output_filename = f_out,
-            output_format = "text",
+            output_format = ext,
         )
 
         if return_value == False:
