@@ -130,7 +130,7 @@ def test_format_checker_json_output(tmp_path):
 
         step.run()
 
-        args, kwargs = mock_run_checker.call_args
+        _, kwargs = mock_run_checker.call_args
 
         assert kwargs["output_format"] == "json"
         assert kwargs["output_filename"].endswith("demo_test_check.json")
