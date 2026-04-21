@@ -21,14 +21,12 @@ def test_format_checker_run_success(tmp_path):
         mock_run_checker.return_value = (True, False)
         mock_checksuite.return_value = mock_suite_instance
 
-        src = "test_file.nc"
-        standards = ["og"]
-
         step = FormatCheck(
             name="format_check",
             parameters={
-                "src": src,
-                "standards": standards,
+                "src": "test_file.nc",
+                "standards": ["og"],
+                "output_type": "ascii"
             },
             context={
                 "global_parameters": {
@@ -57,6 +55,7 @@ def test_format_checker_run_failure_raises(tmp_path):
             parameters={
                 "src": "test_file.nc",
                 "standards": ["og"],
+                "output_type": "ascii",
                 "proceed_on_fail": False,
             },
             context={
@@ -73,6 +72,7 @@ def test_format_checker_run_failure_raises(tmp_path):
         
         step.log_warn.assert_called_once()
 
+
 def test_format_checker_errors(tmp_path):
     with patch("toolbox.steps.custom.format_check.CheckSuite") as mock_checksuite, \
          patch("toolbox.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
@@ -80,14 +80,12 @@ def test_format_checker_errors(tmp_path):
         mock_run_checker.return_value = (True, True)
         mock_checksuite.return_value = mock_suite_instance
 
-        src = "test_file.nc"
-        standards = ["og"]
-
         step = FormatCheck(
             name="format_check",
             parameters={
-                "src": src,
-                "standards": standards,
+                "src": "test_file.nc",
+                "standards": ["og"],
+                "output_type": "ascii",
             },
             context={
                 "global_parameters": {
@@ -105,3 +103,34 @@ def test_format_checker_errors(tmp_path):
         assert result is not None
 
         step.log_warn.assert_called_once()
+
+
+def test_format_checker_json_output(tmp_path):
+    with patch("toolbox.steps.custom.format_check.CheckSuite") as mock_checksuite, \
+         patch("toolbox.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+
+        mock_suite_instance = MagicMock()
+        mock_run_checker.return_value = (True, False)
+        mock_checksuite.return_value = mock_suite_instance
+
+        step = FormatCheck(
+            name="format_check",
+            parameters={
+                "src": "test_file.nc",
+                "standards": ["og"],
+                "output_type": "json",
+            },
+            context={
+                "global_parameters": {
+                    "out_directory": str(tmp_path) + "/",
+                    "filename_core": "demo_test"
+                }
+            }
+        )
+
+        step.run()
+
+        args, kwargs = mock_run_checker.call_args
+
+        assert kwargs["output_format"] == "json"
+        assert kwargs["output_filename"].endswith("demo_test_check.json")
